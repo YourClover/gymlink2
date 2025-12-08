@@ -18,8 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkoutIndexRouteImport } from './routes/workout/index'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises/index'
+import { Route as WorkoutSelectDayRouteImport } from './routes/workout/select-day'
+import { Route as WorkoutActiveRouteImport } from './routes/workout/active'
 import { Route as PlansNewRouteImport } from './routes/plans/new'
 import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/index'
+import { Route as WorkoutSummarySessionIdRouteImport } from './routes/workout/summary.$sessionId'
 import { Route as PlansPlanIdDayDayIdRouteImport } from './routes/plans/$planId/day/$dayId'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -67,6 +70,16 @@ const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
   path: '/exercises/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkoutSelectDayRoute = WorkoutSelectDayRouteImport.update({
+  id: '/workout/select-day',
+  path: '/workout/select-day',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkoutActiveRoute = WorkoutActiveRouteImport.update({
+  id: '/workout/active',
+  path: '/workout/active',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansNewRoute = PlansNewRouteImport.update({
   id: '/plans/new',
   path: '/plans/new',
@@ -75,6 +88,11 @@ const PlansNewRoute = PlansNewRouteImport.update({
 const PlansPlanIdIndexRoute = PlansPlanIdIndexRouteImport.update({
   id: '/plans/$planId/',
   path: '/plans/$planId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkoutSummarySessionIdRoute = WorkoutSummarySessionIdRouteImport.update({
+  id: '/workout/summary/$sessionId',
+  path: '/workout/summary/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlansPlanIdDayDayIdRoute = PlansPlanIdDayDayIdRouteImport.update({
@@ -91,9 +109,12 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/plans/new': typeof PlansNewRoute
+  '/workout/active': typeof WorkoutActiveRoute
+  '/workout/select-day': typeof WorkoutSelectDayRoute
   '/exercises': typeof ExercisesIndexRoute
   '/plans': typeof PlansIndexRoute
   '/workout': typeof WorkoutIndexRoute
+  '/workout/summary/$sessionId': typeof WorkoutSummarySessionIdRoute
   '/plans/$planId': typeof PlansPlanIdIndexRoute
   '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
 }
@@ -105,9 +126,12 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/plans/new': typeof PlansNewRoute
+  '/workout/active': typeof WorkoutActiveRoute
+  '/workout/select-day': typeof WorkoutSelectDayRoute
   '/exercises': typeof ExercisesIndexRoute
   '/plans': typeof PlansIndexRoute
   '/workout': typeof WorkoutIndexRoute
+  '/workout/summary/$sessionId': typeof WorkoutSummarySessionIdRoute
   '/plans/$planId': typeof PlansPlanIdIndexRoute
   '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
 }
@@ -120,9 +144,12 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/plans/new': typeof PlansNewRoute
+  '/workout/active': typeof WorkoutActiveRoute
+  '/workout/select-day': typeof WorkoutSelectDayRoute
   '/exercises/': typeof ExercisesIndexRoute
   '/plans/': typeof PlansIndexRoute
   '/workout/': typeof WorkoutIndexRoute
+  '/workout/summary/$sessionId': typeof WorkoutSummarySessionIdRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
   '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
 }
@@ -136,9 +163,12 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/plans/new'
+    | '/workout/active'
+    | '/workout/select-day'
     | '/exercises'
     | '/plans'
     | '/workout'
+    | '/workout/summary/$sessionId'
     | '/plans/$planId'
     | '/plans/$planId/day/$dayId'
   fileRoutesByTo: FileRoutesByTo
@@ -150,9 +180,12 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/plans/new'
+    | '/workout/active'
+    | '/workout/select-day'
     | '/exercises'
     | '/plans'
     | '/workout'
+    | '/workout/summary/$sessionId'
     | '/plans/$planId'
     | '/plans/$planId/day/$dayId'
   id:
@@ -164,9 +197,12 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/plans/new'
+    | '/workout/active'
+    | '/workout/select-day'
     | '/exercises/'
     | '/plans/'
     | '/workout/'
+    | '/workout/summary/$sessionId'
     | '/plans/$planId/'
     | '/plans/$planId/day/$dayId'
   fileRoutesById: FileRoutesById
@@ -179,9 +215,12 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   PlansNewRoute: typeof PlansNewRoute
+  WorkoutActiveRoute: typeof WorkoutActiveRoute
+  WorkoutSelectDayRoute: typeof WorkoutSelectDayRoute
   ExercisesIndexRoute: typeof ExercisesIndexRoute
   PlansIndexRoute: typeof PlansIndexRoute
   WorkoutIndexRoute: typeof WorkoutIndexRoute
+  WorkoutSummarySessionIdRoute: typeof WorkoutSummarySessionIdRoute
   PlansPlanIdIndexRoute: typeof PlansPlanIdIndexRoute
   PlansPlanIdDayDayIdRoute: typeof PlansPlanIdDayDayIdRoute
 }
@@ -251,6 +290,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExercisesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/workout/select-day': {
+      id: '/workout/select-day'
+      path: '/workout/select-day'
+      fullPath: '/workout/select-day'
+      preLoaderRoute: typeof WorkoutSelectDayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workout/active': {
+      id: '/workout/active'
+      path: '/workout/active'
+      fullPath: '/workout/active'
+      preLoaderRoute: typeof WorkoutActiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/new': {
       id: '/plans/new'
       path: '/plans/new'
@@ -263,6 +316,13 @@ declare module '@tanstack/react-router' {
       path: '/plans/$planId'
       fullPath: '/plans/$planId'
       preLoaderRoute: typeof PlansPlanIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workout/summary/$sessionId': {
+      id: '/workout/summary/$sessionId'
+      path: '/workout/summary/$sessionId'
+      fullPath: '/workout/summary/$sessionId'
+      preLoaderRoute: typeof WorkoutSummarySessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plans/$planId/day/$dayId': {
@@ -283,9 +343,12 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   PlansNewRoute: PlansNewRoute,
+  WorkoutActiveRoute: WorkoutActiveRoute,
+  WorkoutSelectDayRoute: WorkoutSelectDayRoute,
   ExercisesIndexRoute: ExercisesIndexRoute,
   PlansIndexRoute: PlansIndexRoute,
   WorkoutIndexRoute: WorkoutIndexRoute,
+  WorkoutSummarySessionIdRoute: WorkoutSummarySessionIdRoute,
   PlansPlanIdIndexRoute: PlansPlanIdIndexRoute,
   PlansPlanIdDayDayIdRoute: PlansPlanIdDayDayIdRoute,
 }
