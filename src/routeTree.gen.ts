@@ -17,6 +17,10 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkoutIndexRouteImport } from './routes/workout/index'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
+import { Route as ExercisesIndexRouteImport } from './routes/exercises/index'
+import { Route as PlansNewRouteImport } from './routes/plans/new'
+import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/index'
+import { Route as PlansPlanIdDayDayIdRouteImport } from './routes/plans/$planId/day/$dayId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -58,6 +62,26 @@ const PlansIndexRoute = PlansIndexRouteImport.update({
   path: '/plans/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
+  id: '/exercises/',
+  path: '/exercises/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlansNewRoute = PlansNewRouteImport.update({
+  id: '/plans/new',
+  path: '/plans/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlansPlanIdIndexRoute = PlansPlanIdIndexRouteImport.update({
+  id: '/plans/$planId/',
+  path: '/plans/$planId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlansPlanIdDayDayIdRoute = PlansPlanIdDayDayIdRouteImport.update({
+  id: '/plans/$planId/day/$dayId',
+  path: '/plans/$planId/day/$dayId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,8 +90,12 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/plans/new': typeof PlansNewRoute
+  '/exercises': typeof ExercisesIndexRoute
   '/plans': typeof PlansIndexRoute
   '/workout': typeof WorkoutIndexRoute
+  '/plans/$planId': typeof PlansPlanIdIndexRoute
+  '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,8 +104,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/plans/new': typeof PlansNewRoute
+  '/exercises': typeof ExercisesIndexRoute
   '/plans': typeof PlansIndexRoute
   '/workout': typeof WorkoutIndexRoute
+  '/plans/$planId': typeof PlansPlanIdIndexRoute
+  '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,8 +119,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/plans/new': typeof PlansNewRoute
+  '/exercises/': typeof ExercisesIndexRoute
   '/plans/': typeof PlansIndexRoute
   '/workout/': typeof WorkoutIndexRoute
+  '/plans/$planId/': typeof PlansPlanIdIndexRoute
+  '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,8 +135,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
+    | '/plans/new'
+    | '/exercises'
     | '/plans'
     | '/workout'
+    | '/plans/$planId'
+    | '/plans/$planId/day/$dayId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,8 +149,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
+    | '/plans/new'
+    | '/exercises'
     | '/plans'
     | '/workout'
+    | '/plans/$planId'
+    | '/plans/$planId/day/$dayId'
   id:
     | '__root__'
     | '/'
@@ -119,8 +163,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
+    | '/plans/new'
+    | '/exercises/'
     | '/plans/'
     | '/workout/'
+    | '/plans/$planId/'
+    | '/plans/$planId/day/$dayId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -130,8 +178,12 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
+  PlansNewRoute: typeof PlansNewRoute
+  ExercisesIndexRoute: typeof ExercisesIndexRoute
   PlansIndexRoute: typeof PlansIndexRoute
   WorkoutIndexRoute: typeof WorkoutIndexRoute
+  PlansPlanIdIndexRoute: typeof PlansPlanIdIndexRoute
+  PlansPlanIdDayDayIdRoute: typeof PlansPlanIdDayDayIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +244,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlansIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/exercises/': {
+      id: '/exercises/'
+      path: '/exercises'
+      fullPath: '/exercises'
+      preLoaderRoute: typeof ExercisesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plans/new': {
+      id: '/plans/new'
+      path: '/plans/new'
+      fullPath: '/plans/new'
+      preLoaderRoute: typeof PlansNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plans/$planId/': {
+      id: '/plans/$planId/'
+      path: '/plans/$planId'
+      fullPath: '/plans/$planId'
+      preLoaderRoute: typeof PlansPlanIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plans/$planId/day/$dayId': {
+      id: '/plans/$planId/day/$dayId'
+      path: '/plans/$planId/day/$dayId'
+      fullPath: '/plans/$planId/day/$dayId'
+      preLoaderRoute: typeof PlansPlanIdDayDayIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -202,8 +282,12 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
+  PlansNewRoute: PlansNewRoute,
+  ExercisesIndexRoute: ExercisesIndexRoute,
   PlansIndexRoute: PlansIndexRoute,
   WorkoutIndexRoute: WorkoutIndexRoute,
+  PlansPlanIdIndexRoute: PlansPlanIdIndexRoute,
+  PlansPlanIdDayDayIdRoute: PlansPlanIdDayDayIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

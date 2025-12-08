@@ -1,0 +1,148 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
+import { type Exercise, MuscleGroup, Equipment } from '@prisma/client'
+import { Dumbbell } from 'lucide-react'
+import AppLayout from '@/components/AppLayout'
+import SearchInput from '@/components/ui/SearchInput'
+import EmptyState from '@/components/ui/EmptyState'
+import ExerciseCard from '@/components/exercises/ExerciseCard'
+import ExerciseFilters from '@/components/exercises/ExerciseFilters'
+import Modal from '@/components/ui/Modal'
+import { getExercises } from '@/lib/exercises.server'
+import { useAuth } from '@/context/AuthContext'
+
+export const Route = createFileRoute('/exercises/')({
+  component: ExercisesPage,
+})
+
+function ExercisesPage() {
+  const { user } = useAuth()
+  const [exercises, setExercises] = useState<Exercise[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup | undefined>()
+  const [equipment, setEquipment] = useState<Equipment | undefined>()
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(
+    null,
+  )
+
+  // Fetch exercises
+  useEffect(() => {
+    const fetchExercises = async () => {
+      setLoading(true)
+      try {
+        const result = await getExercises({
+          data: {
+            muscleGroup,
+            equipment,
+            search: search || undefined,
+            userId: user?.id,
+          },
+        })
+        setExercises(result.exercises)
+      } catch (error) {
+        console.error('Failed to fetch exercises:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchExercises()
+  }, [muscleGroup, equipment, search, user?.id])
+
+  return (
+    <AppLayout title="Exercises">
+      <div className="flex flex-col h-full">
+        {/* Search and Filters */}
+        <div className="flex-shrink-0 px-4 py-4 space-y-4 border-b border-zinc-800">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search exercises..."
+          />
+          <ExerciseFilters
+            muscleGroup={muscleGroup}
+            equipment={equipment}
+            onMuscleGroupChange={setMuscleGroup}
+            onEquipmentChange={setEquipment}
+          />
+        </div>
+
+        {/* Exercise List */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : exercises.length === 0 ? (
+            <EmptyState
+              icon={<Dumbbell className="w-8 h-8" />}
+              title="No exercises found"
+              description="Try adjusting your search or filters to find exercises."
+            />
+          ) : (
+            <div className="p-4 space-y-2">
+              <p className="text-sm text-zinc-500 mb-3">
+                {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
+              </p>
+              {exercises.map((exercise) => (
+                <ExerciseCard
+                  key={exercise.id}
+                  exercise={exercise}
+                  onPress={() => setSelectedExercise(exercise)}
+                  showDescription
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Exercise Detail Modal */}
+      <Modal
+        isOpen={!!selectedExercise}
+        onClose={() => setSelectedExercise(null)}
+        title={selectedExercise?.name}
+      >
+        {selectedExercise && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <span className="px-3 py-1 bg-zinc-800 rounded-full text-sm text-zinc-300">
+                {selectedExercise.muscleGroup.replace('_', ' ')}
+              </span>
+              <span className="px-3 py-1 bg-zinc-800 rounded-full text-sm text-zinc-300">
+                {selectedExercise.equipment}
+              </span>
+              <span className="px-3 py-1 bg-zinc-800 rounded-full text-sm text-zinc-300">
+                {selectedExercise.exerciseType}
+              </span>
+              {selectedExercise.isTimed && (
+                <span className="px-3 py-1 bg-blue-600/20 rounded-full text-sm text-blue-400">
+                  Timed
+                </span>
+              )}
+            </div>
+
+            {selectedExercise.description && (
+              <div>
+                <h4 className="text-sm font-medium text-zinc-400 mb-1">
+                  Description
+                </h4>
+                <p className="text-white">{selectedExercise.description}</p>
+              </div>
+            )}
+
+            {selectedExercise.instructions && (
+              <div>
+                <h4 className="text-sm font-medium text-zinc-400 mb-1">
+                  Instructions
+                </h4>
+                <p className="text-white">{selectedExercise.instructions}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+    </AppLayout>
+  )
+}
