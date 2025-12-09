@@ -10,7 +10,7 @@ import {
   Trophy,
   Weight,
 } from 'lucide-react'
-import type { MuscleGroup } from '@prisma/client'
+import type { MuscleGroup, RecordType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
@@ -20,6 +20,7 @@ import {
   getRecentPRs,
   getVolumeHistory,
 } from '@/lib/stats.server'
+import { formatDuration, formatVolume } from '@/lib/formatting'
 
 export const Route = createFileRoute('/stats')({
   component: StatsPage,
@@ -56,11 +57,40 @@ type PRData = {
   id: string
   exerciseName: string
   muscleGroup: MuscleGroup | null
-  recordType: string
-  weight: number
+  isTimed: boolean
+  recordType: RecordType
+  value: number
+  weight: number | null
   reps: number | null
   timeSeconds: number | null
   achievedAt: Date
+}
+
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function formatPRDisplay(pr: PRData): string {
+  switch (pr.recordType) {
+    case 'MAX_VOLUME':
+      if (pr.weight && pr.reps) {
+        return `${pr.weight}kg × ${pr.reps} reps`
+      }
+      if (pr.weight && pr.timeSeconds) {
+        return `${pr.weight}kg × ${formatTime(pr.timeSeconds)}`
+      }
+      return `Score: ${pr.value}`
+    case 'MAX_TIME':
+      return formatTime(pr.value)
+    case 'MAX_REPS':
+      return `${pr.value} reps`
+    case 'MAX_WEIGHT':
+      return `${pr.value}kg`
+    default:
+      return `${pr.value}`
+  }
 }
 
 function StatsPage() {
@@ -101,25 +131,6 @@ function StatsPage() {
 
     fetchStats()
   }, [user])
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    if (hours < 1) {
-      const mins = Math.floor(seconds / 60)
-      return `${mins}m`
-    }
-    return `${hours}h`
-  }
-
-  const formatVolume = (kg: number) => {
-    if (kg >= 1000000) {
-      return `${(kg / 1000000).toFixed(1)}M kg`
-    }
-    if (kg >= 1000) {
-      return `${(kg / 1000).toFixed(1)}t`
-    }
-    return `${Math.round(kg)} kg`
-  }
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -311,9 +322,7 @@ function StatsPage() {
                       {pr.exerciseName}
                     </p>
                     <p className="text-sm text-zinc-400">
-                      {pr.timeSeconds
-                        ? `${pr.weight}kg x ${pr.timeSeconds}s`
-                        : `${pr.weight}kg x ${pr.reps} reps`}
+                      {formatPRDisplay(pr)}
                     </p>
                   </div>
                   <div className="text-xs text-zinc-500">

@@ -1,73 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
+import { RecordType } from '@prisma/client'
 import { prisma } from './db'
-
-// Helper function to get the start of a week (Monday) for a given date
-function getWeekStart(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay()
-  const diff = day === 0 ? 6 : day - 1
-  d.setDate(d.getDate() - diff)
-  return d
-}
-
-// Helper function to calculate weekly workout streak
-async function calculateStreak(userId: string): Promise<number> {
-  const workouts = await prisma.workoutSession.findMany({
-    where: {
-      userId,
-      completedAt: { not: null },
-    },
-    select: {
-      completedAt: true,
-    },
-    orderBy: {
-      completedAt: 'desc',
-    },
-  })
-
-  if (workouts.length === 0) return 0
-
-  const workoutWeeks = new Set<string>()
-  for (const workout of workouts) {
-    if (workout.completedAt) {
-      const weekStart = getWeekStart(workout.completedAt)
-      workoutWeeks.add(weekStart.toISOString().split('T')[0])
-    }
-  }
-
-  const uniqueWeeks = Array.from(workoutWeeks).sort().reverse()
-
-  const today = new Date()
-  const currentWeekStart = getWeekStart(today)
-  const lastWeekStart = new Date(currentWeekStart)
-  lastWeekStart.setDate(lastWeekStart.getDate() - 7)
-
-  const currentWeekStr = currentWeekStart.toISOString().split('T')[0]
-  const lastWeekStr = lastWeekStart.toISOString().split('T')[0]
-
-  if (uniqueWeeks[0] !== currentWeekStr && uniqueWeeks[0] !== lastWeekStr) {
-    return 0
-  }
-
-  let streak = 0
-  const expectedWeek = new Date(
-    uniqueWeeks[0] === currentWeekStr ? currentWeekStart : lastWeekStart,
-  )
-
-  for (const weekStr of uniqueWeeks) {
-    const expectedStr = expectedWeek.toISOString().split('T')[0]
-
-    if (weekStr === expectedStr) {
-      streak++
-      expectedWeek.setDate(expectedWeek.getDate() - 7)
-    } else if (weekStr < expectedStr) {
-      break
-    }
-  }
-
-  return streak
-}
+import { calculateStreak, getWeekStart } from './date-utils'
 
 // ============================================
 // OVERVIEW STATS
@@ -320,7 +254,13 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getRecentPRs = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; limit?: number }) => data)
+  .inputValidator((data: { userId: string; limit?: number }) => {
+    // Validate limit if provided
+    if (data.limit !== undefined && (data.limit < 1 || data.limit > 100)) {
+      throw new Error('limit must be between 1 and 100')
+    }
+    return data
+  })
   .handler(async ({ data }) => {
     const prs = await prisma.personalRecord.findMany({
       where: {
@@ -328,10 +268,10 @@ export const getRecentPRs = createServerFn({ method: 'GET' })
       },
       include: {
         exercise: {
-          select: { name: true, muscleGroup: true },
+          select: { name: true, muscleGroup: true, isTimed: true },
         },
         workoutSet: {
-          select: { reps: true, timeSeconds: true },
+          select: { reps: true, timeSeconds: true, weight: true },
         },
       },
       orderBy: {
@@ -345,10 +285,12 @@ export const getRecentPRs = createServerFn({ method: 'GET' })
         id: pr.id,
         exerciseName: pr.exercise.name,
         muscleGroup: pr.exercise.muscleGroup,
+        isTimed: pr.exercise.isTimed,
         recordType: pr.recordType,
-        weight: pr.value,
-        reps: pr.workoutSet?.reps ?? null,
-        timeSeconds: pr.workoutSet?.timeSeconds ?? null,
+        value: pr.value,
+        weight: pr.workoutSet.weight ?? null,
+        reps: pr.workoutSet.reps ?? null,
+        timeSeconds: pr.workoutSet.timeSeconds ?? null,
         achievedAt: pr.achievedAt,
       })),
     }
@@ -361,7 +303,7 @@ export const getRecentPRs = createServerFn({ method: 'GET' })
 export const getUserExercisePRs = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId: string }) => data)
   .handler(async ({ data }) => {
-    // Get the best PR for each exercise (most recent if multiple with same value)
+    // Get all PRs for the user
     const prs = await prisma.personalRecord.findMany({
       where: {
         userId: data.userId,
@@ -376,7 +318,7 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
           },
         },
         workoutSet: {
-          select: { reps: true, timeSeconds: true },
+          select: { reps: true, timeSeconds: true, weight: true },
         },
       },
       orderBy: [
@@ -386,8 +328,8 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
       ],
     })
 
-    // Group by exercise and take the best PR for each
-    const exercisePRs = new Map<
+    // Group by exercise+recordType and take the best PR for each
+    const exercisePRsByType = new Map<
       string,
       {
         exerciseId: string
@@ -397,22 +339,53 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
         value: number
         reps: number | null
         timeSeconds: number | null
+        weight: number | null
+        recordType: RecordType
         achievedAt: Date
       }
     >()
 
     for (const pr of prs) {
-      if (!exercisePRs.has(pr.exerciseId)) {
-        exercisePRs.set(pr.exerciseId, {
+      const key = `${pr.exerciseId}-${pr.recordType}`
+      if (!exercisePRsByType.has(key)) {
+        exercisePRsByType.set(key, {
           exerciseId: pr.exerciseId,
           exerciseName: pr.exercise.name,
           muscleGroup: pr.exercise.muscleGroup,
           isTimed: pr.exercise.isTimed,
           value: pr.value,
-          reps: pr.workoutSet?.reps ?? null,
-          timeSeconds: pr.workoutSet?.timeSeconds ?? null,
+          reps: pr.workoutSet.reps ?? null,
+          timeSeconds: pr.workoutSet.timeSeconds ?? null,
+          weight: pr.workoutSet.weight ?? null,
+          recordType: pr.recordType,
           achievedAt: pr.achievedAt,
         })
+      }
+    }
+
+    // For each exercise, select the most relevant PR type
+    // Priority: MAX_VOLUME > MAX_TIME/MAX_REPS > MAX_WEIGHT
+    const exerciseIds = [...new Set(prs.map((pr) => pr.exerciseId))]
+    const exercisePRs = new Map<string, (typeof exercisePRsByType extends Map<string, infer V> ? V : never)>()
+
+    const priorityOrder = {
+      [RecordType.MAX_VOLUME]: 0,
+      [RecordType.MAX_TIME]: 1,
+      [RecordType.MAX_REPS]: 1,
+      [RecordType.MAX_WEIGHT]: 2,
+    }
+
+    for (const exerciseId of exerciseIds) {
+      const exercisePRsForType = Array.from(exercisePRsByType.values()).filter(
+        (pr) => pr.exerciseId === exerciseId,
+      )
+
+      exercisePRsForType.sort(
+        (a, b) => priorityOrder[a.recordType] - priorityOrder[b.recordType],
+      )
+
+      if (exercisePRsForType.length > 0) {
+        exercisePRs.set(exerciseId, exercisePRsForType[0])
       }
     }
 
@@ -428,14 +401,14 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
         value: number
         reps: number | null
         timeSeconds: number | null
+        weight: number | null
+        recordType: RecordType
         achievedAt: Date
       }>
     > = {}
 
     for (const pr of allPRs) {
-      if (!grouped[pr.muscleGroup]) {
-        grouped[pr.muscleGroup] = []
-      }
+      grouped[pr.muscleGroup] ??= []
       grouped[pr.muscleGroup].push({
         exerciseId: pr.exerciseId,
         exerciseName: pr.exerciseName,
@@ -443,6 +416,8 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
         value: pr.value,
         reps: pr.reps,
         timeSeconds: pr.timeSeconds,
+        weight: pr.weight,
+        recordType: pr.recordType,
         achievedAt: pr.achievedAt,
       })
     }

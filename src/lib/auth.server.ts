@@ -8,6 +8,15 @@ import {
 } from './auth'
 import type { JWTPayload } from './auth'
 
+// Development-only logging helper
+const isDev = process.env.NODE_ENV !== 'production'
+const log = (message: string, data?: object) => {
+  if (isDev) console.log(`[AUTH] ${message}`, data ?? '')
+}
+const logError = (message: string, data?: object) => {
+  if (isDev) console.error(`[AUTH] ${message}`, data ?? '')
+}
+
 // Server functions for authentication
 // These can be called from client code via RPC
 
@@ -18,7 +27,7 @@ export const registerUser = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     const { email, password, name } = data
-    console.log('[AUTH] Register attempt:', { email, name })
+    log('Register attempt:', { email, name })
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -26,7 +35,7 @@ export const registerUser = createServerFn({ method: 'POST' })
     })
 
     if (existingUser) {
-      console.log('[AUTH] Register failed: Email already exists:', email)
+      log('Register failed: Email already exists:', { email })
       throw new Error('User with this email already exists')
     }
 
@@ -43,10 +52,7 @@ export const registerUser = createServerFn({ method: 'POST' })
     // Generate token
     const token = generateToken({ userId: user.id, email: user.email })
 
-    console.log('[AUTH] Register success:', {
-      userId: user.id,
-      email: user.email,
-    })
+    log('Register success:', { userId: user.id, email: user.email })
     return {
       user: {
         id: user.id,
@@ -62,7 +68,7 @@ export const loginUser = createServerFn({ method: 'POST' })
   .inputValidator((data: { email: string; password: string }) => data)
   .handler(async ({ data }) => {
     const { email, password } = data
-    console.log('[AUTH] Login attempt:', { email })
+    log('Login attempt:', { email })
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -70,21 +76,21 @@ export const loginUser = createServerFn({ method: 'POST' })
     })
 
     if (!user) {
-      console.log('[AUTH] Login failed: User not found:', email)
+      log('Login failed: User not found:', { email })
       throw new Error('Invalid email or password')
     }
 
     // Verify password
     const isValid = await verifyPassword(password, user.passwordHash)
     if (!isValid) {
-      console.log('[AUTH] Login failed: Invalid password for:', email)
+      log('Login failed: Invalid password for:', { email })
       throw new Error('Invalid email or password')
     }
 
     // Generate token
     const token = generateToken({ userId: user.id, email: user.email })
 
-    console.log('[AUTH] Login success:', { userId: user.id, email: user.email })
+    log('Login success:', { userId: user.id, email: user.email })
     return {
       user: {
         id: user.id,
@@ -104,23 +110,17 @@ export const logoutUser = createServerFn({ method: 'POST' }).handler(() => {
 export const checkEmailAvailable = createServerFn({ method: 'POST' })
   .inputValidator((data: { email: string }) => data)
   .handler(async ({ data }) => {
-    console.log('[AUTH] Email availability check:', { email: data.email })
+    log('Email availability check:', { email: data.email })
     try {
       const existingUser = await prisma.user.findUnique({
         where: { email: data.email },
         select: { id: true },
       })
       const available = !existingUser
-      console.log('[AUTH] Email availability result:', {
-        email: data.email,
-        available,
-      })
+      log('Email availability result:', { email: data.email, available })
       return { available }
     } catch (error) {
-      console.error('[AUTH] Email availability check error:', {
-        email: data.email,
-        error,
-      })
+      logError('Email availability check error:', { email: data.email, error })
       throw error
     }
   })
@@ -130,16 +130,16 @@ export const getCurrentUser = createServerFn({ method: 'POST' })
   .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
     const { token } = data
-    console.log('[AUTH] Get current user:', { hasToken: !!token })
+    log('Get current user:', { hasToken: !!token })
 
     if (!token) {
-      console.log('[AUTH] Get current user: No token provided')
+      log('Get current user: No token provided')
       return { user: null }
     }
 
     const payload = verifyToken(token)
     if (!payload) {
-      console.log('[AUTH] Get current user: Invalid token')
+      log('Get current user: Invalid token')
       return { user: null }
     }
 
@@ -154,13 +154,10 @@ export const getCurrentUser = createServerFn({ method: 'POST' })
     })
 
     if (!user) {
-      console.log('[AUTH] Get current user: User not found for token')
+      log('Get current user: User not found for token')
       return { user: null }
     }
 
-    console.log('[AUTH] Get current user success:', {
-      userId: user.id,
-      email: user.email,
-    })
+    log('Get current user success:', { userId: user.id, email: user.email })
     return { user }
   })

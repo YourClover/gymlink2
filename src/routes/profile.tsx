@@ -79,13 +79,13 @@ function ProfilePage() {
               </div>
               <ChevronRight className="w-5 h-5 text-zinc-500" />
             </Link>
-            <button className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors">
+            <div className="w-full flex items-center justify-between p-4 opacity-50 cursor-not-allowed">
               <div className="flex items-center gap-3">
                 <Settings className="w-5 h-5 text-zinc-400" />
                 <span className="text-white">Preferences</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-zinc-500" />
-            </button>
+              <span className="text-xs text-zinc-500">Coming soon</span>
+            </div>
           </div>
         </div>
 

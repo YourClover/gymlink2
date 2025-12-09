@@ -26,6 +26,12 @@ import {
   getDashboardStats,
   getNextWorkoutSuggestion,
 } from '@/lib/dashboard.server'
+import {
+  formatDuration,
+  formatElapsedTime,
+  formatRelativeDate,
+  formatVolume,
+} from '@/lib/formatting'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardPage,
@@ -122,53 +128,6 @@ function DashboardPage() {
     return 'Ready to crush your workout?'
   }
 
-  // Format elapsed time for active session
-  const getElapsedTime = (startedAt: Date) => {
-    const start = new Date(startedAt)
-    const now = new Date()
-    const diffMs = now.getTime() - start.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-
-    if (diffMins < 60) {
-      return `${diffMins} min`
-    }
-    const hours = Math.floor(diffMins / 60)
-    return `${hours}h ${diffMins % 60}m`
-  }
-
-  // Format volume
-  const formatVolume = (kg: number) => {
-    if (kg >= 1000) {
-      return `${(kg / 1000).toFixed(1)}t`
-    }
-    return `${kg.toLocaleString()}`
-  }
-
-  // Format date for recent workouts
-  const formatDate = (date: Date) => {
-    const d = new Date(date)
-    const now = new Date()
-    const diffDays = Math.floor(
-      (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24),
-    )
-
-    if (diffDays === 0) return 'Today'
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays} days ago`
-
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
-
-  // Format duration
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const mins = Math.floor((seconds % 3600) / 60)
-    if (hours > 0) {
-      return `${hours}h ${mins}m`
-    }
-    return `${mins}m`
-  }
-
   // Start suggested workout
   const handleStartSuggestion = async () => {
     if (!user || !suggestion) return
@@ -222,7 +181,7 @@ function DashboardPage() {
                         Workout in Progress
                       </span>
                       <span className="px-2 py-0.5 text-xs bg-blue-500/30 text-blue-300 rounded-full">
-                        {getElapsedTime(activeSession.startedAt)}
+                        {formatElapsedTime(activeSession.startedAt)}
                       </span>
                     </div>
                     <p className="text-sm text-zinc-400">
@@ -383,7 +342,7 @@ function DashboardPage() {
                           <div className="flex items-center gap-3 text-sm text-zinc-500">
                             <span>
                               {workout.completedAt &&
-                                formatDate(workout.completedAt)}
+                                formatRelativeDate(workout.completedAt)}
                             </span>
                             {workout.durationSeconds && (
                               <span className="flex items-center gap-1">

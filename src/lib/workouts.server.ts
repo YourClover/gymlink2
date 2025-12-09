@@ -106,7 +106,16 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
       userId: string
       notes?: string
       moodRating?: number
-    }) => data,
+    }) => {
+      // Validate moodRating if provided
+      if (
+        data.moodRating !== undefined &&
+        (data.moodRating < 1 || data.moodRating > 10)
+      ) {
+        throw new Error('moodRating must be between 1 and 10')
+      }
+      return data
+    },
   )
   .handler(async ({ data }) => {
     // Verify ownership
@@ -177,7 +186,22 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
       rpe?: number
       notes?: string
       userId: string
-    }) => data,
+    }) => {
+      // Validate numeric fields
+      if (data.reps !== undefined && data.reps < 0) {
+        throw new Error('reps must be non-negative')
+      }
+      if (data.timeSeconds !== undefined && data.timeSeconds < 0) {
+        throw new Error('timeSeconds must be non-negative')
+      }
+      if (data.weight !== undefined && data.weight < 0) {
+        throw new Error('weight must be non-negative')
+      }
+      if (data.rpe !== undefined && (data.rpe < 1 || data.rpe > 10)) {
+        throw new Error('rpe must be between 1 and 10')
+      }
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const { userId, ...setData } = data
@@ -211,43 +235,83 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
       },
     })
 
-    // Check for PR (only for working sets with weight)
+    // Check for PR (only for working sets, not warmups)
     let prResult: {
       isNewPR: boolean
       newRecord?: number
       previousRecord?: number
+      recordType?: RecordType
+      weight?: number
+      reps?: number
+      timeSeconds?: number
     } = { isNewPR: false }
 
-    if (setData.weight && setData.weight > 0 && !setData.isWarmup) {
-      // Get existing max weight PR for this exercise
-      const existingPR = await prisma.personalRecord.findFirst({
-        where: {
-          userId,
-          exerciseId: setData.exerciseId,
-          recordType: RecordType.MAX_WEIGHT,
-        },
-        orderBy: { value: 'desc' },
-      })
+    if (!setData.isWarmup) {
+      // Calculate PR score based on exercise type
+      let prScore: number | null = null
+      let recordType: RecordType = RecordType.MAX_VOLUME
 
-      const previousRecord = existingPR?.value ?? null
+      const isTimed = workoutSet.exercise.isTimed
+      const weight = setData.weight ?? 0
+      const reps = setData.reps ?? 0
+      const time = setData.timeSeconds ?? 0
+
+      if (isTimed) {
+        if (weight > 0 && time > 0) {
+          // Weighted timed exercise: weight × time
+          prScore = weight * time
+          recordType = RecordType.MAX_VOLUME
+        } else if (time > 0) {
+          // Bodyweight timed exercise: max time
+          prScore = time
+          recordType = RecordType.MAX_TIME
+        }
+      } else {
+        if (weight > 0 && reps > 0) {
+          // Weighted rep exercise: weight × reps
+          prScore = weight * reps
+          recordType = RecordType.MAX_VOLUME
+        } else if (reps > 0) {
+          // Bodyweight rep exercise: max reps
+          prScore = reps
+          recordType = RecordType.MAX_REPS
+        }
+      }
 
       // Check if this is a new PR
-      if (!existingPR || setData.weight > existingPR.value) {
-        await prisma.personalRecord.create({
-          data: {
+      if (prScore !== null) {
+        const existingPR = await prisma.personalRecord.findFirst({
+          where: {
             userId,
             exerciseId: setData.exerciseId,
-            recordType: RecordType.MAX_WEIGHT,
-            value: setData.weight,
-            workoutSetId: workoutSet.id,
-            previousRecord: previousRecord,
+            recordType,
           },
+          orderBy: { value: 'desc' },
         })
 
-        prResult = {
-          isNewPR: true,
-          newRecord: setData.weight,
-          previousRecord: previousRecord ?? undefined,
+        const previousRecord = existingPR?.value ?? null
+
+        if (!existingPR || prScore > existingPR.value) {
+          await prisma.personalRecord.create({
+            data: {
+              userId,
+              exerciseId: setData.exerciseId,
+              recordType,
+              value: prScore,
+              workoutSetId: workoutSet.id,
+              previousRecord: previousRecord,
+            },
+          })
+
+          prResult = {
+            isNewPR: true,
+            newRecord: prScore,
+            previousRecord: previousRecord ?? undefined,
+            recordType,
+            weight: weight > 0 ? weight : undefined,
+            reps: reps > 0 ? reps : undefined,
+            timeSeconds: time > 0 ? time : undefined,
+          }
         }
       }
     }
@@ -354,7 +418,13 @@ export const getWorkoutSession = createServerFn({ method: 'GET' })
 
 // Get user's recent completed workouts
 export const getRecentWorkouts = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; limit?: number }) => data)
+  .inputValidator((data: { userId: string; limit?: number }) => {
+    // Validate limit if provided
+    if (data.limit !== undefined && (data.limit < 1 || data.limit > 100)) {
+      throw new Error('limit must be between 1 and 100')
+    }
+    return data
+  })
   .handler(async ({ data }) => {
     const workouts = await prisma.workoutSession.findMany({
       where: {

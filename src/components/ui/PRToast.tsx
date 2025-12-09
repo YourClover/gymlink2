@@ -1,18 +1,77 @@
 import { useEffect } from 'react'
 import { Trophy, X } from 'lucide-react'
 
+type RecordType = 'MAX_WEIGHT' | 'MAX_REPS' | 'MAX_VOLUME' | 'MAX_TIME'
+
 interface PRToastProps {
   exerciseName: string
-  weight: number
-  previousWeight?: number
+  newRecord: number
+  previousRecord?: number
+  recordType: RecordType
+  weight?: number
+  reps?: number
+  timeSeconds?: number
   onClose: () => void
   autoCloseMs?: number
 }
 
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function formatRecordDisplay(
+  recordType: RecordType,
+  newRecord: number,
+  weight?: number,
+  reps?: number,
+  timeSeconds?: number,
+): string {
+  switch (recordType) {
+    case 'MAX_VOLUME':
+      if (weight && reps) {
+        return `${weight}kg × ${reps} reps`
+      }
+      if (weight && timeSeconds) {
+        return `${weight}kg × ${formatTime(timeSeconds)}`
+      }
+      return `${newRecord}`
+    case 'MAX_TIME':
+      return formatTime(newRecord)
+    case 'MAX_REPS':
+      return `${newRecord} reps`
+    case 'MAX_WEIGHT':
+      return `${newRecord}kg`
+    default:
+      return `${newRecord}`
+  }
+}
+
+function formatImprovement(
+  recordType: RecordType,
+  improvement: number,
+): string {
+  switch (recordType) {
+    case 'MAX_TIME':
+      return `+${formatTime(improvement)}`
+    case 'MAX_REPS':
+      return `+${improvement} reps`
+    case 'MAX_VOLUME':
+    case 'MAX_WEIGHT':
+    default:
+      return `+${improvement}`
+  }
+}
+
 export default function PRToast({
   exerciseName,
+  newRecord,
+  previousRecord,
+  recordType,
   weight,
-  previousWeight,
+  reps,
+  timeSeconds,
   onClose,
   autoCloseMs = 4000,
 }: PRToastProps) {
@@ -22,7 +81,7 @@ export default function PRToast({
     return () => clearTimeout(timer)
   }, [onClose, autoCloseMs])
 
-  const improvement = previousWeight ? weight - previousWeight : null
+  const improvement = previousRecord ? newRecord - previousRecord : null
 
   return (
     <div className="fixed top-4 left-4 right-4 z-[90] animate-in slide-in-from-top-4 duration-300 safe-area-mt">
@@ -39,17 +98,17 @@ export default function PRToast({
               <span className="text-lg font-bold text-yellow-400">New PR!</span>
               {improvement && improvement > 0 && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-green-500/30 text-green-400 rounded-full">
-                  +{improvement}kg
+                  {formatImprovement(recordType, improvement)}
                 </span>
               )}
             </div>
             <p className="text-white font-medium truncate">{exerciseName}</p>
             <p className="text-sm text-zinc-400">
-              {weight}kg
-              {previousWeight && (
+              {formatRecordDisplay(recordType, newRecord, weight, reps, timeSeconds)}
+              {previousRecord && (
                 <span className="text-zinc-500">
                   {' '}
-                  (previous: {previousWeight}kg)
+                  (previous: {formatRecordDisplay(recordType, previousRecord, weight, reps, timeSeconds)})
                 </span>
               )}
             </p>

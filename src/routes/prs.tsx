@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Trophy } from 'lucide-react'
-import type { MuscleGroup } from '@prisma/client'
+import type { MuscleGroup, RecordType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
@@ -18,6 +18,8 @@ type ExercisePR = {
   value: number
   reps: number | null
   timeSeconds: number | null
+  weight: number | null
+  recordType: RecordType
   achievedAt: Date
 }
 
@@ -57,11 +59,31 @@ function PRsPage() {
     })
   }
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   const formatPR = (pr: ExercisePR) => {
-    if (pr.timeSeconds) {
-      return `${pr.value}kg x ${pr.timeSeconds}s`
+    switch (pr.recordType) {
+      case 'MAX_VOLUME':
+        if (pr.weight && pr.reps) {
+          return `${pr.weight}kg × ${pr.reps} reps`
+        }
+        if (pr.weight && pr.timeSeconds) {
+          return `${pr.weight}kg × ${formatTime(pr.timeSeconds)}`
+        }
+        return `Score: ${pr.value}`
+      case 'MAX_TIME':
+        return formatTime(pr.value)
+      case 'MAX_REPS':
+        return `${pr.value} reps`
+      case 'MAX_WEIGHT':
+        return `${pr.value}kg`
+      default:
+        return `${pr.value}`
     }
-    return `${pr.value}kg x ${pr.reps} reps`
   }
 
   const muscleGroupOrder: Array<MuscleGroup> = [

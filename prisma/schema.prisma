@@ -87,6 +87,7 @@ model WorkoutPlan {
   planDays        PlanDay[]
   workoutSessions WorkoutSession[]
 
+  @@index([userId])
   @@map("workout_plans")
 }
 
@@ -102,6 +103,7 @@ model PlanDay {
   planExercises   PlanExercise[]
   workoutSessions WorkoutSession[]
 
+  @@index([workoutPlanId])
   @@map("plan_days")
 }
 
@@ -143,6 +145,7 @@ model Exercise {
   workoutSets     WorkoutSet[]
   personalRecords PersonalRecord[]
 
+  @@index([userId])
   @@map("exercises")
 }
 
@@ -163,6 +166,8 @@ model WorkoutSession {
   planDay     PlanDay?     @relation(fields: [planDayId], references: [id], onDelete: SetNull)
   workoutSets WorkoutSet[]
 
+  @@index([userId])
+  @@index([workoutPlanId])
   @@map("workout_sessions")
 }
 
@@ -186,6 +191,8 @@ model WorkoutSet {
   exercise        Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   personalRecords PersonalRecord[]
 
+  @@index([workoutSessionId])
+  @@index([exerciseId])
   @@map("workout_sets")
 }
 
@@ -204,5 +211,7 @@ model PersonalRecord {
   exercise   Exercise   @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   workoutSet WorkoutSet @relation(fields: [workoutSetId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([exerciseId])
   @@map("personal_records")
 }

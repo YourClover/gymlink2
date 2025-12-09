@@ -318,15 +318,15 @@ describe('workout server functions', () => {
       })
     })
 
-    it('does not check PR for warmup sets', async () => {
-      const isWarmup = true
-      const weight = 100
+    it('does not check PR for warmup sets', () => {
+      // PR check logic: weight > 0 && !isWarmup
+      // Test cases for warmup sets - PR check should be skipped
+      const shouldCheckPRWithWarmup = (weight: number, isWarmup: boolean) =>
+        weight > 0 && !isWarmup
 
-      // When warmup, PR check should be skipped
-      const shouldCheckPR = weight > 0 && !isWarmup
-      expect(shouldCheckPR).toBe(false)
-
-      // personalRecord.findFirst should not be called for warmup sets
+      expect(shouldCheckPRWithWarmup(100, true)).toBe(false) // warmup set
+      expect(shouldCheckPRWithWarmup(100, false)).toBe(true) // working set
+      expect(shouldCheckPRWithWarmup(0, false)).toBe(false) // zero weight
     })
 
     it('throws error for unauthorized session', async () => {

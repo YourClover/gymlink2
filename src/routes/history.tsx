@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import { getRecentWorkouts } from '@/lib/workouts.server'
+import { formatDuration } from '@/lib/formatting'
 
 export const Route = createFileRoute('/history')({
   component: HistoryPage,
@@ -52,16 +53,6 @@ function HistoryPage() {
     fetchHistory()
   }, [user])
 
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return '--'
-    const hours = Math.floor(seconds / 3600)
-    const mins = Math.floor((seconds % 3600) / 60)
-    if (hours > 0) {
-      return `${hours}h ${mins}m`
-    }
-    return `${mins}m`
-  }
-
   const formatDate = (date: Date | null) => {
     if (!date) return '--'
     return new Date(date).toLocaleDateString('en-US', {
@@ -76,9 +67,7 @@ function HistoryPage() {
   ): Array<MuscleGroup> => {
     const muscles = new Set<MuscleGroup>()
     for (const set of sets) {
-      if (set.exercise.muscleGroup) {
-        muscles.add(set.exercise.muscleGroup)
-      }
+      muscles.add(set.exercise.muscleGroup)
     }
     return Array.from(muscles).slice(0, 3)
   }
@@ -145,7 +134,9 @@ function HistoryPage() {
                 <div className="text-right text-sm text-zinc-400">
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {formatDuration(workout.durationSeconds)}
+                    {workout.durationSeconds
+                      ? formatDuration(workout.durationSeconds)
+                      : '--'}
                   </div>
                 </div>
               </div>

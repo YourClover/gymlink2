@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Dumbbell, Plus } from 'lucide-react'
 import type {
   Exercise,
@@ -80,6 +80,7 @@ function ActiveWorkoutPage() {
   const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(
     null,
   )
+  const hasAutoExpanded = useRef(false)
 
   // Rest timer state
   const [showRestTimer, setShowRestTimer] = useState(false)
@@ -93,8 +94,12 @@ function ActiveWorkoutPage() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [prToast, setPRToast] = useState<{
     exerciseName: string
-    weight: number
-    previousWeight?: number
+    newRecord: number
+    previousRecord?: number
+    recordType: 'MAX_WEIGHT' | 'MAX_REPS' | 'MAX_VOLUME' | 'MAX_TIME'
+    weight?: number
+    reps?: number
+    timeSeconds?: number
   } | null>(null)
 
   // Fetch active session
@@ -147,28 +152,31 @@ function ActiveWorkoutPage() {
       }
 
       setExercises(Array.from(exerciseMap.values()))
-
-      // Auto-expand first exercise with incomplete sets
-      if (!expandedExerciseId) {
-        for (const [exerciseId, ex] of exerciseMap) {
-          const targetSets = ex.planExercise?.targetSets ?? 0
-          const completedSets = ex.sets.filter((s) => !s.isWarmup).length
-          if (targetSets === 0 || completedSets < targetSets) {
-            setExpandedExerciseId(exerciseId)
-            break
-          }
-        }
-      }
     } catch (error) {
       console.error('Failed to fetch session:', error)
     } finally {
       setLoading(false)
     }
-  }, [user, navigate, expandedExerciseId])
+  }, [user, navigate])
 
   useEffect(() => {
     fetchSession()
   }, [fetchSession])
+
+  // Auto-expand first exercise with incomplete sets (only once on initial load)
+  useEffect(() => {
+    if (hasAutoExpanded.current || exercises.length === 0) return
+
+    for (const ex of exercises) {
+      const targetSets = ex.planExercise?.targetSets ?? 0
+      const completedSets = ex.sets.filter((s) => !s.isWarmup).length
+      if (targetSets === 0 || completedSets < targetSets) {
+        setExpandedExerciseId(ex.exercise.id)
+        hasAutoExpanded.current = true
+        break
+      }
+    }
+  }, [exercises])
 
   // Handle opening the set logger modal (fetch previous workout data)
   const handleOpenSetLogger = async (ex: WorkoutExercise) => {
@@ -222,12 +230,16 @@ function ActiveWorkoutPage() {
       })
 
       // Check for new PR and celebrate
-      if (result.isNewPR && setData.weight) {
+      if (result.isNewPR && result.recordType && result.newRecord) {
         setShowConfetti(true)
         setPRToast({
           exerciseName: loggingExercise.exercise.name,
-          weight: setData.weight,
-          previousWeight: result.previousRecord,
+          newRecord: result.newRecord,
+          previousRecord: result.previousRecord,
+          recordType: result.recordType,
+          weight: result.weight,
+          reps: result.reps,
+          timeSeconds: result.timeSeconds,
         })
       }
 
@@ -397,10 +409,8 @@ function ActiveWorkoutPage() {
                 planExercise={ex.planExercise}
                 isExpanded={expandedExerciseId === ex.exercise.id}
                 onToggleExpand={() =>
-                  setExpandedExerciseId(
-                    expandedExerciseId === ex.exercise.id
-                      ? null
-                      : ex.exercise.id,
+                  setExpandedExerciseId((current) =>
+                    current === ex.exercise.id ? null : ex.exercise.id,
                   )
                 }
                 onLogSet={() => handleOpenSetLogger(ex)}
@@ -496,8 +506,12 @@ function ActiveWorkoutPage() {
       {prToast && (
         <PRToast
           exerciseName={prToast.exerciseName}
+          newRecord={prToast.newRecord}
+          previousRecord={prToast.previousRecord}
+          recordType={prToast.recordType}
           weight={prToast.weight}
-          previousWeight={prToast.previousWeight}
+          reps={prToast.reps}
+          timeSeconds={prToast.timeSeconds}
           onClose={() => setPRToast(null)}
         />
       )}

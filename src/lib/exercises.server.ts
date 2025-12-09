@@ -58,11 +58,16 @@ export const getExercises = createServerFn({ method: 'GET' })
 
 // Get a single exercise by ID
 export const getExercise = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: string }) => data)
+  .inputValidator((data: { id: string; userId?: string }) => data)
   .handler(async ({ data }) => {
     const exercise = await prisma.exercise.findUnique({
       where: { id: data.id },
     })
+
+    // Allow built-in exercises, but verify ownership for custom exercises
+    if (exercise?.isCustom && exercise.userId !== data.userId) {
+      throw new Error('Not authorized to view this exercise')
+    }
 
     return { exercise }
   })

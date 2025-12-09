@@ -19,6 +19,11 @@ import {
   getRecentWorkouts,
   startWorkoutSession,
 } from '@/lib/workouts.server'
+import {
+  formatDuration,
+  formatElapsedTime,
+  formatRelativeDate,
+} from '@/lib/formatting'
 
 export const Route = createFileRoute('/workout/')({
   component: WorkoutPage,
@@ -88,45 +93,6 @@ function WorkoutPage() {
     }
   }
 
-  // Format duration
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const mins = Math.floor((seconds % 3600) / 60)
-    if (hours > 0) {
-      return `${hours}h ${mins}m`
-    }
-    return `${mins}m`
-  }
-
-  // Format elapsed time for active session
-  const getElapsedTime = (startedAt: Date) => {
-    const start = new Date(startedAt)
-    const now = new Date()
-    const diffMs = now.getTime() - start.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-
-    if (diffMins < 60) {
-      return `${diffMins} min ago`
-    }
-    const hours = Math.floor(diffMins / 60)
-    return `${hours}h ${diffMins % 60}m ago`
-  }
-
-  // Format date for recent workouts
-  const formatDate = (date: Date) => {
-    const d = new Date(date)
-    const now = new Date()
-    const diffDays = Math.floor(
-      (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24),
-    )
-
-    if (diffDays === 0) return 'Today'
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays} days ago`
-
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
-
   return (
     <AppLayout title="Workout">
       <div className="px-4 py-6 space-y-6">
@@ -159,7 +125,7 @@ function WorkoutPage() {
                       {activeSession.planDay?.name ||
                         activeSession.workoutPlan?.name ||
                         'Quick workout'}{' '}
-                      · Started {getElapsedTime(activeSession.startedAt)}
+                      · Started {formatElapsedTime(activeSession.startedAt)} ago
                     </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-blue-400" />
@@ -257,7 +223,7 @@ function WorkoutPage() {
                           <div className="flex items-center gap-3 text-sm text-zinc-500">
                             <span>
                               {workout.completedAt &&
-                                formatDate(workout.completedAt)}
+                                formatRelativeDate(workout.completedAt)}
                             </span>
                             {workout.durationSeconds && (
                               <span className="flex items-center gap-1">

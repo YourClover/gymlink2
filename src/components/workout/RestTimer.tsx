@@ -30,6 +30,8 @@ export default function RestTimer({
   useEffect(() => {
     if (!isOpen || remainingSeconds <= 0) return
 
+    let timeoutId: ReturnType<typeof setTimeout>
+
     const interval = setInterval(() => {
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
@@ -38,15 +40,18 @@ export default function RestTimer({
             navigator.vibrate([200, 100, 200])
           }
           // Auto-close after a brief delay
-          setTimeout(onClose, 1500)
+          timeoutId = setTimeout(onClose, 1500)
           return 0
         }
         return prev - 1
       })
     }, 1000)
 
-    return () => clearInterval(interval)
-  }, [isOpen, remainingSeconds, onClose])
+    return () => {
+      clearInterval(interval)
+      clearTimeout(timeoutId)
+    }
+  }, [isOpen, durationSeconds, onClose])
 
   // Prevent body scroll
   useEffect(() => {
