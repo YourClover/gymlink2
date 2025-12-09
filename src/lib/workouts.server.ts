@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
-import { WeightUnit } from '@prisma/client'
+import { WeightUnit, RecordType } from '@prisma/client'
 
 // ============================================
 // SESSION MANAGEMENT
@@ -214,7 +214,48 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
       },
     })
 
-    return { workoutSet }
+    // Check for PR (only for working sets with weight)
+    let prResult: {
+      isNewPR: boolean
+      newRecord?: number
+      previousRecord?: number
+    } = { isNewPR: false }
+
+    if (setData.weight && setData.weight > 0 && !setData.isWarmup) {
+      // Get existing max weight PR for this exercise
+      const existingPR = await prisma.personalRecord.findFirst({
+        where: {
+          userId,
+          exerciseId: setData.exerciseId,
+          recordType: RecordType.MAX_WEIGHT,
+        },
+        orderBy: { value: 'desc' },
+      })
+
+      const previousRecord = existingPR?.value ?? null
+
+      // Check if this is a new PR
+      if (!existingPR || setData.weight > existingPR.value) {
+        await prisma.personalRecord.create({
+          data: {
+            userId,
+            exerciseId: setData.exerciseId,
+            recordType: RecordType.MAX_WEIGHT,
+            value: setData.weight,
+            workoutSetId: workoutSet.id,
+            previousRecord: previousRecord,
+          },
+        })
+
+        prResult = {
+          isNewPR: true,
+          newRecord: setData.weight,
+          previousRecord: previousRecord ?? undefined,
+        }
+      }
+    }
+
+    return { workoutSet, ...prResult }
   })
 
 // Update a logged set

@@ -48,12 +48,22 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
     // Calculate streak
     const currentStreak = await calculateStreak(data.userId)
 
+    // Count PRs this week
+    const prsThisWeek = await prisma.personalRecord.count({
+      where: {
+        userId: data.userId,
+        achievedAt: {
+          gte: weekStart,
+        },
+      },
+    })
+
     return {
       stats: {
         workoutsThisWeek: workoutsThisWeek.length,
         totalVolumeThisWeek,
         currentStreak,
-        prsThisWeek: 0, // Placeholder for future PR tracking
+        prsThisWeek,
       },
     }
   })

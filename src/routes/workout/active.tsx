@@ -4,6 +4,8 @@ import { type Exercise, type WorkoutSet, type PlanExercise } from '@prisma/clien
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import Confetti from '@/components/ui/Confetti'
+import PRToast from '@/components/ui/PRToast'
 import WorkoutHeader from '@/components/workout/WorkoutHeader'
 import ExerciseWorkoutCard from '@/components/workout/ExerciseWorkoutCard'
 import SetLoggerModal from '@/components/workout/SetLoggerModal'
@@ -64,6 +66,14 @@ function ActiveWorkoutPage() {
   const [nextSetInfo, setNextSetInfo] = useState<{
     exerciseName: string
     setNumber: number
+  } | null>(null)
+
+  // PR celebration state
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [prToast, setPRToast] = useState<{
+    exerciseName: string
+    weight: number
+    previousWeight?: number
   } | null>(null)
 
   // Fetch active session
@@ -155,7 +165,7 @@ function ActiveWorkoutPage() {
       const setNumber =
         loggingExercise.sets.length + 1
 
-      await logWorkoutSet({
+      const result = await logWorkoutSet({
         data: {
           workoutSessionId: session.id,
           exerciseId: loggingExercise.exercise.id,
@@ -169,6 +179,16 @@ function ActiveWorkoutPage() {
           userId: user.id,
         },
       })
+
+      // Check for new PR and celebrate
+      if (result.isNewPR && setData.weight) {
+        setShowConfetti(true)
+        setPRToast({
+          exerciseName: loggingExercise.exercise.name,
+          weight: setData.weight,
+          previousWeight: result.previousRecord,
+        })
+      }
 
       // Close modal and refresh
       setLoggingExercise(null)
@@ -376,6 +396,21 @@ function ActiveWorkoutPage() {
         onCancel={() => setShowDiscardConfirm(false)}
         variant="danger"
       />
+
+      {/* PR Celebration */}
+      <Confetti
+        active={showConfetti}
+        onComplete={() => setShowConfetti(false)}
+      />
+
+      {prToast && (
+        <PRToast
+          exerciseName={prToast.exerciseName}
+          weight={prToast.weight}
+          previousWeight={prToast.previousWeight}
+          onClose={() => setPRToast(null)}
+        />
+      )}
     </div>
   )
 }
