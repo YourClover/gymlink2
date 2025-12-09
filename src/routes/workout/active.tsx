@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useCallback } from 'react'
-import { type Exercise, type WorkoutSet, type PlanExercise } from '@prisma/client'
+import { useCallback, useEffect, useState } from 'react'
+import { Dumbbell, Plus } from 'lucide-react'
+import type { Exercise, PlanExercise, WorkoutSet } from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -12,13 +13,12 @@ import SetLoggerModal from '@/components/workout/SetLoggerModal'
 import RestTimer from '@/components/workout/RestTimer'
 import ExercisePicker from '@/components/exercises/ExercisePicker'
 import {
-  getActiveSession,
-  logWorkoutSet,
   deleteWorkoutSet,
   discardWorkoutSession,
+  getActiveSession,
+  logWorkoutSet,
 } from '@/lib/workouts.server'
 import { useAuth } from '@/context/AuthContext'
-import { Dumbbell, Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/workout/active')({
   component: ActiveWorkoutPage,
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/workout/active')({
 type WorkoutExercise = {
   exercise: Exercise
   planExercise?: PlanExercise | null
-  sets: WorkoutSet[]
+  sets: Array<WorkoutSet>
 }
 
 type SessionData = {
@@ -49,16 +49,19 @@ function ActiveWorkoutPage() {
 
   const [session, setSession] = useState<SessionData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [exercises, setExercises] = useState<WorkoutExercise[]>([])
+  const [exercises, setExercises] = useState<Array<WorkoutExercise>>([])
 
   // Modal states
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [showExercisePicker, setShowExercisePicker] = useState(false)
-  const [loggingExercise, setLoggingExercise] = useState<WorkoutExercise | null>(null)
+  const [loggingExercise, setLoggingExercise] =
+    useState<WorkoutExercise | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Expanded exercise tracking
-  const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null)
+  const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(
+    null,
+  )
 
   // Rest timer state
   const [showRestTimer, setShowRestTimer] = useState(false)
@@ -162,8 +165,7 @@ function ActiveWorkoutPage() {
 
     setIsSubmitting(true)
     try {
-      const setNumber =
-        loggingExercise.sets.length + 1
+      const setNumber = loggingExercise.sets.length + 1
 
       const result = await logWorkoutSet({
         data: {
@@ -361,9 +363,19 @@ function ActiveWorkoutPage() {
           exercise={loggingExercise.exercise}
           setNumber={loggingExercise.sets.length + 1}
           defaultValues={{
-            reps: loggingExercise.planExercise?.targetReps ?? loggingExercise.sets[loggingExercise.sets.length - 1]?.reps ?? 10,
-            timeSeconds: loggingExercise.planExercise?.targetTimeSeconds ?? loggingExercise.sets[loggingExercise.sets.length - 1]?.timeSeconds ?? 60,
-            weight: loggingExercise.planExercise?.targetWeight ?? loggingExercise.sets[loggingExercise.sets.length - 1]?.weight ?? undefined,
+            reps:
+              loggingExercise.planExercise?.targetReps ??
+              loggingExercise.sets[loggingExercise.sets.length - 1]?.reps ??
+              10,
+            timeSeconds:
+              loggingExercise.planExercise?.targetTimeSeconds ??
+              loggingExercise.sets[loggingExercise.sets.length - 1]
+                ?.timeSeconds ??
+              60,
+            weight:
+              loggingExercise.planExercise?.targetWeight ??
+              loggingExercise.sets[loggingExercise.sets.length - 1]?.weight ??
+              undefined,
           }}
           isLoading={isSubmitting}
         />

@@ -1,6 +1,15 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useCallback } from 'react'
-import { type Exercise } from '@prisma/client'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  ArrowLeft,
+  Dumbbell,
+  Moon,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react'
+import type { Exercise } from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
@@ -10,23 +19,14 @@ import PlanDayForm from '@/components/forms/PlanDayForm'
 import ExerciseTargetsForm from '@/components/forms/ExerciseTargetsForm'
 import ExercisePicker from '@/components/exercises/ExercisePicker'
 import {
-  getPlanDay,
-  updatePlanDay,
-  deletePlanDay,
   addPlanExercise,
-  updatePlanExercise,
+  deletePlanDay,
+  getPlanDay,
   removePlanExercise,
+  updatePlanDay,
+  updatePlanExercise,
 } from '@/lib/plans.server'
 import { useAuth } from '@/context/AuthContext'
-import {
-  ArrowLeft,
-  Plus,
-  MoreVertical,
-  Pencil,
-  Trash2,
-  Dumbbell,
-  Moon,
-} from 'lucide-react'
 
 export const Route = createFileRoute('/plans/$planId/day/$dayId')({
   component: DayDetailPage,
@@ -50,7 +50,7 @@ type PlanDay = {
   dayOrder: number
   restDay: boolean
   workoutPlan: { id: string; name: string }
-  planExercises: PlanExercise[]
+  planExercises: Array<PlanExercise>
 }
 
 function DayDetailPage() {
@@ -231,7 +231,8 @@ function DayDetailPage() {
             description="This day doesn't exist or you don't have access to it."
             action={{
               label: 'Go to Plan',
-              onClick: () => navigate({ to: '/plans/$planId', params: { planId } }),
+              onClick: () =>
+                navigate({ to: '/plans/$planId', params: { planId } }),
             }}
           />
         </div>

@@ -1,4 +1,10 @@
-import { ChevronRight, Moon, Dumbbell, ChevronUp, ChevronDown } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Dumbbell,
+  Moon,
+} from 'lucide-react'
 
 interface PlanDayCardProps {
   day: {

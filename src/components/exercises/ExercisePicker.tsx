@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react'
-import { type Exercise, MuscleGroup, Equipment } from '@prisma/client'
-import { X, Search } from 'lucide-react'
-import { getExercises } from '@/lib/exercises.server'
-import { useAuth } from '@/context/AuthContext'
+import { useEffect, useState } from 'react'
+import { Search, X } from 'lucide-react'
 import ExerciseCard from './ExerciseCard'
 import ExerciseFilters from './ExerciseFilters'
+import type { Equipment, Exercise, MuscleGroup } from '@prisma/client'
+import { getExercises } from '@/lib/exercises.server'
+import { useAuth } from '@/context/AuthContext'
 
 interface ExercisePickerProps {
   isOpen: boolean
   onClose: () => void
   onSelect: (exercise: Exercise) => void
-  excludeIds?: string[]
+  excludeIds?: Array<string>
 }
 
 export default function ExercisePicker({
@@ -20,7 +20,7 @@ export default function ExercisePicker({
   excludeIds = [],
 }: ExercisePickerProps) {
   const { user } = useAuth()
-  const [exercises, setExercises] = useState<Exercise[]>([])
+  const [exercises, setExercises] = useState<Array<Exercise>>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup | undefined>()

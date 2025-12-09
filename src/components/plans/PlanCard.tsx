@@ -1,4 +1,4 @@
-import { ChevronRight, Calendar, Star } from 'lucide-react'
+import { Calendar, ChevronRight, Star } from 'lucide-react'
 
 interface PlanCardProps {
   plan: {

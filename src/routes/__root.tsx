@@ -1,69 +1,68 @@
 import {
   HeadContent,
-  Scripts,
   Outlet,
+  Scripts,
   createRootRoute,
-} from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { TanStackDevtools } from "@tanstack/react-devtools";
+} from '@tanstack/react-router'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { TanStackDevtools } from '@tanstack/react-devtools'
 
-import { AuthProvider } from "@/context/AuthContext";
-
-import appCss from "../styles.css?url";
+import appCss from '../styles.css?url'
+import { AuthProvider } from '@/context/AuthContext'
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       {
-        charSet: "utf-8",
+        charSet: 'utf-8',
       },
       {
-        name: "viewport",
+        name: 'viewport',
         content:
-          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+          'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
       },
       {
-        name: "theme-color",
-        content: "#18181b",
+        name: 'theme-color',
+        content: '#18181b',
       },
       {
-        name: "apple-mobile-web-app-capable",
-        content: "yes",
+        name: 'apple-mobile-web-app-capable',
+        content: 'yes',
       },
       {
-        name: "apple-mobile-web-app-status-bar-style",
-        content: "black-translucent",
+        name: 'apple-mobile-web-app-status-bar-style',
+        content: 'black-translucent',
       },
       {
-        title: "GymLink - Track Your Fitness Journey",
+        title: 'GymLink - Track Your Fitness Journey',
       },
     ],
     links: [
       {
-        rel: "stylesheet",
+        rel: 'stylesheet',
         href: appCss,
       },
       {
-        rel: "manifest",
-        href: "/manifest.json",
+        rel: 'manifest',
+        href: '/manifest.json',
       },
       {
-        rel: "apple-touch-icon",
-        href: "/logo192.png",
+        rel: 'apple-touch-icon',
+        href: '/logo192.png',
       },
     ],
   }),
 
   component: RootComponent,
   shellComponent: RootDocument,
-});
+})
 
 function RootComponent() {
   return (
     <AuthProvider initialUser={null}>
       <Outlet />
     </AuthProvider>
-  );
+  )
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -74,14 +73,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="bg-zinc-900 text-white">
         {children}
-        {process.env.NODE_ENV === "development" && (
+        {process.env.NODE_ENV === 'development' && (
           <TanStackDevtools
             config={{
-              position: "bottom-right",
+              position: 'bottom-right',
             }}
             plugins={[
               {
-                name: "Tanstack Router",
+                name: 'Tanstack Router',
                 render: <TanStackRouterDevtoolsPanel />,
               },
             ]}
@@ -90,5 +89,5 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
-  );
+  )
 }

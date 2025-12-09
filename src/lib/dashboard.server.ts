@@ -113,7 +113,7 @@ async function calculateStreak(userId: string): Promise<number> {
 
   // Count consecutive days
   let streak = 0
-  let expectedDate = uniqueDates[0] === todayStr ? today : yesterday
+  const expectedDate = uniqueDates[0] === todayStr ? today : yesterday
 
   for (const dateStr of uniqueDates) {
     const expectedStr = expectedDate.toISOString().split('T')[0]

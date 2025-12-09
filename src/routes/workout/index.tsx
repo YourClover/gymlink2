@@ -1,14 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import AppLayout from '@/components/AppLayout'
+import { useEffect, useState } from 'react'
 import {
-  Play,
+  ChevronRight,
   ClipboardList,
-  Zap,
   Clock,
   Dumbbell,
-  ChevronRight,
+  Play,
+  Zap,
 } from 'lucide-react'
+import AppLayout from '@/components/AppLayout'
 import { useAuth } from '@/context/AuthContext'
 import {
   getActiveSession,
@@ -41,7 +41,7 @@ function WorkoutPage() {
   const navigate = useNavigate()
 
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null)
-  const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([])
+  const [recentWorkouts, setRecentWorkouts] = useState<Array<RecentWorkout>>([])
   const [loading, setLoading] = useState(true)
   const [startingQuick, setStartingQuick] = useState(false)
 
@@ -251,7 +251,8 @@ function WorkoutPage() {
                           </h4>
                           <div className="flex items-center gap-3 text-sm text-zinc-500">
                             <span>
-                              {workout.completedAt && formatDate(workout.completedAt)}
+                              {workout.completedAt &&
+                                formatDate(workout.completedAt)}
                             </span>
                             {workout.durationSeconds && (
                               <span className="flex items-center gap-1">

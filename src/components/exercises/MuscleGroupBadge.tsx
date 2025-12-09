@@ -1,4 +1,4 @@
-import { MuscleGroup } from '@prisma/client'
+import type { MuscleGroup } from '@prisma/client'
 
 interface MuscleGroupBadgeProps {
   muscleGroup: MuscleGroup
@@ -17,9 +17,21 @@ const muscleGroupConfig: Record<
     color: 'text-orange-400',
     bgColor: 'bg-orange-400/10',
   },
-  ARMS: { label: 'Arms', color: 'text-purple-400', bgColor: 'bg-purple-400/10' },
-  CORE: { label: 'Core', color: 'text-yellow-400', bgColor: 'bg-yellow-400/10' },
-  CARDIO: { label: 'Cardio', color: 'text-pink-400', bgColor: 'bg-pink-400/10' },
+  ARMS: {
+    label: 'Arms',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-400/10',
+  },
+  CORE: {
+    label: 'Core',
+    color: 'text-yellow-400',
+    bgColor: 'bg-yellow-400/10',
+  },
+  CARDIO: {
+    label: 'Cardio',
+    color: 'text-pink-400',
+    bgColor: 'bg-pink-400/10',
+  },
   FULL_BODY: {
     label: 'Full Body',
     color: 'text-cyan-400',
@@ -32,7 +44,8 @@ export default function MuscleGroupBadge({
   size = 'sm',
 }: MuscleGroupBadgeProps) {
   const config = muscleGroupConfig[muscleGroup]
-  const sizeClasses = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1'
+  const sizeClasses =
+    size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1'
 
   return (
     <span

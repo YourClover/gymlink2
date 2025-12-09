@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
+import { RecordType, WeightUnit } from '@prisma/client'
 import { prisma } from './db'
-import { WeightUnit, RecordType } from '@prisma/client'
 
 // ============================================
 // SESSION MANAGEMENT
@@ -47,11 +47,8 @@ export const getActiveSession = createServerFn({ method: 'GET' })
 // Start a new workout session
 export const startWorkoutSession = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      userId: string
-      workoutPlanId?: string
-      planDayId?: string
-    }) => data,
+    (data: { userId: string; workoutPlanId?: string; planDayId?: string }) =>
+      data,
   )
   .handler(async ({ data }) => {
     // If plan/day provided, verify ownership

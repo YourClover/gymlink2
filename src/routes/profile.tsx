@@ -1,14 +1,21 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useAuth } from "@/context/AuthContext";
-import AppLayout from "@/components/AppLayout";
-import { User, Mail, LogOut, Settings, ChevronRight, Dumbbell } from "lucide-react";
+import { Link, createFileRoute } from '@tanstack/react-router'
+import {
+  ChevronRight,
+  Dumbbell,
+  LogOut,
+  Mail,
+  Settings,
+  User,
+} from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import AppLayout from '@/components/AppLayout'
 
-export const Route = createFileRoute("/profile")({
+export const Route = createFileRoute('/profile')({
   component: ProfilePage,
-});
+})
 
 function ProfilePage() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading } = useAuth()
 
   return (
     <AppLayout title="Profile">
@@ -64,7 +71,7 @@ function ProfilePage() {
             >
               <div className="flex items-center gap-3">
                 <LogOut className="w-5 h-5" />
-                <span>{isLoading ? "Signing out..." : "Sign Out"}</span>
+                <span>{isLoading ? 'Signing out...' : 'Sign Out'}</span>
               </div>
             </button>
           </div>
@@ -76,5 +83,5 @@ function ProfilePage() {
         </div>
       </div>
     </AppLayout>
-  );
+  )
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MuscleGroup, Equipment, ExerciseType } from '@prisma/client'
+import type { Equipment, ExerciseType, MuscleGroup } from '@prisma/client'
 
 export interface ExerciseFormData {
   name: string
@@ -17,7 +17,7 @@ interface ExerciseFormProps {
   isLoading?: boolean
 }
 
-const muscleGroups: { value: MuscleGroup; label: string }[] = [
+const muscleGroups: Array<{ value: MuscleGroup; label: string }> = [
   { value: 'CHEST', label: 'Chest' },
   { value: 'BACK', label: 'Back' },
   { value: 'LEGS', label: 'Legs' },
@@ -28,7 +28,7 @@ const muscleGroups: { value: MuscleGroup; label: string }[] = [
   { value: 'FULL_BODY', label: 'Full Body' },
 ]
 
-const equipmentOptions: { value: Equipment; label: string }[] = [
+const equipmentOptions: Array<{ value: Equipment; label: string }> = [
   { value: 'BARBELL', label: 'Barbell' },
   { value: 'DUMBBELL', label: 'Dumbbell' },
   { value: 'MACHINE', label: 'Machine' },
@@ -39,7 +39,7 @@ const equipmentOptions: { value: Equipment; label: string }[] = [
   { value: 'NONE', label: 'None' },
 ]
 
-const exerciseTypes: { value: ExerciseType; label: string }[] = [
+const exerciseTypes: Array<{ value: ExerciseType; label: string }> = [
   { value: 'STRENGTH', label: 'Strength' },
   { value: 'CARDIO', label: 'Cardio' },
   { value: 'FLEXIBILITY', label: 'Flexibility' },

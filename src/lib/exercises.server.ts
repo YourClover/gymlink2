@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
+import { ExerciseType } from '@prisma/client'
 import { prisma } from './db'
-import { MuscleGroup, Equipment, ExerciseType } from '@prisma/client'
+import type { Equipment, MuscleGroup } from '@prisma/client'
 
 // Get exercises with optional filtering
 export const getExercises = createServerFn({ method: 'GET' })
@@ -15,7 +16,14 @@ export const getExercises = createServerFn({ method: 'GET' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { muscleGroup, equipment, exerciseType, search, userId, includeBuiltIn = true } = data
+    const {
+      muscleGroup,
+      equipment,
+      exerciseType,
+      search,
+      userId,
+      includeBuiltIn = true,
+    } = data
 
     const where: {
       muscleGroup?: MuscleGroup
@@ -74,7 +82,12 @@ export const createExercise = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { userId, exerciseType = ExerciseType.STRENGTH, isTimed = false, ...rest } = data
+    const {
+      userId,
+      exerciseType = ExerciseType.STRENGTH,
+      isTimed = false,
+      ...rest
+    } = data
 
     const exercise = await prisma.exercise.create({
       data: {

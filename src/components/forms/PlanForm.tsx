@@ -16,9 +16,7 @@ export default function PlanForm({
   submitLabel = 'Save',
 }: PlanFormProps) {
   const [name, setName] = useState(initialData?.name ?? '')
-  const [description, setDescription] = useState(
-    initialData?.description ?? '',
-  )
+  const [description, setDescription] = useState(initialData?.description ?? '')
   const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {

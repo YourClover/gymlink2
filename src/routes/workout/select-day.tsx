@@ -1,18 +1,18 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import AppLayout from '@/components/AppLayout'
-import EmptyState from '@/components/ui/EmptyState'
-import { getPlans, getPlan } from '@/lib/plans.server'
-import { startWorkoutSession } from '@/lib/workouts.server'
-import { useAuth } from '@/context/AuthContext'
+import { useEffect, useState } from 'react'
 import {
   ArrowLeft,
-  ChevronRight,
   ChevronDown,
+  ChevronRight,
   Dumbbell,
   Moon,
   Play,
 } from 'lucide-react'
+import AppLayout from '@/components/AppLayout'
+import EmptyState from '@/components/ui/EmptyState'
+import { getPlan, getPlans } from '@/lib/plans.server'
+import { startWorkoutSession } from '@/lib/workouts.server'
+import { useAuth } from '@/context/AuthContext'
 
 export const Route = createFileRoute('/workout/select-day')({
   component: SelectDayPage,
@@ -34,14 +34,14 @@ type PlanDay = {
 }
 
 type PlanWithDays = Plan & {
-  planDays?: PlanDay[]
+  planDays?: Array<PlanDay>
 }
 
 function SelectDayPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [plans, setPlans] = useState<PlanWithDays[]>([])
+  const [plans, setPlans] = useState<Array<PlanWithDays>>([])
   const [loading, setLoading] = useState(true)
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null)
   const [loadingDays, setLoadingDays] = useState(false)
@@ -85,9 +85,7 @@ function SelectDayPage() {
       if (result.plan) {
         setPlans((prev) =>
           prev.map((p) =>
-            p.id === planId
-              ? { ...p, planDays: result.plan!.planDays }
-              : p,
+            p.id === planId ? { ...p, planDays: result.plan!.planDays } : p,
           ),
         )
       }
@@ -237,7 +235,9 @@ function SelectDayPage() {
                             {!day.restDay && (
                               <div className="flex items-center gap-1 text-blue-400">
                                 <Play className="w-4 h-4" />
-                                <span className="text-sm font-medium">Start</span>
+                                <span className="text-sm font-medium">
+                                  Start
+                                </span>
                               </div>
                             )}
                           </button>

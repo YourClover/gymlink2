@@ -1,6 +1,6 @@
-import { MuscleGroup, Equipment } from '@prisma/client'
 import { muscleGroupConfig } from './MuscleGroupBadge'
 import { equipmentConfig } from './EquipmentBadge'
+import type { Equipment, MuscleGroup } from '@prisma/client'
 
 interface ExerciseFiltersProps {
   muscleGroup?: MuscleGroup

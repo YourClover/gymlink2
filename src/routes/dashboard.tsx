@@ -1,24 +1,27 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  Calendar,
+  ChevronRight,
+  Clock,
+  Dumbbell,
+  Play,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react'
+import type { MuscleGroup } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import {
-  Dumbbell,
-  TrendingUp,
-  Calendar,
-  Trophy,
-  ChevronRight,
-  Clock,
-  Play,
-} from 'lucide-react'
-import { getActiveSession, getRecentWorkouts } from '@/lib/workouts.server'
-import { startWorkoutSession } from '@/lib/workouts.server'
+  getActiveSession,
+  getRecentWorkouts,
+  startWorkoutSession,
+} from '@/lib/workouts.server'
 import {
   getDashboardStats,
   getNextWorkoutSuggestion,
 } from '@/lib/dashboard.server'
-import { type MuscleGroup } from '@prisma/client'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardPage,
@@ -65,7 +68,7 @@ function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null)
   const [suggestion, setSuggestion] = useState<WorkoutSuggestion | null>(null)
-  const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([])
+  const [recentWorkouts, setRecentWorkouts] = useState<Array<RecentWorkout>>([])
   const [startingWorkout, setStartingWorkout] = useState(false)
 
   // Fetch all dashboard data
@@ -106,12 +109,12 @@ function DashboardPage() {
 
   // Get motivational subtext based on stats
   const getSubtext = () => {
-    if (!stats) return "Ready to crush your workout?"
+    if (!stats) return 'Ready to crush your workout?'
     if (stats.currentStreak >= 7)
       return `${stats.currentStreak} day streak! Keep it going!`
     if (stats.workoutsThisWeek >= 3) return "You're on fire this week!"
-    if (stats.workoutsThisWeek > 0) return "Great progress this week!"
-    return "Ready to crush your workout?"
+    if (stats.workoutsThisWeek > 0) return 'Great progress this week!'
+    return 'Ready to crush your workout?'
   }
 
   // Format elapsed time for active session
@@ -193,7 +196,7 @@ function DashboardPage() {
             {/* Welcome Section */}
             <div className="space-y-1">
               <h1 className="text-2xl font-bold text-white">
-                {getGreeting()}, {user?.name?.split(' ')[0]}!
+                {getGreeting()}, {user?.name.split(' ')[0] ?? 'there'}!
               </h1>
               <p className="text-zinc-400">{getSubtext()}</p>
             </div>
@@ -374,7 +377,8 @@ function DashboardPage() {
                           </h4>
                           <div className="flex items-center gap-3 text-sm text-zinc-500">
                             <span>
-                              {workout.completedAt && formatDate(workout.completedAt)}
+                              {workout.completedAt &&
+                                formatDate(workout.completedAt)}
                             </span>
                             {workout.durationSeconds && (
                               <span className="flex items-center gap-1">

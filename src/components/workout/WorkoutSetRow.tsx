@@ -1,4 +1,4 @@
-import { Trash2, Flame, TrendingDown, Trophy } from 'lucide-react'
+import { Flame, Trash2, TrendingDown, Trophy } from 'lucide-react'
 
 interface WorkoutSetRowProps {
   setNumber: number
@@ -44,15 +44,9 @@ export default function WorkoutSetRow({
         )}
 
         {/* Reps or Time */}
-        {reps != null && (
-          <span className="text-zinc-400">
-            {reps} reps
-          </span>
-        )}
+        {reps != null && <span className="text-zinc-400">{reps} reps</span>}
         {timeSeconds != null && (
-          <span className="text-zinc-400">
-            {formatTime(timeSeconds)}
-          </span>
+          <span className="text-zinc-400">{formatTime(timeSeconds)}</span>
         )}
 
         {/* RPE */}

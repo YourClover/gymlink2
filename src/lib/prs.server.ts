@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
 import { RecordType } from '@prisma/client'
+import { prisma } from './db'
 
 // Check if a weight is a new PR and create record if so
 export const checkAndCreatePR = createServerFn({ method: 'POST' })
@@ -102,10 +102,7 @@ export const getUserPRs = createServerFn({ method: 'GET' })
     })
 
     // Group by exercise and get the max value for each
-    const prsByExercise = new Map<
-      string,
-      (typeof prs)[0]
-    >()
+    const prsByExercise = new Map<string, (typeof prs)[0]>()
 
     for (const pr of prs) {
       const existing = prsByExercise.get(pr.exerciseId)

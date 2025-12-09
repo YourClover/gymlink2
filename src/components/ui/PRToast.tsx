@@ -36,9 +36,7 @@ export default function PRToast({
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-yellow-400">
-                New PR!
-              </span>
+              <span className="text-lg font-bold text-yellow-400">New PR!</span>
               {improvement && improvement > 0 && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-green-500/30 text-green-400 rounded-full">
                   +{improvement}kg
@@ -50,7 +48,8 @@ export default function PRToast({
               {weight}kg
               {previousWeight && (
                 <span className="text-zinc-500">
-                  {' '}(previous: {previousWeight}kg)
+                  {' '}
+                  (previous: {previousWeight}kg)
                 </span>
               )}
             </p>

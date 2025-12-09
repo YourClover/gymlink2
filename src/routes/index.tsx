@@ -1,49 +1,49 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { useAuth } from "@/context/AuthContext";
+import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import {
+  Calendar,
+  ChevronRight,
   Dumbbell,
   TrendingUp,
-  Calendar,
   Trophy,
-  ChevronRight,
-} from "lucide-react";
+} from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
-export const Route = createFileRoute("/")({ component: LandingPage });
+export const Route = createFileRoute('/')({ component: LandingPage })
 
 function LandingPage() {
-  const { user } = useAuth();
+  const { user } = useAuth()
 
   // Redirect authenticated users to dashboard
   if (user) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/dashboard" />
   }
 
   const features = [
     {
       icon: <Calendar className="w-8 h-8 text-blue-400" />,
-      title: "Custom Workout Plans",
+      title: 'Custom Workout Plans',
       description:
-        "Create and customize your own workout plans with exercises, sets, reps, and rest times.",
+        'Create and customize your own workout plans with exercises, sets, reps, and rest times.',
     },
     {
       icon: <Dumbbell className="w-8 h-8 text-green-400" />,
-      title: "Track Every Set",
+      title: 'Track Every Set',
       description:
-        "Log weight, reps, and RPE for each set. See your previous performance for reference.",
+        'Log weight, reps, and RPE for each set. See your previous performance for reference.',
     },
     {
       icon: <TrendingUp className="w-8 h-8 text-purple-400" />,
-      title: "Progress Analytics",
+      title: 'Progress Analytics',
       description:
-        "Visualize your progress with charts showing strength gains and workout frequency.",
+        'Visualize your progress with charts showing strength gains and workout frequency.',
     },
     {
       icon: <Trophy className="w-8 h-8 text-yellow-400" />,
-      title: "Personal Records",
+      title: 'Personal Records',
       description:
-        "Automatically track and celebrate when you hit new personal records.",
+        'Automatically track and celebrate when you hit new personal records.',
     },
-  ];
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black">
@@ -105,7 +105,9 @@ function LandingPage() {
                     <h3 className="font-semibold text-white mb-1">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-zinc-400">{feature.description}</p>
+                    <p className="text-sm text-zinc-400">
+                      {feature.description}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -142,5 +144,5 @@ function LandingPage() {
         </div>
       </footer>
     </div>
-  );
+  )
 }

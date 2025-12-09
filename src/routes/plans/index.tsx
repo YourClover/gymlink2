@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { ClipboardList, Plus } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import PlanCard from '@/components/plans/PlanCard'
 import { getPlans } from '@/lib/plans.server'
 import { useAuth } from '@/context/AuthContext'
-import { Plus, ClipboardList } from 'lucide-react'
 
 export const Route = createFileRoute('/plans/')({
   component: PlansPage,
@@ -25,7 +25,7 @@ type PlanWithCount = {
 function PlansPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [plans, setPlans] = useState<PlanWithCount[]>([])
+  const [plans, setPlans] = useState<Array<PlanWithCount>>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

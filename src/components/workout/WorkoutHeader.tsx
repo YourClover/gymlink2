@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Check } from 'lucide-react'
 
 interface WorkoutHeaderProps {

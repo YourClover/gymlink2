@@ -1,5 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  ArrowLeft,
+  Calendar,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
@@ -8,21 +16,13 @@ import PlanDayCard from '@/components/plans/PlanDayCard'
 import PlanForm from '@/components/forms/PlanForm'
 import PlanDayForm from '@/components/forms/PlanDayForm'
 import {
-  getPlan,
-  updatePlan,
-  deletePlan,
   createPlanDay,
+  deletePlan,
+  getPlan,
   reorderPlanDays,
+  updatePlan,
 } from '@/lib/plans.server'
 import { useAuth } from '@/context/AuthContext'
-import {
-  ArrowLeft,
-  Plus,
-  MoreVertical,
-  Pencil,
-  Trash2,
-  Calendar,
-} from 'lucide-react'
 
 export const Route = createFileRoute('/plans/$planId/')({
   component: PlanDetailPage,
@@ -41,7 +41,7 @@ type Plan = {
   name: string
   description: string | null
   isActive: boolean
-  planDays: PlanDay[]
+  planDays: Array<PlanDay>
 }
 
 function PlanDetailPage() {
@@ -136,9 +136,8 @@ function PlanDetailPage() {
     const newDays = [...plan.planDays]
     const targetIndex = direction === 'up' ? dayIndex - 1 : dayIndex + 1
 
-    if (targetIndex < 0 || targetIndex >= newDays.length) return
-
-    // Swap the days
+    if (targetIndex < 0 || targetIndex >= newDays.length)
+      return // Swap the days
     ;[newDays[dayIndex], newDays[targetIndex]] = [
       newDays[targetIndex],
       newDays[dayIndex],

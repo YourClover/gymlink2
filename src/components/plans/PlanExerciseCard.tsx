@@ -1,5 +1,5 @@
-import { type Exercise } from '@prisma/client'
-import { Trash2, Timer, Repeat } from 'lucide-react'
+import { Repeat, Timer, Trash2 } from 'lucide-react'
+import type { Exercise } from '@prisma/client'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 
 interface PlanExerciseCardProps {

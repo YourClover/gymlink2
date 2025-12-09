@@ -1,4 +1,4 @@
-import { Equipment } from '@prisma/client'
+import type { Equipment } from '@prisma/client'
 
 interface EquipmentBadgeProps {
   equipment: Equipment
@@ -21,7 +21,8 @@ export default function EquipmentBadge({
   size = 'sm',
 }: EquipmentBadgeProps) {
   const config = equipmentConfig[equipment]
-  const sizeClasses = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1'
+  const sizeClasses =
+    size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1'
 
   return (
     <span

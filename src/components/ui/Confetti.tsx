@@ -28,7 +28,7 @@ const COLORS = [
 
 export default function Confetti({ active, onComplete }: ConfettiProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const particlesRef = useRef<Particle[]>([])
+  const particlesRef = useRef<Array<Particle>>([])
   const animationRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function Confetti({ active, onComplete }: ConfettiProps) {
     canvas.height = window.innerHeight
 
     // Create particles
-    const particles: Particle[] = []
+    const particles: Array<Particle> = []
     const particleCount = 150
 
     for (let i = 0; i < particleCount; i++) {

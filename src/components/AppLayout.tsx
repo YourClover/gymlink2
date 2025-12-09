@@ -1,12 +1,12 @@
-import { type ReactNode } from "react";
-import { Navigate } from "@tanstack/react-router";
-import { useAuth } from "@/context/AuthContext";
-import BottomNav from "./BottomNav";
+import { Navigate } from '@tanstack/react-router'
+import BottomNav from './BottomNav'
+import type { ReactNode } from 'react'
+import { useAuth } from '@/context/AuthContext'
 
 interface AppLayoutProps {
-  children: ReactNode;
-  title?: string;
-  showNav?: boolean;
+  children: ReactNode
+  title?: string
+  showNav?: boolean
 }
 
 export default function AppLayout({
@@ -14,11 +14,11 @@ export default function AppLayout({
   title,
   showNav = true,
 }: AppLayoutProps) {
-  const { user } = useAuth();
+  const { user } = useAuth()
 
   // Redirect to login if not authenticated
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" />
   }
 
   return (
@@ -33,10 +33,10 @@ export default function AppLayout({
       )}
 
       {/* Main content */}
-      <main className={`flex-1 ${showNav ? "pb-20" : ""}`}>{children}</main>
+      <main className={`flex-1 ${showNav ? 'pb-20' : ''}`}>{children}</main>
 
       {/* Bottom Navigation */}
       {showNav && <BottomNav />}
     </div>
-  );
+  )
 }

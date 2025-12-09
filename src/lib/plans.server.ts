@@ -233,7 +233,8 @@ export const deletePlanDay = createServerFn({ method: 'POST' })
 // Reorder plan days
 export const reorderPlanDays = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { workoutPlanId: string; dayIds: string[]; userId: string }) => data,
+    (data: { workoutPlanId: string; dayIds: Array<string>; userId: string }) =>
+      data,
   )
   .handler(async ({ data }) => {
     // Verify plan ownership
@@ -381,7 +382,7 @@ export const removePlanExercise = createServerFn({ method: 'POST' })
 // Reorder exercises in a day
 export const reorderPlanExercises = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { planDayId: string; exerciseIds: string[]; userId: string }) =>
+    (data: { planDayId: string; exerciseIds: Array<string>; userId: string }) =>
       data,
   )
   .handler(async ({ data }) => {

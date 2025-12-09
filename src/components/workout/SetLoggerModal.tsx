@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { X, Minus, Plus } from 'lucide-react'
-import { type Exercise } from '@prisma/client'
+import { useEffect, useState } from 'react'
+import { Minus, Plus, X } from 'lucide-react'
+import type { Exercise } from '@prisma/client'
 
 interface SetLoggerModalProps {
   isOpen: boolean
@@ -36,7 +36,9 @@ export default function SetLoggerModal({
 }: SetLoggerModalProps) {
   const [weight, setWeight] = useState(defaultValues?.weight ?? 0)
   const [reps, setReps] = useState(defaultValues?.reps ?? 10)
-  const [timeSeconds, setTimeSeconds] = useState(defaultValues?.timeSeconds ?? 60)
+  const [timeSeconds, setTimeSeconds] = useState(
+    defaultValues?.timeSeconds ?? 60,
+  )
   const [rpe, setRpe] = useState<number | undefined>(undefined)
   const [isWarmup, setIsWarmup] = useState(false)
   const [isDropset, setIsDropset] = useState(false)
@@ -109,7 +111,9 @@ export default function SetLoggerModal({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-800">
           <div>
-            <h2 className="text-lg font-semibold text-white">Log Set {setNumber}</h2>
+            <h2 className="text-lg font-semibold text-white">
+              Log Set {setNumber}
+            </h2>
             <p className="text-sm text-zinc-400">{exercise.name}</p>
           </div>
           <button

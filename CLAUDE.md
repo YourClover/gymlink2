@@ -20,23 +20,27 @@ npm run db:studio        # Open Prisma Studio UI
 **Stack:** React 19 + TypeScript + TanStack Start (full-stack framework) + Prisma + PostgreSQL + Tailwind CSS v4
 
 ### File-Based Routing (TanStack Router)
+
 - Routes defined in `src/routes/` directory
 - Use `createFileRoute(path)({component})` pattern
 - `routeTree.gen.ts` is auto-generated - do not edit manually
 - Root layout in `__root.tsx` wraps all pages with AuthProvider
 
 ### Server Functions
+
 - Defined in `*.server.ts` files (e.g., `src/lib/auth.server.ts`)
 - Use `createServerFn({method}).inputValidator().handler()` pattern
 - Run on server via Nitro, called transparently from client
 
 ### Authentication
+
 - JWT tokens stored in localStorage
 - `AuthContext` provides `useAuth()` hook for auth state
 - Password hashing with bcryptjs (12 rounds)
 - Server-side token verification in `auth.server.ts`
 
 ### Database (Prisma)
+
 - Schema in `prisma/schema.prisma`
 - Prisma Client singleton in `src/lib/db.ts` (prevents multiple instances)
 - Uses PrismaPg adapter for connection pooling

@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import AppLayout from "@/components/AppLayout";
-import { Calendar } from "lucide-react";
+import { createFileRoute } from '@tanstack/react-router'
+import { Calendar } from 'lucide-react'
+import AppLayout from '@/components/AppLayout'
 
-export const Route = createFileRoute("/history")({
+export const Route = createFileRoute('/history')({
   component: HistoryPage,
-});
+})
 
 function HistoryPage() {
   return (
@@ -23,5 +23,5 @@ function HistoryPage() {
         </div>
       </div>
     </AppLayout>
-  );
+  )
 }

@@ -1,15 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { type Exercise, MuscleGroup, Equipment } from '@prisma/client'
+import { useEffect, useState } from 'react'
 import { Dumbbell, Plus } from 'lucide-react'
+import type { Equipment, Exercise, MuscleGroup } from '@prisma/client'
+import type { ExerciseFormData } from '@/components/forms/ExerciseForm'
 import AppLayout from '@/components/AppLayout'
 import SearchInput from '@/components/ui/SearchInput'
 import EmptyState from '@/components/ui/EmptyState'
 import ExerciseCard from '@/components/exercises/ExerciseCard'
 import ExerciseFilters from '@/components/exercises/ExerciseFilters'
 import Modal from '@/components/ui/Modal'
-import ExerciseForm, { type ExerciseFormData } from '@/components/forms/ExerciseForm'
-import { getExercises, createExercise } from '@/lib/exercises.server'
+import ExerciseForm from '@/components/forms/ExerciseForm'
+import { createExercise, getExercises } from '@/lib/exercises.server'
 import { useAuth } from '@/context/AuthContext'
 
 export const Route = createFileRoute('/exercises/')({
@@ -18,7 +19,7 @@ export const Route = createFileRoute('/exercises/')({
 
 function ExercisesPage() {
   const { user } = useAuth()
-  const [exercises, setExercises] = useState<Exercise[]>([])
+  const [exercises, setExercises] = useState<Array<Exercise>>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup | undefined>()

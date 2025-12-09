@@ -1,5 +1,6 @@
-import { type ReactNode, useEffect } from 'react'
+import { useEffect } from 'react'
 import { X } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 interface ModalProps {
   isOpen: boolean
@@ -8,7 +9,12 @@ interface ModalProps {
   children: ReactNode
 }
 
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+}: ModalProps) {
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {

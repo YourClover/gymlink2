@@ -1,21 +1,24 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { type Exercise, type WorkoutSet } from '@prisma/client'
+import { useEffect, useState } from 'react'
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Dumbbell,
+  Trophy,
+  Weight,
+} from 'lucide-react'
+import type { Exercise, WorkoutSet } from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import MoodRating from '@/components/workout/MoodRating'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
-import { getWorkoutSession, completeWorkoutSession } from '@/lib/workouts.server'
-import { useAuth } from '@/context/AuthContext'
 import {
-  Dumbbell,
-  Clock,
-  Trophy,
-  Weight,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
-} from 'lucide-react'
+  completeWorkoutSession,
+  getWorkoutSession,
+} from '@/lib/workouts.server'
+import { useAuth } from '@/context/AuthContext'
 
 export const Route = createFileRoute('/workout/summary/$sessionId')({
   component: WorkoutSummaryPage,
@@ -35,7 +38,7 @@ type SessionDetails = {
 
 type ExerciseSummary = {
   exercise: Exercise
-  sets: WorkoutSet[]
+  sets: Array<WorkoutSet>
   totalVolume: number
 }
 
@@ -87,7 +90,7 @@ function WorkoutSummaryPage() {
   }, [user, sessionId, navigate])
 
   // Group sets by exercise
-  const getExerciseSummaries = (): ExerciseSummary[] => {
+  const getExerciseSummaries = (): Array<ExerciseSummary> => {
     if (!session) return []
 
     const exerciseMap = new Map<string, ExerciseSummary>()
@@ -422,10 +425,7 @@ function WorkoutSummaryPage() {
                 <h3 className="text-sm font-medium text-zinc-400 mb-3 text-center">
                   Mood Rating
                 </h3>
-                <MoodRating
-                  value={session.moodRating}
-                  onChange={() => {}}
-                />
+                <MoodRating value={session.moodRating} onChange={() => {}} />
               </div>
             )}
             {session.notes && (

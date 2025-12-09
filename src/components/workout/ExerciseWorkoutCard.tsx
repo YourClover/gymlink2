@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Plus, Timer, Repeat } from 'lucide-react'
-import { type Exercise, type WorkoutSet, type PlanExercise } from '@prisma/client'
-import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
+import { ChevronDown, ChevronUp, Plus, Repeat, Timer } from 'lucide-react'
 import WorkoutSetRow from './WorkoutSetRow'
+import type { Exercise, PlanExercise, WorkoutSet } from '@prisma/client'
+import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 
 interface ExerciseWorkoutCardProps {
   exercise: Exercise
-  sets: WorkoutSet[]
+  sets: Array<WorkoutSet>
   planExercise?: PlanExercise | null
   onLogSet: () => void
   onDeleteSet: (setId: string) => void
@@ -44,9 +44,9 @@ export default function ExerciseWorkoutCard({
   const formatTarget = () => {
     if (!planExercise) return null
 
-    const { targetSets, targetReps, targetTimeSeconds, targetWeight } = planExercise
+    const { targetReps, targetTimeSeconds, targetWeight } = planExercise
 
-    let display = `${targetSets}`
+    let display = `${planExercise.targetSets}`
 
     if (targetTimeSeconds) {
       const mins = Math.floor(targetTimeSeconds / 60)

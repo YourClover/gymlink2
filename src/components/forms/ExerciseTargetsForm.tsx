@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { type Exercise } from '@prisma/client'
+import type { Exercise } from '@prisma/client'
 
 interface ExerciseTargets {
   targetSets: number
@@ -37,9 +37,7 @@ export default function ExerciseTargetsForm({
   const [targetWeight, setTargetWeight] = useState(
     initialData?.targetWeight ?? undefined,
   )
-  const [restSeconds, setRestSeconds] = useState(
-    initialData?.restSeconds ?? 60,
-  )
+  const [restSeconds, setRestSeconds] = useState(initialData?.restSeconds ?? 60)
   const [notes, setNotes] = useState(initialData?.notes ?? '')
   const [error, setError] = useState('')
 
@@ -146,7 +144,9 @@ export default function ExerciseTargetsForm({
           type="number"
           value={targetWeight ?? ''}
           onChange={(e) =>
-            setTargetWeight(e.target.value ? parseFloat(e.target.value) : undefined)
+            setTargetWeight(
+              e.target.value ? parseFloat(e.target.value) : undefined,
+            )
           }
           min={0}
           step={0.5}
