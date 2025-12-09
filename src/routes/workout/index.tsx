@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useLocation } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   ChevronRight,
@@ -39,6 +39,7 @@ type RecentWorkout = {
 function WorkoutPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null)
   const [recentWorkouts, setRecentWorkouts] = useState<Array<RecentWorkout>>([])
@@ -66,7 +67,7 @@ function WorkoutPage() {
     }
 
     fetchData()
-  }, [user])
+  }, [user, location.search])
 
   // Start quick workout
   const handleStartQuick = async () => {

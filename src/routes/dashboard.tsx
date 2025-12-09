@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useLocation } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   Calendar,
@@ -63,6 +63,7 @@ type RecentWorkout = {
 function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<Stats | null>(null)
@@ -97,7 +98,8 @@ function DashboardPage() {
     }
 
     fetchData()
-  }, [user])
+
+  }, [user, location.search])
 
   // Get time-based greeting
   const getGreeting = () => {

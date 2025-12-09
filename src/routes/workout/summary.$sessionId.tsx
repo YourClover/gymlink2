@@ -169,7 +169,7 @@ function WorkoutSummaryPage() {
           moodRating: moodRating,
         },
       })
-      navigate({ to: '/workout' })
+      navigate({ to: '/workout', search: { completed: Date.now() } })
     } catch (error) {
       console.error('Failed to complete workout:', error)
     } finally {
