@@ -34,8 +34,8 @@ export default function SetLoggerModal({
   defaultValues,
   isLoading = false,
 }: SetLoggerModalProps) {
-  const [weight, setWeight] = useState(defaultValues?.weight ?? 0)
-  const [reps, setReps] = useState(defaultValues?.reps ?? 10)
+  const [weight, setWeight] = useState<number | string>(defaultValues?.weight ?? 0)
+  const [reps, setReps] = useState<number | string>(defaultValues?.reps ?? 10)
   const [timeSeconds, setTimeSeconds] = useState(
     defaultValues?.timeSeconds ?? 60,
   )
@@ -70,10 +70,12 @@ export default function SetLoggerModal({
   if (!isOpen) return null
 
   const handleLog = () => {
+    const weightNum = typeof weight === 'string' ? parseFloat(weight) || 0 : weight
+    const repsNum = typeof reps === 'string' ? parseInt(reps) || 1 : reps
     onLog({
-      reps: exercise.isTimed ? undefined : reps,
+      reps: exercise.isTimed ? undefined : repsNum,
       timeSeconds: exercise.isTimed ? timeSeconds : undefined,
-      weight: weight > 0 ? weight : undefined,
+      weight: weightNum > 0 ? weightNum : undefined,
       rpe,
       isWarmup,
       isDropset,
@@ -81,11 +83,17 @@ export default function SetLoggerModal({
   }
 
   const adjustWeight = (delta: number) => {
-    setWeight((prev) => Math.max(0, prev + delta))
+    setWeight((prev) => {
+      const num = typeof prev === 'string' ? parseFloat(prev) || 0 : prev
+      return Math.max(0, num + delta)
+    })
   }
 
   const adjustReps = (delta: number) => {
-    setReps((prev) => Math.max(1, prev + delta))
+    setReps((prev) => {
+      const num = typeof prev === 'string' ? parseInt(prev) || 0 : prev
+      return Math.max(1, num + delta)
+    })
   }
 
   const adjustTime = (delta: number) => {
@@ -132,29 +140,29 @@ export default function SetLoggerModal({
             <label className="block text-sm font-medium text-zinc-400 mb-3">
               Weight (kg)
             </label>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => adjustWeight(-2.5)}
-                className="w-14 h-14 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                 aria-label="Decrease weight"
               >
-                <Minus className="w-6 h-6" />
+                <Minus className="w-5 h-5" />
               </button>
               <input
                 type="number"
                 value={weight}
-                onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
-                className="flex-1 text-center text-2xl font-semibold bg-zinc-800 text-white rounded-xl py-3 border border-zinc-700 focus:border-blue-500 focus:outline-none"
+                onChange={(e) => setWeight(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
                 inputMode="decimal"
                 step={0.5}
                 min={0}
               />
               <button
                 onClick={() => adjustWeight(2.5)}
-                className="w-14 h-14 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                 aria-label="Increase weight"
               >
-                <Plus className="w-6 h-6" />
+                <Plus className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -165,23 +173,23 @@ export default function SetLoggerModal({
               <label className="block text-sm font-medium text-zinc-400 mb-3">
                 Time
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => adjustTime(-15)}
-                  className="w-14 h-14 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                  className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                   aria-label="Decrease time"
                 >
-                  <Minus className="w-6 h-6" />
+                  <Minus className="w-5 h-5" />
                 </button>
-                <div className="flex-1 text-center text-2xl font-semibold bg-zinc-800 text-white rounded-xl py-3 border border-zinc-700">
+                <div className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700">
                   {formatTime(timeSeconds)}
                 </div>
                 <button
                   onClick={() => adjustTime(15)}
-                  className="w-14 h-14 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                  className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                   aria-label="Increase time"
                 >
-                  <Plus className="w-6 h-6" />
+                  <Plus className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -190,28 +198,28 @@ export default function SetLoggerModal({
               <label className="block text-sm font-medium text-zinc-400 mb-3">
                 Reps
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => adjustReps(-1)}
-                  className="w-14 h-14 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                  className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                   aria-label="Decrease reps"
                 >
-                  <Minus className="w-6 h-6" />
+                  <Minus className="w-5 h-5" />
                 </button>
                 <input
                   type="number"
                   value={reps}
-                  onChange={(e) => setReps(parseInt(e.target.value) || 1)}
-                  className="flex-1 text-center text-2xl font-semibold bg-zinc-800 text-white rounded-xl py-3 border border-zinc-700 focus:border-blue-500 focus:outline-none"
+                  onChange={(e) => setReps(e.target.value === '' ? '' : parseInt(e.target.value) || 1)}
+                  className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
                   inputMode="numeric"
                   min={1}
                 />
                 <button
                   onClick={() => adjustReps(1)}
-                  className="w-14 h-14 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                  className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                   aria-label="Increase reps"
                 >
-                  <Plus className="w-6 h-6" />
+                  <Plus className="w-5 h-5" />
                 </button>
               </div>
             </div>
