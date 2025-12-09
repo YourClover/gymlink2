@@ -6,6 +6,7 @@ import {
   MoreVertical,
   Pencil,
   Plus,
+  Share2,
   Trash2,
 } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
@@ -15,6 +16,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PlanDayCard from '@/components/plans/PlanDayCard'
 import PlanForm from '@/components/forms/PlanForm'
 import PlanDayForm from '@/components/forms/PlanDayForm'
+import SharePlanModal from '@/components/sharing/SharePlanModal'
 import {
   createPlanDay,
   deletePlan,
@@ -55,6 +57,7 @@ function PlanDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAddDayModal, setShowAddDayModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const fetchPlan = useCallback(async () => {
@@ -235,6 +238,16 @@ function PlanDetailPage() {
                   <button
                     onClick={() => {
                       setShowMenu(false)
+                      setShowShareModal(true)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-zinc-700 transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share Plan
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMenu(false)
                       setShowEditModal(true)
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-zinc-700 transition-colors"
@@ -353,6 +366,14 @@ function PlanDetailPage() {
         onConfirm={handleDeletePlan}
         onCancel={() => setShowDeleteConfirm(false)}
         variant="danger"
+      />
+
+      {/* Share Plan Modal */}
+      <SharePlanModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        planId={plan.id}
+        planName={plan.name}
       />
     </AppLayout>
   )

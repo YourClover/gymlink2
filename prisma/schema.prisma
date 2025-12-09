@@ -69,6 +69,7 @@ model User {
   exercises       Exercise[]
   workoutSessions WorkoutSession[]
   personalRecords PersonalRecord[]
+  planShareCodes  PlanShareCode[]
 
   @@map("users")
 }
@@ -86,6 +87,7 @@ model WorkoutPlan {
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   planDays        PlanDay[]
   workoutSessions WorkoutSession[]
+  shareCodes      PlanShareCode[]
 
   @@index([userId])
   @@map("workout_plans")
@@ -214,4 +216,22 @@ model PersonalRecord {
   @@index([userId])
   @@index([exerciseId])
   @@map("personal_records")
+}
+
+model PlanShareCode {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  workoutPlanId String   @map("workout_plan_id")
+  creatorId     String   @map("creator_id")
+  expiresAt     DateTime @map("expires_at")
+  usageCount    Int      @default(0) @map("usage_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  creator     User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([code])
+  @@index([workoutPlanId])
+  @@map("plan_share_codes")
 }

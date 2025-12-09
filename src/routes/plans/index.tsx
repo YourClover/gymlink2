@@ -1,9 +1,10 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { ClipboardList, Plus } from 'lucide-react'
+import { ClipboardList, Download, Plus } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import PlanCard from '@/components/plans/PlanCard'
+import ImportPlanModal from '@/components/sharing/ImportPlanModal'
 import { getPlans } from '@/lib/plans.server'
 import { useAuth } from '@/context/AuthContext'
 
@@ -27,6 +28,7 @@ function PlansPage() {
   const navigate = useNavigate()
   const [plans, setPlans] = useState<Array<PlanWithCount>>([])
   const [loading, setLoading] = useState(true)
+  const [showImportModal, setShowImportModal] = useState(false)
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -49,6 +51,10 @@ function PlansPage() {
     navigate({ to: '/plans/$planId', params: { planId } })
   }
 
+  const handleImportSuccess = (planId: string) => {
+    navigate({ to: '/plans/$planId', params: { planId } })
+  }
+
   return (
     <AppLayout title="Workout Plans">
       <div className="flex flex-col h-full">
@@ -66,6 +72,10 @@ function PlansPage() {
                 label: 'Create Plan',
                 onClick: () => navigate({ to: '/plans/new' }),
               }}
+              secondaryAction={{
+                label: 'Import Plan',
+                onClick: () => setShowImportModal(true),
+              }}
             />
           </div>
         ) : (
@@ -80,16 +90,32 @@ function PlansPage() {
           </div>
         )}
 
-        {/* FAB for creating new plan */}
+        {/* FABs for creating/importing plans */}
         {plans.length > 0 && (
-          <Link
-            to="/plans/new"
-            className="fixed bottom-24 right-4 w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 active:bg-blue-800 transition-colors"
-            aria-label="Create new plan"
-          >
-            <Plus className="w-6 h-6 text-white" />
-          </Link>
+          <div className="fixed bottom-24 right-4 flex flex-col gap-3">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="w-14 h-14 bg-zinc-700 rounded-full flex items-center justify-center shadow-lg hover:bg-zinc-600 active:bg-zinc-500 transition-colors"
+              aria-label="Import plan"
+            >
+              <Download className="w-6 h-6 text-white" />
+            </button>
+            <Link
+              to="/plans/new"
+              className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 active:bg-blue-800 transition-colors"
+              aria-label="Create new plan"
+            >
+              <Plus className="w-6 h-6 text-white" />
+            </Link>
+          </div>
         )}
+
+        {/* Import Plan Modal */}
+        <ImportPlanModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onImportSuccess={handleImportSuccess}
+        />
       </div>
     </AppLayout>
   )
