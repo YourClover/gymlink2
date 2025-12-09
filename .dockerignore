@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Environment files (use docker-compose env instead)
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+.output/
+.vinxi/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Misc
+.DS_Store
+Thumbs.db
+*.md
+!README.md
