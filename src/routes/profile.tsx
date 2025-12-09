@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/context/AuthContext";
 import AppLayout from "@/components/AppLayout";
-import { User, Mail, LogOut, Settings, ChevronRight } from "lucide-react";
+import { User, Mail, LogOut, Settings, ChevronRight, Dumbbell } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   component: ProfilePage,
@@ -33,6 +33,16 @@ function ProfilePage() {
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-zinc-400 px-1">Settings</h3>
           <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+            <Link
+              to="/exercises"
+              className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Dumbbell className="w-5 h-5 text-zinc-400" />
+                <span className="text-white">Exercise Library</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-zinc-500" />
+            </Link>
             <button className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors">
               <div className="flex items-center gap-3">
                 <Settings className="w-5 h-5 text-zinc-400" />

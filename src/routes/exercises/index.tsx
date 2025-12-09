@@ -1,14 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { type Exercise, MuscleGroup, Equipment } from '@prisma/client'
-import { Dumbbell } from 'lucide-react'
+import { Dumbbell, Plus } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
 import SearchInput from '@/components/ui/SearchInput'
 import EmptyState from '@/components/ui/EmptyState'
 import ExerciseCard from '@/components/exercises/ExerciseCard'
 import ExerciseFilters from '@/components/exercises/ExerciseFilters'
 import Modal from '@/components/ui/Modal'
-import { getExercises } from '@/lib/exercises.server'
+import ExerciseForm, { type ExerciseFormData } from '@/components/forms/ExerciseForm'
+import { getExercises, createExercise } from '@/lib/exercises.server'
 import { useAuth } from '@/context/AuthContext'
 
 export const Route = createFileRoute('/exercises/')({
@@ -25,6 +26,8 @@ function ExercisesPage() {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(
     null,
   )
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
 
   // Fetch exercises
   useEffect(() => {
@@ -50,16 +53,61 @@ function ExercisesPage() {
     fetchExercises()
   }, [muscleGroup, equipment, search, user?.id])
 
+  const refreshExercises = async () => {
+    try {
+      const result = await getExercises({
+        data: {
+          muscleGroup,
+          equipment,
+          search: search || undefined,
+          userId: user?.id,
+        },
+      })
+      setExercises(result.exercises)
+    } catch (error) {
+      console.error('Failed to fetch exercises:', error)
+    }
+  }
+
+  const handleCreateExercise = async (data: ExerciseFormData) => {
+    if (!user?.id) return
+
+    setIsCreating(true)
+    try {
+      await createExercise({
+        data: {
+          ...data,
+          userId: user.id,
+        },
+      })
+      await refreshExercises()
+      setShowCreateModal(false)
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   return (
     <AppLayout title="Exercises">
       <div className="flex flex-col h-full">
         {/* Search and Filters */}
         <div className="flex-shrink-0 px-4 py-4 space-y-4 border-b border-zinc-800">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Search exercises..."
-          />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search exercises..."
+              />
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+              aria-label="Create exercise"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
           <ExerciseFilters
             muscleGroup={muscleGroup}
             equipment={equipment}
@@ -142,6 +190,19 @@ function ExercisesPage() {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Create Exercise Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create Custom Exercise"
+      >
+        <ExerciseForm
+          onSubmit={handleCreateExercise}
+          onCancel={() => setShowCreateModal(false)}
+          isLoading={isCreating}
+        />
       </Modal>
     </AppLayout>
   )
