@@ -6,8 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm run dev              # Start dev server on port 3000
+npm run start            # Start dev server on port 3000 with network access (--host)
 npm run build            # Build for production
-npm run test             # Run tests (Vitest)
+npm run test             # Run tests once (Vitest)
+npm run test:watch       # Run tests in watch mode
 npm run check            # Fix formatting and linting (Prettier + ESLint)
 npm run db:migrate       # Create and run Prisma migrations
 npm run db:generate      # Generate Prisma Client after schema changes
@@ -59,3 +61,32 @@ npm run db:studio        # Open Prisma Studio UI
 - TypeScript strict mode enabled
 - Path alias: `@/*` maps to `./src/*`
 - Tailwind CSS for styling (dark theme with zinc/blue accents)
+
+## Docker
+
+### Development with Docker Compose
+
+```bash
+docker compose up -d       # Start app and PostgreSQL database
+docker compose logs -f app # View logs
+docker compose down        # Stop services
+```
+
+Required environment variables (set in `.env` or shell):
+
+- `POSTGRES_PASSWORD` - PostgreSQL password
+- `JWT_SECRET` - Secret for JWT token signing
+- `JWT_EXPIRES_IN` - Token expiration (default: 7d)
+
+### Production Build
+
+```bash
+docker build -t gymlink .
+
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgresql://... \
+  -e JWT_SECRET=... \
+  gymlink
+```
+
+The Dockerfile uses multi-stage builds and runs as non-root user. Migrations run automatically on container start.

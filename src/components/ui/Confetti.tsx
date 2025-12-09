@@ -30,6 +30,12 @@ export default function Confetti({ active, onComplete }: ConfettiProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Array<Particle>>([])
   const animationRef = useRef<number | null>(null)
+  const onCompleteRef = useRef(onComplete)
+
+  // Keep the ref updated with the latest callback
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
   useEffect(() => {
     if (!active) {
@@ -111,7 +117,7 @@ export default function Confetti({ active, onComplete }: ConfettiProps) {
       } else {
         // Animation complete
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-        onComplete?.()
+        onCompleteRef.current?.()
       }
     }
 
@@ -122,7 +128,7 @@ export default function Confetti({ active, onComplete }: ConfettiProps) {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [active, onComplete])
+  }, [active])
 
   if (!active) return null
 

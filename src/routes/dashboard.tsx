@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate, useLocation } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  useLocation,
+  useNavigate,
+} from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   Calendar,
@@ -98,7 +102,6 @@ function DashboardPage() {
     }
 
     fetchData()
-
   }, [user, location.search])
 
   // Get time-based greeting

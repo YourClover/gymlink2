@@ -6,8 +6,8 @@ import {
   Clock,
   Dumbbell,
   Flame,
-  Trophy,
   TrendingUp,
+  Trophy,
   Weight,
 } from 'lucide-react'
 import type { MuscleGroup } from '@prisma/client'
@@ -15,10 +15,10 @@ import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import {
-  getOverviewStats,
-  getVolumeHistory,
   getExerciseStats,
+  getOverviewStats,
   getRecentPRs,
+  getVolumeHistory,
 } from '@/lib/stats.server'
 
 export const Route = createFileRoute('/stats')({
@@ -68,10 +68,10 @@ function StatsPage() {
 
   const [loading, setLoading] = useState(true)
   const [overview, setOverview] = useState<OverviewStats | null>(null)
-  const [volumeHistory, setVolumeHistory] = useState<WeekData[]>([])
-  const [topExercises, setTopExercises] = useState<TopExercise[]>([])
-  const [muscleGroups, setMuscleGroups] = useState<MuscleGroupData[]>([])
-  const [recentPRs, setRecentPRs] = useState<PRData[]>([])
+  const [volumeHistory, setVolumeHistory] = useState<Array<WeekData>>([])
+  const [topExercises, setTopExercises] = useState<Array<TopExercise>>([])
+  const [muscleGroups, setMuscleGroups] = useState<Array<MuscleGroupData>>([])
+  const [recentPRs, setRecentPRs] = useState<Array<PRData>>([])
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -241,17 +241,25 @@ function StatsPage() {
             </h2>
             <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
               {topExercises.map((ex, i) => (
-                <div key={ex.exerciseId} className="p-3 flex items-center gap-3">
+                <div
+                  key={ex.exerciseId}
+                  className="p-3 flex items-center gap-3"
+                >
                   <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-medium text-zinc-300">
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-white truncate">{ex.name}</p>
                     {ex.muscleGroup && (
-                      <MuscleGroupBadge muscleGroup={ex.muscleGroup} size="sm" />
+                      <MuscleGroupBadge
+                        muscleGroup={ex.muscleGroup}
+                        size="sm"
+                      />
                     )}
                   </div>
-                  <div className="text-sm text-zinc-400">{ex.setCount} sets</div>
+                  <div className="text-sm text-zinc-400">
+                    {ex.setCount} sets
+                  </div>
                 </div>
               ))}
             </div>

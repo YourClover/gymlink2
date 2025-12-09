@@ -31,7 +31,7 @@ function HistoryPage() {
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
-  const [workouts, setWorkouts] = useState<WorkoutHistory[]>([])
+  const [workouts, setWorkouts] = useState<Array<WorkoutHistory>>([])
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -41,7 +41,7 @@ function HistoryPage() {
         const result = await getRecentWorkouts({
           data: { userId: user.id, limit: 50 },
         })
-        setWorkouts(result.workouts as WorkoutHistory[])
+        setWorkouts(result.workouts as Array<WorkoutHistory>)
       } catch (error) {
         console.error('Failed to fetch workout history:', error)
       } finally {
@@ -73,7 +73,7 @@ function HistoryPage() {
 
   const getUniqueMuscles = (
     sets: WorkoutHistory['workoutSets'],
-  ): MuscleGroup[] => {
+  ): Array<MuscleGroup> => {
     const muscles = new Set<MuscleGroup>()
     for (const set of sets) {
       if (set.exercise.muscleGroup) {
@@ -153,7 +153,11 @@ function HistoryPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   {getUniqueMuscles(workout.workoutSets).map((muscle) => (
-                    <MuscleGroupBadge key={muscle} muscleGroup={muscle} size="sm" />
+                    <MuscleGroupBadge
+                      key={muscle}
+                      muscleGroup={muscle}
+                      size="sm"
+                    />
                   ))}
                 </div>
                 <div className="flex items-center gap-1 text-sm text-zinc-500">

@@ -379,7 +379,11 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
           select: { reps: true, timeSeconds: true },
         },
       },
-      orderBy: [{ exerciseId: 'asc' }, { value: 'desc' }, { achievedAt: 'desc' }],
+      orderBy: [
+        { exerciseId: 'asc' },
+        { value: 'desc' },
+        { achievedAt: 'desc' },
+      ],
     })
 
     // Group by exercise and take the best PR for each

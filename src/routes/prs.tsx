@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Trophy } from 'lucide-react'
+import type { MuscleGroup } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import { getUserExercisePRs } from '@/lib/stats.server'
-import type { MuscleGroup } from '@prisma/client'
 
 export const Route = createFileRoute('/prs')({
   component: PRsPage,
@@ -21,7 +21,7 @@ type ExercisePR = {
   achievedAt: Date
 }
 
-type GroupedPRs = Record<string, ExercisePR[]>
+type GroupedPRs = Record<string, Array<ExercisePR>>
 
 function PRsPage() {
   const { user } = useAuth()
@@ -64,7 +64,7 @@ function PRsPage() {
     return `${pr.value}kg x ${pr.reps} reps`
   }
 
-  const muscleGroupOrder: MuscleGroup[] = [
+  const muscleGroupOrder: Array<MuscleGroup> = [
     'CHEST',
     'BACK',
     'LEGS',

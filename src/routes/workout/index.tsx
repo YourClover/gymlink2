@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate, useLocation } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  useLocation,
+  useNavigate,
+} from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   ChevronRight,

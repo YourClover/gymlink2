@@ -1,7 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import { Dumbbell, Plus } from 'lucide-react'
-import type { Exercise, PlanExercise, WorkoutSet } from '@prisma/client'
+import type {
+  Exercise,
+  PlanExercise,
+  WeightUnit,
+  WorkoutSet,
+} from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -16,6 +21,7 @@ import {
   deleteWorkoutSet,
   discardWorkoutSession,
   getActiveSession,
+  getLastExerciseSets,
   logWorkoutSet,
 } from '@/lib/workouts.server'
 import { useAuth } from '@/context/AuthContext'
@@ -57,6 +63,17 @@ function ActiveWorkoutPage() {
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [loggingExercise, setLoggingExercise] =
     useState<WorkoutExercise | null>(null)
+  const [previousWorkout, setPreviousWorkout] = useState<{
+    date: Date | null
+    sets: Array<{
+      setNumber: number
+      weight: number | null
+      reps: number | null
+      timeSeconds: number | null
+      rpe: number | null
+      weightUnit: WeightUnit
+    }>
+  } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Expanded exercise tracking
@@ -152,6 +169,27 @@ function ActiveWorkoutPage() {
   useEffect(() => {
     fetchSession()
   }, [fetchSession])
+
+  // Handle opening the set logger modal (fetch previous workout data)
+  const handleOpenSetLogger = async (ex: WorkoutExercise) => {
+    setLoggingExercise(ex)
+    setPreviousWorkout(null) // Reset while loading
+
+    if (!user || !session) return
+
+    try {
+      const result = await getLastExerciseSets({
+        data: {
+          userId: user.id,
+          exerciseId: ex.exercise.id,
+          excludeSessionId: session.id,
+        },
+      })
+      setPreviousWorkout(result.lastSession)
+    } catch (error) {
+      console.error('Failed to fetch previous workout:', error)
+    }
+  }
 
   // Handle set logging
   const handleLogSet = async (setData: {
@@ -365,7 +403,7 @@ function ActiveWorkoutPage() {
                       : ex.exercise.id,
                   )
                 }
-                onLogSet={() => setLoggingExercise(ex)}
+                onLogSet={() => handleOpenSetLogger(ex)}
                 onDeleteSet={handleDeleteSet}
               />
             ))}
@@ -405,6 +443,7 @@ function ActiveWorkoutPage() {
               loggingExercise.sets[loggingExercise.sets.length - 1]?.weight ??
               undefined,
           }}
+          previousWorkout={previousWorkout}
           isLoading={isSubmitting}
         />
       )}

@@ -386,3 +386,56 @@ export const getRecentWorkouts = createServerFn({ method: 'GET' })
 
     return { workouts }
   })
+
+// Get last workout data for a specific exercise (for showing previous performance)
+export const getLastExerciseSets = createServerFn({ method: 'GET' })
+  .inputValidator(
+    (data: { userId: string; exerciseId: string; excludeSessionId?: string }) =>
+      data,
+  )
+  .handler(async ({ data }) => {
+    // Find the most recent completed session that includes this exercise
+    const lastSession = await prisma.workoutSession.findFirst({
+      where: {
+        userId: data.userId,
+        completedAt: { not: null },
+        ...(data.excludeSessionId && { id: { not: data.excludeSessionId } }),
+        workoutSets: {
+          some: {
+            exerciseId: data.exerciseId,
+          },
+        },
+      },
+      orderBy: { completedAt: 'desc' },
+      select: {
+        id: true,
+        completedAt: true,
+        workoutSets: {
+          where: {
+            exerciseId: data.exerciseId,
+            isWarmup: false, // Exclude warmup sets
+          },
+          orderBy: { setNumber: 'asc' },
+          select: {
+            setNumber: true,
+            weight: true,
+            reps: true,
+            timeSeconds: true,
+            rpe: true,
+            weightUnit: true,
+          },
+        },
+      },
+    })
+
+    if (!lastSession || lastSession.workoutSets.length === 0) {
+      return { lastSession: null }
+    }
+
+    return {
+      lastSession: {
+        date: lastSession.completedAt,
+        sets: lastSession.workoutSets,
+      },
+    }
+  })

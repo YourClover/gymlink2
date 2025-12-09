@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Minus, Plus, X } from 'lucide-react'
-import type { Exercise } from '@prisma/client'
+import { Calendar, Minus, Plus, X } from 'lucide-react'
+import type { Exercise, WeightUnit } from '@prisma/client'
+
+interface PreviousWorkoutData {
+  date: Date | null
+  sets: Array<{
+    setNumber: number
+    weight: number | null
+    reps: number | null
+    timeSeconds: number | null
+    rpe: number | null
+    weightUnit: WeightUnit
+  }>
+}
 
 interface SetLoggerModalProps {
   isOpen: boolean
@@ -20,6 +32,7 @@ interface SetLoggerModalProps {
     timeSeconds?: number
     weight?: number
   }
+  previousWorkout?: PreviousWorkoutData | null
   isLoading?: boolean
 }
 
@@ -32,9 +45,12 @@ export default function SetLoggerModal({
   exercise,
   setNumber,
   defaultValues,
+  previousWorkout,
   isLoading = false,
 }: SetLoggerModalProps) {
-  const [weight, setWeight] = useState<number | string>(defaultValues?.weight ?? 0)
+  const [weight, setWeight] = useState<number | string>(
+    defaultValues?.weight ?? 0,
+  )
   const [reps, setReps] = useState<number | string>(defaultValues?.reps ?? 10)
   const [timeSeconds, setTimeSeconds] = useState(
     defaultValues?.timeSeconds ?? 60,
@@ -70,7 +86,8 @@ export default function SetLoggerModal({
   if (!isOpen) return null
 
   const handleLog = () => {
-    const weightNum = typeof weight === 'string' ? parseFloat(weight) || 0 : weight
+    const weightNum =
+      typeof weight === 'string' ? parseFloat(weight) || 0 : weight
     const repsNum = typeof reps === 'string' ? parseInt(reps) || 1 : reps
     onLog({
       reps: exercise.isTimed ? undefined : repsNum,
@@ -133,6 +150,39 @@ export default function SetLoggerModal({
           </button>
         </div>
 
+        {/* Previous Workout Info */}
+        {previousWorkout && previousWorkout.sets.length > 0 && (
+          <div className="px-4 py-3 bg-zinc-800/50 border-b border-zinc-800">
+            <div className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+              <Calendar className="w-4 h-4" />
+              <span>
+                Last workout:{' '}
+                {previousWorkout.date
+                  ? new Date(previousWorkout.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : 'Unknown'}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {previousWorkout.sets.map((set) => (
+                <span
+                  key={set.setNumber}
+                  className="text-xs px-2 py-1 bg-zinc-700/50 rounded-md text-zinc-300"
+                >
+                  {set.weight ? `${set.weight}kg` : ''}
+                  {set.weight && set.reps ? ' × ' : ''}
+                  {set.reps ? `${set.reps}` : ''}
+                  {set.timeSeconds && !set.reps
+                    ? `${Math.floor(set.timeSeconds / 60)}:${(set.timeSeconds % 60).toString().padStart(2, '0')}`
+                    : ''}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Weight Input */}
@@ -151,7 +201,13 @@ export default function SetLoggerModal({
               <input
                 type="number"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  setWeight(
+                    e.target.value === ''
+                      ? ''
+                      : parseFloat(e.target.value) || 0,
+                  )
+                }
                 className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
                 inputMode="decimal"
                 step={0.5}
@@ -209,7 +265,13 @@ export default function SetLoggerModal({
                 <input
                   type="number"
                   value={reps}
-                  onChange={(e) => setReps(e.target.value === '' ? '' : parseInt(e.target.value) || 1)}
+                  onChange={(e) =>
+                    setReps(
+                      e.target.value === ''
+                        ? ''
+                        : parseInt(e.target.value) || 1,
+                    )
+                  }
                   className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
                   inputMode="numeric"
                   min={1}
