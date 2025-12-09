@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StatsRouteImport } from './routes/stats'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as PrsRouteImport } from './routes/prs'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -25,9 +27,19 @@ import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/ind
 import { Route as WorkoutSummarySessionIdRouteImport } from './routes/workout/summary.$sessionId'
 import { Route as PlansPlanIdDayDayIdRouteImport } from './routes/plans/$planId/day/$dayId'
 
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrsRoute = PrsRouteImport.update({
+  id: '/prs',
+  path: '/prs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -107,7 +119,9 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/prs': typeof PrsRoute
   '/register': typeof RegisterRoute
+  '/stats': typeof StatsRoute
   '/plans/new': typeof PlansNewRoute
   '/workout/active': typeof WorkoutActiveRoute
   '/workout/select-day': typeof WorkoutSelectDayRoute
@@ -124,7 +138,9 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/prs': typeof PrsRoute
   '/register': typeof RegisterRoute
+  '/stats': typeof StatsRoute
   '/plans/new': typeof PlansNewRoute
   '/workout/active': typeof WorkoutActiveRoute
   '/workout/select-day': typeof WorkoutSelectDayRoute
@@ -142,7 +158,9 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/prs': typeof PrsRoute
   '/register': typeof RegisterRoute
+  '/stats': typeof StatsRoute
   '/plans/new': typeof PlansNewRoute
   '/workout/active': typeof WorkoutActiveRoute
   '/workout/select-day': typeof WorkoutSelectDayRoute
@@ -161,7 +179,9 @@ export interface FileRouteTypes {
     | '/history'
     | '/login'
     | '/profile'
+    | '/prs'
     | '/register'
+    | '/stats'
     | '/plans/new'
     | '/workout/active'
     | '/workout/select-day'
@@ -178,7 +198,9 @@ export interface FileRouteTypes {
     | '/history'
     | '/login'
     | '/profile'
+    | '/prs'
     | '/register'
+    | '/stats'
     | '/plans/new'
     | '/workout/active'
     | '/workout/select-day'
@@ -195,7 +217,9 @@ export interface FileRouteTypes {
     | '/history'
     | '/login'
     | '/profile'
+    | '/prs'
     | '/register'
+    | '/stats'
     | '/plans/new'
     | '/workout/active'
     | '/workout/select-day'
@@ -213,7 +237,9 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
+  PrsRoute: typeof PrsRoute
   RegisterRoute: typeof RegisterRoute
+  StatsRoute: typeof StatsRoute
   PlansNewRoute: typeof PlansNewRoute
   WorkoutActiveRoute: typeof WorkoutActiveRoute
   WorkoutSelectDayRoute: typeof WorkoutSelectDayRoute
@@ -227,11 +253,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prs': {
+      id: '/prs'
+      path: '/prs'
+      fullPath: '/prs'
+      preLoaderRoute: typeof PrsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -341,7 +381,9 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
+  PrsRoute: PrsRoute,
   RegisterRoute: RegisterRoute,
+  StatsRoute: StatsRoute,
   PlansNewRoute: PlansNewRoute,
   WorkoutActiveRoute: WorkoutActiveRoute,
   WorkoutSelectDayRoute: WorkoutSelectDayRoute,

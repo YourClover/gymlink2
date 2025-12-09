@@ -53,6 +53,7 @@ function ActiveWorkoutPage() {
 
   // Modal states
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
+  const [showIncompleteConfirm, setShowIncompleteConfirm] = useState(false)
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [loggingExercise, setLoggingExercise] =
     useState<WorkoutExercise | null>(null)
@@ -254,9 +255,36 @@ function ActiveWorkoutPage() {
     }
   }
 
+  // Check if all planned sets are complete
+  const hasIncompleteSets = () => {
+    for (const ex of exercises) {
+      const targetSets = ex.planExercise?.targetSets ?? 0
+      const completedSets = ex.sets.filter((s) => !s.isWarmup).length
+      if (targetSets > 0 && completedSets < targetSets) {
+        return true
+      }
+    }
+    return false
+  }
+
   // Handle finish workout
   const handleFinish = () => {
     if (session) {
+      if (hasIncompleteSets()) {
+        setShowIncompleteConfirm(true)
+      } else {
+        navigate({
+          to: '/workout/summary/$sessionId',
+          params: { sessionId: session.id },
+        })
+      }
+    }
+  }
+
+  // Confirm finish with incomplete sets
+  const handleConfirmFinish = () => {
+    if (session) {
+      setShowIncompleteConfirm(false)
       navigate({
         to: '/workout/summary/$sessionId',
         params: { sessionId: session.id },
@@ -407,6 +435,17 @@ function ActiveWorkoutPage() {
         onConfirm={handleDiscard}
         onCancel={() => setShowDiscardConfirm(false)}
         variant="danger"
+      />
+
+      {/* Incomplete Sets Confirmation */}
+      <ConfirmDialog
+        isOpen={showIncompleteConfirm}
+        title="Finish Early?"
+        message="You still have incomplete sets in your workout. Are you sure you want to finish?"
+        confirmText="Finish Anyway"
+        cancelText="Keep Going"
+        onConfirm={handleConfirmFinish}
+        onCancel={() => setShowIncompleteConfirm(false)}
       />
 
       {/* PR Celebration */}

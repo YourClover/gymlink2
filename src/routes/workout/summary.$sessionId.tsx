@@ -127,10 +127,15 @@ function WorkoutSummaryPage() {
 
     const exerciseIds = new Set(session.workoutSets.map((s) => s.exerciseId))
 
+    // Use stored duration if completed, otherwise calculate from startedAt
+    const duration = session.durationSeconds
+      ? session.durationSeconds
+      : Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000)
+
     return {
       totalSets: workingSets.length,
       totalVolume,
-      duration: session.durationSeconds || 0,
+      duration,
       exerciseCount: exerciseIds.size,
     }
   }

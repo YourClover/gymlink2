@@ -68,7 +68,18 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
     }
   })
 
-// Helper function to calculate workout streak
+// Helper function to get the start of a week (Monday) for a given date
+function getWeekStart(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  const day = d.getDay()
+  // Adjust to Monday (day 0 = Sunday, so we need to go back 6 days; day 1 = Monday, go back 0 days)
+  const diff = day === 0 ? 6 : day - 1
+  d.setDate(d.getDate() - diff)
+  return d
+}
+
+// Helper function to calculate weekly workout streak
 async function calculateStreak(userId: string): Promise<number> {
   // Get all completed workout dates, newest first
   const workouts = await prisma.workoutSession.findMany({
@@ -86,46 +97,47 @@ async function calculateStreak(userId: string): Promise<number> {
 
   if (workouts.length === 0) return 0
 
-  // Get unique dates (normalize to date only)
-  const workoutDates = new Set<string>()
+  // Get unique weeks (by week start date)
+  const workoutWeeks = new Set<string>()
   for (const workout of workouts) {
     if (workout.completedAt) {
-      const dateStr = workout.completedAt.toISOString().split('T')[0]
-      workoutDates.add(dateStr)
+      const weekStart = getWeekStart(workout.completedAt)
+      workoutWeeks.add(weekStart.toISOString().split('T')[0])
     }
   }
 
-  const uniqueDates = Array.from(workoutDates).sort().reverse()
+  const uniqueWeeks = Array.from(workoutWeeks).sort().reverse()
 
-  // Check if there's a workout today or yesterday to start counting
+  // Get current week and last week
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
+  const currentWeekStart = getWeekStart(today)
+  const lastWeekStart = new Date(currentWeekStart)
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7)
 
-  const todayStr = today.toISOString().split('T')[0]
-  const yesterdayStr = yesterday.toISOString().split('T')[0]
+  const currentWeekStr = currentWeekStart.toISOString().split('T')[0]
+  const lastWeekStr = lastWeekStart.toISOString().split('T')[0]
 
-  // Streak must start from today or yesterday
-  if (uniqueDates[0] !== todayStr && uniqueDates[0] !== yesterdayStr) {
+  // Streak must include current week or last week
+  if (uniqueWeeks[0] !== currentWeekStr && uniqueWeeks[0] !== lastWeekStr) {
     return 0
   }
 
-  // Count consecutive days
+  // Count consecutive weeks
   let streak = 0
-  const expectedDate = uniqueDates[0] === todayStr ? today : yesterday
+  const expectedWeek = new Date(
+    uniqueWeeks[0] === currentWeekStr ? currentWeekStart : lastWeekStart,
+  )
 
-  for (const dateStr of uniqueDates) {
-    const expectedStr = expectedDate.toISOString().split('T')[0]
+  for (const weekStr of uniqueWeeks) {
+    const expectedStr = expectedWeek.toISOString().split('T')[0]
 
-    if (dateStr === expectedStr) {
+    if (weekStr === expectedStr) {
       streak++
-      expectedDate.setDate(expectedDate.getDate() - 1)
-    } else if (dateStr < expectedStr) {
-      // Gap in dates, streak broken
+      expectedWeek.setDate(expectedWeek.getDate() - 7)
+    } else if (weekStr < expectedStr) {
+      // Gap in weeks, streak broken
       break
     }
-    // If dateStr > expectedStr, skip (shouldn't happen with sorted desc)
   }
 
   return streak

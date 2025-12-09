@@ -2,9 +2,11 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import {
   ChevronRight,
   Dumbbell,
+  History,
   LogOut,
   Mail,
   Settings,
+  Trophy,
   User,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -33,6 +35,33 @@ function ProfilePage() {
               <Mail className="w-4 h-4" />
               <span className="truncate">{user?.email}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Activity Section */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-zinc-400 px-1">Activity</h3>
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+            <Link
+              to="/history"
+              className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <History className="w-5 h-5 text-zinc-400" />
+                <span className="text-white">Workout History</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-zinc-500" />
+            </Link>
+            <Link
+              to="/prs"
+              className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Trophy className="w-5 h-5 text-zinc-400" />
+                <span className="text-white">My PRs</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-zinc-500" />
+            </Link>
           </div>
         </div>
 

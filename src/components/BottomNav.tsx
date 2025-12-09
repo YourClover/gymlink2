@@ -1,11 +1,11 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { ClipboardList, Dumbbell, History, Home, User } from 'lucide-react'
+import { BarChart3, ClipboardList, Dumbbell, Home, User } from 'lucide-react'
 
 const navItems = [
   { to: '/dashboard', icon: Home, label: 'Home' },
   { to: '/plans', icon: ClipboardList, label: 'Plans' },
   { to: '/workout', icon: Dumbbell, label: 'Workout' },
-  { to: '/history', icon: History, label: 'History' },
+  { to: '/stats', icon: BarChart3, label: 'Stats' },
   { to: '/profile', icon: User, label: 'Profile' },
 ] as const
 

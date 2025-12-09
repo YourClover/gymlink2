@@ -370,6 +370,14 @@ export const getRecentWorkouts = createServerFn({ method: 'GET' })
         planDay: {
           select: { name: true },
         },
+        workoutSets: {
+          select: {
+            exercise: {
+              select: { name: true, muscleGroup: true },
+            },
+          },
+          distinct: ['exerciseId'],
+        },
         _count: {
           select: { workoutSets: true },
         },

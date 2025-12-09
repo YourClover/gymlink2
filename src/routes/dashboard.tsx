@@ -112,8 +112,8 @@ function DashboardPage() {
   // Get motivational subtext based on stats
   const getSubtext = () => {
     if (!stats) return 'Ready to crush your workout?'
-    if (stats.currentStreak >= 7)
-      return `${stats.currentStreak} day streak! Keep it going!`
+    if (stats.currentStreak >= 4)
+      return `${stats.currentStreak} week streak! Keep it going!`
     if (stats.workoutsThisWeek >= 3) return "You're on fire this week!"
     if (stats.workoutsThisWeek > 0) return 'Great progress this week!'
     return 'Ready to crush your workout?'
@@ -324,7 +324,7 @@ function DashboardPage() {
                   icon={<Calendar className="w-5 h-5" />}
                   label="Streak"
                   value={stats?.currentStreak.toString() ?? '0'}
-                  subtext="days"
+                  subtext={stats?.currentStreak === 1 ? 'week' : 'weeks'}
                 />
                 <StatCard
                   icon={<Trophy className="w-5 h-5" />}
