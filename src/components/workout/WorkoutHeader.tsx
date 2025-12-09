@@ -27,7 +27,7 @@ export default function WorkoutHeader({
   planName,
   dayName,
 }: WorkoutHeaderProps) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null)
 
   useEffect(() => {
     // Calculate initial elapsed time
@@ -66,7 +66,7 @@ export default function WorkoutHeader({
             </p>
           )}
           <p className="text-lg font-mono font-semibold text-white">
-            {formatDuration(elapsedSeconds)}
+            {elapsedSeconds !== null ? formatDuration(elapsedSeconds) : '0:00'}
           </p>
         </div>
 

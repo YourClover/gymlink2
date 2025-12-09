@@ -81,6 +81,7 @@ function DashboardPage() {
   const [suggestion, setSuggestion] = useState<WorkoutSuggestion | null>(null)
   const [recentWorkouts, setRecentWorkouts] = useState<Array<RecentWorkout>>([])
   const [startingWorkout, setStartingWorkout] = useState(false)
+  const [greeting, setGreeting] = useState('Welcome')
 
   // Fetch all dashboard data
   useEffect(() => {
@@ -110,13 +111,13 @@ function DashboardPage() {
     fetchData()
   }, [user, location.search])
 
-  // Get time-based greeting
-  const getGreeting = () => {
+  // Set time-based greeting after hydration
+  useEffect(() => {
     const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 17) return 'Good afternoon'
-    return 'Good evening'
-  }
+    if (hour < 12) setGreeting('Good morning')
+    else if (hour < 17) setGreeting('Good afternoon')
+    else setGreeting('Good evening')
+  }, [])
 
   // Get motivational subtext based on stats
   const getSubtext = () => {
@@ -160,7 +161,7 @@ function DashboardPage() {
             {/* Welcome Section */}
             <div className="space-y-1">
               <h1 className="text-2xl font-bold text-white">
-                {getGreeting()}, {user?.name.split(' ')[0] ?? 'there'}!
+                {greeting}, {user?.name.split(' ')[0] ?? 'there'}!
               </h1>
               <p className="text-zinc-400">{getSubtext()}</p>
             </div>

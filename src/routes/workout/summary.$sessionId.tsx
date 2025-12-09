@@ -60,6 +60,11 @@ function WorkoutSummaryPage() {
     null,
   )
 
+  // Calculated duration for incomplete sessions (avoids hydration mismatch)
+  const [calculatedDuration, setCalculatedDuration] = useState<number | null>(
+    null,
+  )
+
   // Fetch session data
   useEffect(() => {
     const fetchSession = async () => {
@@ -79,6 +84,15 @@ function WorkoutSummaryPage() {
         setSession(result.session)
         setNotes(result.session.notes || '')
         setMoodRating(result.session.moodRating || undefined)
+
+        // Calculate duration for incomplete sessions after hydration
+        if (!result.session.durationSeconds) {
+          setCalculatedDuration(
+            Math.floor(
+              (Date.now() - new Date(result.session.startedAt).getTime()) / 1000,
+            ),
+          )
+        }
       } catch (error) {
         console.error('Failed to fetch session:', error)
       } finally {
@@ -127,10 +141,8 @@ function WorkoutSummaryPage() {
 
     const exerciseIds = new Set(session.workoutSets.map((s) => s.exerciseId))
 
-    // Use stored duration if completed, otherwise calculate from startedAt
-    const duration = session.durationSeconds
-      ? session.durationSeconds
-      : Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000)
+    // Use stored duration if completed, otherwise use calculated duration
+    const duration = session.durationSeconds ?? calculatedDuration ?? 0
 
     return {
       totalSets: workingSets.length,
