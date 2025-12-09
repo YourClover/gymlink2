@@ -29,7 +29,7 @@ type ActiveSession = {
 
 type RecentWorkout = {
   id: string
-  completedAt: Date
+  completedAt: Date | null
   durationSeconds: number | null
   workoutPlan?: { name: string } | null
   planDay?: { name: string } | null
@@ -251,7 +251,7 @@ function WorkoutPage() {
                           </h4>
                           <div className="flex items-center gap-3 text-sm text-zinc-500">
                             <span>
-                              {formatDate(workout.completedAt as Date)}
+                              {workout.completedAt && formatDate(workout.completedAt)}
                             </span>
                             {workout.durationSeconds && (
                               <span className="flex items-center gap-1">
