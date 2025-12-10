@@ -1,5 +1,6 @@
 import { Navigate } from '@tanstack/react-router'
 import BottomNav from './BottomNav'
+import { NotificationBell } from './notifications/NotificationBell'
 import type { ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContext'
 
@@ -7,12 +8,14 @@ interface AppLayoutProps {
   children: ReactNode
   title?: string
   showNav?: boolean
+  showNotifications?: boolean
 }
 
 export default function AppLayout({
   children,
   title,
   showNav = true,
+  showNotifications = true,
 }: AppLayoutProps) {
   const { user } = useAuth()
 
@@ -26,8 +29,9 @@ export default function AppLayout({
       {/* Header */}
       {title && (
         <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
-          <div className="px-4 py-4">
+          <div className="px-4 py-4 flex items-center justify-between">
             <h1 className="text-xl font-bold text-white">{title}</h1>
+            {showNotifications && <NotificationBell />}
           </div>
         </header>
       )}

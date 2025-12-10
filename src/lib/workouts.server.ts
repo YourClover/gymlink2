@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { RecordType, WeightUnit } from '@prisma/client'
 import { prisma } from './db'
 import { checkAchievements } from './achievements.server'
+import { updateChallengeProgress } from './challenges.server'
 
 // ============================================
 // SESSION MANAGEMENT
@@ -119,9 +120,16 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
     },
   )
   .handler(async ({ data }) => {
-    // Verify ownership
+    // Verify ownership and get plan info for activity metadata
     const existing = await prisma.workoutSession.findFirst({
       where: { id: data.sessionId, userId: data.userId },
+      include: {
+        planDay: {
+          include: {
+            workoutPlan: { select: { name: true } },
+          },
+        },
+      },
     })
 
     if (!existing) {
@@ -141,6 +149,25 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
         notes: data.notes,
         moodRating: data.moodRating,
       },
+    })
+
+    // Create activity feed item for workout completion
+    await prisma.activityFeedItem.create({
+      data: {
+        userId: data.userId,
+        activityType: 'WORKOUT_COMPLETED',
+        referenceId: session.id,
+        metadata: {
+          durationSeconds,
+          planName: existing.planDay?.workoutPlan?.name ?? null,
+          dayName: existing.planDay?.name ?? null,
+        },
+      },
+    })
+
+    // Update challenge progress
+    await updateChallengeProgress({
+      data: { userId: data.userId, sessionId: data.sessionId },
     })
 
     // Check for newly earned achievements
@@ -298,7 +325,7 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
         const previousRecord = existingPR?.value ?? null
 
         if (!existingPR || prScore > existingPR.value) {
-          await prisma.personalRecord.create({
+          const newPR = await prisma.personalRecord.create({
             data: {
               userId,
               exerciseId: setData.exerciseId,
@@ -306,6 +333,23 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
               value: prScore,
               workoutSetId: workoutSet.id,
               previousRecord: previousRecord,
+            },
+          })
+
+          // Create activity feed item for PR achieved
+          await prisma.activityFeedItem.create({
+            data: {
+              userId,
+              activityType: 'PR_ACHIEVED',
+              referenceId: newPR.id,
+              metadata: {
+                exerciseName: workoutSet.exercise.name,
+                recordType,
+                value: prScore,
+                weight: weight > 0 ? weight : null,
+                reps: reps > 0 ? reps : null,
+                timeSeconds: time > 0 ? time : null,
+              },
             },
           })
 

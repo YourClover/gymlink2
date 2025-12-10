@@ -69,6 +69,48 @@ enum AchievementRarity {
 }
 
 // ============================================
+// SOCIAL ENUMS
+// ============================================
+
+enum FollowStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum ChallengeType {
+  TOTAL_WORKOUTS
+  TOTAL_VOLUME
+  WORKOUT_STREAK
+  SPECIFIC_EXERCISE
+  TOTAL_SETS
+}
+
+enum ChallengeStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityType {
+  WORKOUT_COMPLETED
+  PR_ACHIEVED
+  ACHIEVEMENT_EARNED
+  CHALLENGE_JOINED
+  CHALLENGE_COMPLETED
+}
+
+enum NotificationType {
+  FOLLOW_REQUEST
+  FOLLOW_ACCEPTED
+  CHALLENGE_INVITE
+  CHALLENGE_STARTED
+  CHALLENGE_ENDED
+  ACHIEVEMENT_EARNED
+}
+
+// ============================================
 // MODELS
 // ============================================
 
@@ -88,6 +130,15 @@ model User {
   personalRecords  PersonalRecord[]
   planShareCodes   PlanShareCode[]
   userAchievements UserAchievement[]
+
+  // Social relations
+  profile                 UserProfile?
+  followers               Follow[]               @relation("FollowingRelation")
+  following               Follow[]               @relation("FollowerRelation")
+  activityFeedItems       ActivityFeedItem[]
+  createdChallenges       Challenge[]
+  challengeParticipations ChallengeParticipant[]
+  notifications           Notification[]
 
   @@map("users")
 }
@@ -164,6 +215,7 @@ model Exercise {
   planExercises   PlanExercise[]
   workoutSets     WorkoutSet[]
   personalRecords PersonalRecord[]
+  challenges      Challenge[]
 
   @@index([userId])
   @@map("exercises")
@@ -290,4 +342,123 @@ model UserAchievement {
   @@index([userId])
   @@index([achievementId])
   @@map("user_achievements")
+}
+
+// ============================================
+// SOCIAL MODELS
+// ============================================
+
+model UserProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique @map("user_id")
+  username         String   @unique
+  bio              String?
+  avatarUrl        String?  @map("avatar_url")
+  isPrivate        Boolean  @default(true) @map("is_private")
+  showAchievements Boolean  @default(true) @map("show_achievements")
+  showStats        Boolean  @default(true) @map("show_stats")
+  profileCode      String   @unique @map("profile_code")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([username])
+  @@index([profileCode])
+  @@map("user_profiles")
+}
+
+model Follow {
+  id          String       @id @default(uuid())
+  followerId  String       @map("follower_id")
+  followingId String       @map("following_id")
+  status      FollowStatus @default(PENDING)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  respondedAt DateTime?    @map("responded_at")
+
+  follower  User @relation("FollowerRelation", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("FollowingRelation", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([status])
+  @@map("follows")
+}
+
+model ActivityFeedItem {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  activityType ActivityType @map("activity_type")
+  referenceId  String?      @map("reference_id")
+  metadata     Json         @default("{}")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activity_feed_items")
+}
+
+model Challenge {
+  id              String          @id @default(uuid())
+  creatorId       String          @map("creator_id")
+  name            String
+  description     String?
+  challengeType   ChallengeType   @map("challenge_type")
+  targetValue     Float           @map("target_value")
+  exerciseId      String?         @map("exercise_id")
+  status          ChallengeStatus @default(UPCOMING)
+  startDate       DateTime        @map("start_date")
+  endDate         DateTime        @map("end_date")
+  isPublic        Boolean         @default(false) @map("is_public")
+  inviteCode      String?         @unique @map("invite_code")
+  maxParticipants Int?            @map("max_participants")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  creator      User                   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  exercise     Exercise?              @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  participants ChallengeParticipant[]
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([inviteCode])
+  @@map("challenges")
+}
+
+model ChallengeParticipant {
+  id          String    @id @default(uuid())
+  challengeId String    @map("challenge_id")
+  userId      String    @map("user_id")
+  progress    Float     @default(0)
+  completedAt DateTime? @map("completed_at")
+  joinedAt    DateTime  @default(now()) @map("joined_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([challengeId])
+  @@index([userId])
+  @@map("challenge_participants")
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String           @map("user_id")
+  type        NotificationType
+  title       String
+  message     String
+  referenceId String?          @map("reference_id")
+  isRead      Boolean          @default(false) @map("is_read")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

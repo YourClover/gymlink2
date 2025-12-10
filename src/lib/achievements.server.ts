@@ -176,11 +176,25 @@ export const checkAchievements = createServerFn({ method: 'POST' })
       }
 
       if (earned) {
-        await prisma.userAchievement.create({
+        const userAchievement = await prisma.userAchievement.create({
           data: {
             userId: data.userId,
             achievementId: achievement.id,
             notified: false,
+          },
+        })
+
+        // Create activity feed item for achievement earned
+        await prisma.activityFeedItem.create({
+          data: {
+            userId: data.userId,
+            activityType: 'ACHIEVEMENT_EARNED',
+            referenceId: userAchievement.id,
+            metadata: {
+              achievementName: achievement.name,
+              achievementIcon: achievement.icon,
+              achievementRarity: achievement.rarity,
+            },
           },
         })
 
