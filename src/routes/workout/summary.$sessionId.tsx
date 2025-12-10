@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
+  ArrowLeft,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -285,7 +286,13 @@ function WorkoutSummaryPage() {
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800">
-        <div className="flex items-center justify-center px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button
+            onClick={() => window.history.back()}
+            className="p-2 -ml-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
           <h1 className="text-lg font-semibold text-white">Workout Summary</h1>
         </div>
       </header>

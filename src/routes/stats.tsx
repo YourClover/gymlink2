@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   BarChart3,
@@ -6,6 +6,7 @@ import {
   Clock,
   Dumbbell,
   Flame,
+  LineChart,
   TrendingUp,
   Trophy,
   Weight,
@@ -95,6 +96,7 @@ function formatPRDisplay(pr: PRData): string {
 
 function StatsPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
   const [overview, setOverview] = useState<OverviewStats | null>(null)
@@ -268,9 +270,21 @@ function StatsPage() {
                       />
                     )}
                   </div>
-                  <div className="text-sm text-zinc-400">
+                  <div className="text-sm text-zinc-400 mr-2">
                     {ex.setCount} sets
                   </div>
+                  <button
+                    onClick={() =>
+                      navigate({
+                        to: '/progress/$exerciseId',
+                        params: { exerciseId: ex.exerciseId },
+                      })
+                    }
+                    className="p-2 text-zinc-400 hover:text-blue-400 rounded-lg hover:bg-zinc-700/50 transition-colors focus:outline-none active:scale-95"
+                    title="View progress"
+                  >
+                    <LineChart className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
