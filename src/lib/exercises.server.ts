@@ -137,3 +137,47 @@ export const deleteExercise = createServerFn({ method: 'POST' })
 
     return { success: true }
   })
+
+// Update a custom exercise (only owner can update)
+export const updateExercise = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: {
+      id: string
+      name?: string
+      description?: string
+      muscleGroup?: MuscleGroup
+      equipment?: Equipment
+      exerciseType?: ExerciseType
+      isTimed?: boolean
+      instructions?: string
+      userId: string
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { id, userId, ...updateData } = data
+
+    // Verify ownership and that it's a custom exercise
+    const existing = await prisma.exercise.findUnique({
+      where: { id },
+      select: { userId: true, isCustom: true },
+    })
+
+    if (!existing) {
+      throw new Error('Exercise not found')
+    }
+
+    if (!existing.isCustom) {
+      throw new Error('Cannot edit built-in exercises')
+    }
+
+    if (existing.userId !== userId) {
+      throw new Error('Not authorized to edit this exercise')
+    }
+
+    const exercise = await prisma.exercise.update({
+      where: { id },
+      data: updateData,
+    })
+
+    return { exercise }
+  })

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { Dumbbell, Plus } from 'lucide-react'
+import { Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Equipment, Exercise, MuscleGroup } from '@prisma/client'
 import type { ExerciseFormData } from '@/components/forms/ExerciseForm'
 import AppLayout from '@/components/AppLayout'
@@ -9,8 +9,14 @@ import EmptyState from '@/components/ui/EmptyState'
 import ExerciseCard from '@/components/exercises/ExerciseCard'
 import ExerciseFilters from '@/components/exercises/ExerciseFilters'
 import Modal from '@/components/ui/Modal'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import ExerciseForm from '@/components/forms/ExerciseForm'
-import { createExercise, getExercises } from '@/lib/exercises.server'
+import {
+  createExercise,
+  deleteExercise,
+  getExercises,
+  updateExercise,
+} from '@/lib/exercises.server'
 import { useAuth } from '@/context/AuthContext'
 
 export const Route = createFileRoute('/exercises/')({
@@ -29,6 +35,10 @@ function ExercisesPage() {
   )
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [exerciseToEdit, setExerciseToEdit] = useState<Exercise | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   // Fetch exercises
   useEffect(() => {
@@ -85,6 +95,46 @@ function ExercisesPage() {
       setShowCreateModal(false)
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  const handleEditExercise = async (data: ExerciseFormData) => {
+    if (!user?.id || !exerciseToEdit) return
+
+    setIsUpdating(true)
+    try {
+      await updateExercise({
+        data: {
+          id: exerciseToEdit.id,
+          ...data,
+          userId: user.id,
+        },
+      })
+      await refreshExercises()
+      setShowEditModal(false)
+      setExerciseToEdit(null)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleDeleteExercise = async () => {
+    if (!user?.id || !exerciseToEdit) return
+
+    setIsUpdating(true)
+    try {
+      await deleteExercise({
+        data: {
+          id: exerciseToEdit.id,
+          userId: user.id,
+        },
+      })
+      await refreshExercises()
+      setShowDeleteConfirm(false)
+      setExerciseToEdit(null)
+      setSelectedExercise(null)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -189,6 +239,34 @@ function ExercisesPage() {
                 <p className="text-white">{selectedExercise.instructions}</p>
               </div>
             )}
+
+            {selectedExercise.isCustom &&
+              selectedExercise.userId === user?.id && (
+                <div className="flex gap-3 pt-4 border-t border-zinc-800">
+                  <button
+                    onClick={() => {
+                      setExerciseToEdit(selectedExercise)
+                      setSelectedExercise(null)
+                      setShowEditModal(true)
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-zinc-800 text-white font-medium rounded-xl hover:bg-zinc-700 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setExerciseToEdit(selectedExercise)
+                      setSelectedExercise(null)
+                      setShowDeleteConfirm(true)
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600/20 text-red-400 font-medium rounded-xl hover:bg-red-600/30 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </button>
+                </div>
+              )}
           </div>
         )}
       </Modal>
@@ -205,6 +283,50 @@ function ExercisesPage() {
           isLoading={isCreating}
         />
       </Modal>
+
+      {/* Edit Exercise Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setExerciseToEdit(null)
+        }}
+        title="Edit Exercise"
+      >
+        {exerciseToEdit && (
+          <ExerciseForm
+            initialData={{
+              name: exerciseToEdit.name,
+              description: exerciseToEdit.description ?? undefined,
+              muscleGroup: exerciseToEdit.muscleGroup,
+              equipment: exerciseToEdit.equipment,
+              exerciseType: exerciseToEdit.exerciseType,
+              isTimed: exerciseToEdit.isTimed,
+              instructions: exerciseToEdit.instructions ?? undefined,
+            }}
+            onSubmit={handleEditExercise}
+            onCancel={() => {
+              setShowEditModal(false)
+              setExerciseToEdit(null)
+            }}
+            isLoading={isUpdating}
+          />
+        )}
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Exercise"
+        message={`Are you sure you want to delete "${exerciseToEdit?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        onConfirm={handleDeleteExercise}
+        onCancel={() => {
+          setShowDeleteConfirm(false)
+          setExerciseToEdit(null)
+        }}
+        variant="danger"
+      />
     </AppLayout>
   )
 }

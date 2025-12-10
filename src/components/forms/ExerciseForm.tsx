@@ -12,9 +12,11 @@ export interface ExerciseFormData {
 }
 
 interface ExerciseFormProps {
+  initialData?: ExerciseFormData
   onSubmit: (data: ExerciseFormData) => Promise<void>
   onCancel?: () => void
   isLoading?: boolean
+  submitLabel?: string
 }
 
 const muscleGroups: Array<{ value: MuscleGroup; label: string }> = [
@@ -47,17 +49,27 @@ const exerciseTypes: Array<{ value: ExerciseType; label: string }> = [
 ]
 
 export default function ExerciseForm({
+  initialData,
   onSubmit,
   onCancel,
   isLoading = false,
+  submitLabel,
 }: ExerciseFormProps) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>('CHEST')
-  const [equipment, setEquipment] = useState<Equipment>('BARBELL')
-  const [exerciseType, setExerciseType] = useState<ExerciseType>('STRENGTH')
-  const [isTimed, setIsTimed] = useState(false)
-  const [instructions, setInstructions] = useState('')
+  const [name, setName] = useState(initialData?.name ?? '')
+  const [description, setDescription] = useState(initialData?.description ?? '')
+  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>(
+    initialData?.muscleGroup ?? 'CHEST',
+  )
+  const [equipment, setEquipment] = useState<Equipment>(
+    initialData?.equipment ?? 'BARBELL',
+  )
+  const [exerciseType, setExerciseType] = useState<ExerciseType>(
+    initialData?.exerciseType ?? 'STRENGTH',
+  )
+  const [isTimed, setIsTimed] = useState(initialData?.isTimed ?? false)
+  const [instructions, setInstructions] = useState(
+    initialData?.instructions ?? '',
+  )
   const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -241,7 +253,9 @@ export default function ExerciseForm({
           disabled={isLoading || !name.trim()}
           className="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed transition-colors"
         >
-          {isLoading ? 'Creating...' : 'Create Exercise'}
+          {isLoading
+            ? 'Saving...'
+            : (submitLabel ?? (initialData ? 'Save Changes' : 'Create Exercise'))}
         </button>
       </div>
     </form>
