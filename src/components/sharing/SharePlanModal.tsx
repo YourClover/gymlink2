@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Copy, Check, Share2 } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import { generateShareCode } from '@/lib/sharing.server'
@@ -25,6 +25,7 @@ export default function SharePlanModal({
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [expiryText, setExpiryText] = useState('')
 
   const handleGenerateCode = async () => {
     if (!user) return
@@ -89,16 +90,19 @@ export default function SharePlanModal({
     setShareCode(null)
     setCopied(false)
     setError(null)
+    setExpiryText('')
     onClose()
   }
 
-  const formatExpiry = (date: Date) => {
-    const days = Math.ceil(
-      (date.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-    )
-    if (days === 1) return 'Expires in 1 day'
-    return `Expires in ${days} days`
-  }
+  // Calculate expiry text after hydration to avoid mismatch
+  useEffect(() => {
+    if (shareCode?.expiresAt) {
+      const days = Math.ceil(
+        (shareCode.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      )
+      setExpiryText(days === 1 ? 'Expires in 1 day' : `Expires in ${days} days`)
+    }
+  }, [shareCode?.expiresAt])
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Share Plan">
@@ -146,7 +150,7 @@ export default function SharePlanModal({
                 {shareCode.code}
               </p>
               <p className="text-zinc-500 text-sm mt-2">
-                {formatExpiry(shareCode.expiresAt)}
+                {expiryText}
               </p>
             </div>
 
