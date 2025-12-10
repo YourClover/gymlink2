@@ -16,6 +16,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AchievementsRouteImport } from './routes/achievements'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkoutIndexRouteImport } from './routes/workout/index'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
@@ -60,6 +61,11 @@ const HistoryRoute = HistoryRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AchievementsRoute = AchievementsRouteImport.update({
+  id: '/achievements',
+  path: '/achievements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -115,6 +121,7 @@ const PlansPlanIdDayDayIdRoute = PlansPlanIdDayDayIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
@@ -154,6 +162,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/achievements'
     | '/dashboard'
     | '/history'
     | '/login'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/achievements'
     | '/dashboard'
     | '/history'
     | '/login'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/achievements'
     | '/dashboard'
     | '/history'
     | '/login'
@@ -233,6 +245,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AchievementsRoute: typeof AchievementsRoute
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
   LoginRoute: typeof LoginRoute
@@ -300,6 +313,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/achievements': {
+      id: '/achievements'
+      path: '/achievements'
+      fullPath: '/achievements'
+      preLoaderRoute: typeof AchievementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -377,6 +397,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AchievementsRoute: AchievementsRoute,
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
   LoginRoute: LoginRoute,

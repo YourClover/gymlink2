@@ -1,5 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import {
+  Award,
   ChevronRight,
   Dumbbell,
   History,
@@ -11,13 +13,51 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
+import { AchievementBadge } from '@/components/achievements'
+import { getUserAchievements } from '@/lib/achievements.server'
+import type { AchievementRarity } from '@prisma/client'
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
 })
 
+interface RecentAchievement {
+  id: string
+  icon: string
+  rarity: AchievementRarity
+  name: string
+}
+
 function ProfilePage() {
   const { user, logout, isLoading } = useAuth()
+  const [recentAchievements, setRecentAchievements] = useState<RecentAchievement[]>([])
+  const [achievementStats, setAchievementStats] = useState({ earned: 0, total: 0 })
+
+  useEffect(() => {
+    async function loadAchievements() {
+      if (!user?.id) return
+
+      try {
+        const result = await getUserAchievements({ data: { userId: user.id } })
+        setAchievementStats({
+          earned: result.earnedCount,
+          total: result.totalCount,
+        })
+        // Get the 4 most recent earned achievements
+        const recent = result.earned.slice(0, 4).map((ua) => ({
+          id: ua.achievement.id,
+          icon: ua.achievement.icon,
+          rarity: ua.achievement.rarity,
+          name: ua.achievement.name,
+        }))
+        setRecentAchievements(recent)
+      } catch (error) {
+        console.error('Failed to load achievements:', error)
+      }
+    }
+
+    loadAchievements()
+  }, [user?.id])
 
   return (
     <AppLayout title="Profile">
@@ -35,6 +75,50 @@ function ProfilePage() {
               <Mail className="w-4 h-4" />
               <span className="truncate">{user?.email}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Achievements Section */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-zinc-400 px-1">Achievements</h3>
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-4">
+            <Link
+              to="/achievements"
+              className="flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
+            >
+              <div className="flex items-center gap-3">
+                <Award className="w-5 h-5 text-amber-400" />
+                <span className="text-white font-medium">
+                  {achievementStats.earned} badges earned
+                </span>
+                <span className="text-zinc-500 text-sm">
+                  / {achievementStats.total}
+                </span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-zinc-500" />
+            </Link>
+
+            {recentAchievements.length > 0 ? (
+              <div className="flex gap-3">
+                {recentAchievements.map((achievement) => (
+                  <div key={achievement.id} className="flex flex-col items-center gap-1">
+                    <AchievementBadge
+                      icon={achievement.icon}
+                      rarity={achievement.rarity}
+                      earned={true}
+                      size="md"
+                    />
+                    <span className="text-xs text-zinc-500 text-center truncate w-14">
+                      {achievement.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-500">
+                Complete workouts to earn badges!
+              </p>
+            )}
           </div>
         </div>
 

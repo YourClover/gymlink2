@@ -9,16 +9,26 @@ import {
   Trophy,
   Weight,
 } from 'lucide-react'
-import type { Exercise, WorkoutSet } from '@prisma/client'
+import type { AchievementRarity, Exercise, WorkoutSet } from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import MoodRating from '@/components/workout/MoodRating'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
+import { AchievementToast } from '@/components/achievements'
 import {
   completeWorkoutSession,
   getWorkoutSession,
 } from '@/lib/workouts.server'
 import { useAuth } from '@/context/AuthContext'
+
+interface NewAchievement {
+  id: string
+  code: string
+  name: string
+  description: string
+  rarity: AchievementRarity
+  icon: string
+}
 
 export const Route = createFileRoute('/workout/summary/$sessionId')({
   component: WorkoutSummaryPage,
@@ -64,6 +74,18 @@ function WorkoutSummaryPage() {
   const [calculatedDuration, setCalculatedDuration] = useState<number | null>(
     null,
   )
+
+  // Achievement toasts
+  const [pendingAchievements, setPendingAchievements] = useState<NewAchievement[]>([])
+  const [currentAchievement, setCurrentAchievement] = useState<NewAchievement | null>(null)
+
+  // Show achievements one by one
+  useEffect(() => {
+    if (!currentAchievement && pendingAchievements.length > 0) {
+      setCurrentAchievement(pendingAchievements[0])
+      setPendingAchievements((prev) => prev.slice(1))
+    }
+  }, [currentAchievement, pendingAchievements])
 
   // Fetch session data
   useEffect(() => {
@@ -178,7 +200,7 @@ function WorkoutSummaryPage() {
 
     setSaving(true)
     try {
-      await completeWorkoutSession({
+      const result = await completeWorkoutSession({
         data: {
           sessionId: session.id,
           userId: user.id,
@@ -186,7 +208,25 @@ function WorkoutSummaryPage() {
           moodRating: moodRating,
         },
       })
-      navigate({ to: '/workout', search: { completed: Date.now() } })
+
+      // Show achievement toasts if any were earned
+      if (result.newAchievements && result.newAchievements.length > 0) {
+        setPendingAchievements(result.newAchievements)
+        // Update session to show as completed
+        setSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                completedAt: new Date(),
+                durationSeconds: calculatedDuration,
+                notes: notes || null,
+                moodRating: moodRating || null,
+              }
+            : null,
+        )
+      } else {
+        navigate({ to: '/workout', search: { completed: Date.now() } })
+      }
     } catch (error) {
       console.error('Failed to complete workout:', error)
     } finally {
@@ -231,6 +271,18 @@ function WorkoutSummaryPage() {
 
   return (
     <div className="min-h-screen bg-zinc-900 flex flex-col safe-area-pt safe-area-pb">
+      {/* Achievement Toast */}
+      {currentAchievement && (
+        <AchievementToast
+          name={currentAchievement.name}
+          description={currentAchievement.description}
+          icon={currentAchievement.icon}
+          rarity={currentAchievement.rarity}
+          onClose={() => setCurrentAchievement(null)}
+          autoCloseMs={5000}
+        />
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800">
         <div className="flex items-center justify-center px-4 py-4">

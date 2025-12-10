@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { RecordType, WeightUnit } from '@prisma/client'
 import { prisma } from './db'
+import { checkAchievements } from './achievements.server'
 
 // ============================================
 // SESSION MANAGEMENT
@@ -142,7 +143,12 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
       },
     })
 
-    return { session }
+    // Check for newly earned achievements
+    const achievementResult = await checkAchievements({
+      data: { userId: data.userId, triggerType: 'workout_complete' },
+    })
+
+    return { session, newAchievements: achievementResult.newlyEarned }
   })
 
 // Discard/cancel an active workout
