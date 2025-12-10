@@ -1,19 +1,27 @@
 import {
   createFileRoute,
+  Link,
   useLocation,
   useNavigate,
 } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
+  ChevronDown,
   ChevronRight,
-  ClipboardList,
   Clock,
+  Download,
   Dumbbell,
+  Moon,
   Play,
+  Plus,
+  Settings,
   Zap,
 } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
+import EmptyState from '@/components/ui/EmptyState'
+import ImportPlanModal from '@/components/sharing/ImportPlanModal'
 import { useAuth } from '@/context/AuthContext'
+import { getPlan, getPlans } from '@/lib/plans.server'
 import {
   getActiveSession,
   getRecentWorkouts,
@@ -45,29 +53,58 @@ type RecentWorkout = {
   _count: { workoutSets: number }
 }
 
+type Plan = {
+  id: string
+  name: string
+  description: string | null
+  _count: { planDays: number }
+}
+
+type PlanDay = {
+  id: string
+  name: string
+  dayOrder: number
+  restDay: boolean
+  _count?: { planExercises: number }
+}
+
+type PlanWithDays = Plan & {
+  planDays?: Array<PlanDay>
+}
+
 function WorkoutPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
+  // Session and recent workouts state
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null)
   const [recentWorkouts, setRecentWorkouts] = useState<Array<RecentWorkout>>([])
   const [loading, setLoading] = useState(true)
   const [startingQuick, setStartingQuick] = useState(false)
 
-  // Fetch active session and recent workouts
+  // Plans state
+  const [plans, setPlans] = useState<Array<PlanWithDays>>([])
+  const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null)
+  const [loadingDays, setLoadingDays] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [startingWorkout, setStartingWorkout] = useState<string | null>(null)
+
+  // Fetch all data
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return
 
       try {
-        const [sessionResult, recentResult] = await Promise.all([
+        const [sessionResult, recentResult, plansResult] = await Promise.all([
           getActiveSession({ data: { userId: user.id } }),
           getRecentWorkouts({ data: { userId: user.id, limit: 5 } }),
+          getPlans({ data: { userId: user.id } }),
         ])
 
         setActiveSession(sessionResult.session)
         setRecentWorkouts(recentResult.workouts)
+        setPlans(plansResult.plans)
       } catch (error) {
         console.error('Failed to fetch workout data:', error)
       } finally {
@@ -93,8 +130,64 @@ function WorkoutPage() {
     }
   }
 
+  // Load days when plan is expanded
+  const handleExpandPlan = async (planId: string) => {
+    if (expandedPlanId === planId) {
+      setExpandedPlanId(null)
+      return
+    }
+
+    setExpandedPlanId(planId)
+
+    // Check if days already loaded
+    const plan = plans.find((p) => p.id === planId)
+    if (plan?.planDays) return
+
+    setLoadingDays(true)
+    try {
+      if (!user) return
+      const result = await getPlan({ data: { id: planId, userId: user.id } })
+      if (result.plan) {
+        setPlans((prev) =>
+          prev.map((p) =>
+            p.id === planId ? { ...p, planDays: result.plan!.planDays } : p,
+          ),
+        )
+      }
+    } catch (error) {
+      console.error('Failed to fetch plan days:', error)
+    } finally {
+      setLoadingDays(false)
+    }
+  }
+
+  // Start workout from selected day
+  const handleStartWorkout = async (planDay: PlanDay) => {
+    if (!user || planDay.restDay) return
+
+    setStartingWorkout(planDay.id)
+    try {
+      await startWorkoutSession({
+        data: {
+          userId: user.id,
+          planDayId: planDay.id,
+        },
+      })
+      navigate({ to: '/workout/active' })
+    } catch (error) {
+      console.error('Failed to start workout:', error)
+    } finally {
+      setStartingWorkout(null)
+    }
+  }
+
+  // Handle plan import success
+  const handleImportSuccess = (planId: string) => {
+    navigate({ to: '/plans/$planId', params: { planId } })
+  }
+
   return (
-    <AppLayout title="Workout">
+    <AppLayout title="Training">
       <div className="px-4 py-6 space-y-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -133,57 +226,184 @@ function WorkoutPage() {
               </button>
             )}
 
-            {/* Start Options */}
-            <div className="space-y-4">
-              {/* From Plan */}
-              <div className="p-5 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-blue-600/20">
-                    <ClipboardList className="w-6 h-6 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-white mb-1">From Plan</h3>
-                    <p className="text-sm text-zinc-400 mb-3">
-                      Start a workout from your active plan
-                    </p>
-                    <button
-                      onClick={() => navigate({ to: '/workout/select-day' })}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium transition-colors"
-                    >
-                      Select Plan Day
-                    </button>
-                  </div>
+            {/* Quick Workout */}
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-lg bg-green-600/20">
+                  <Zap className="w-5 h-5 text-green-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-white">Quick Workout</h3>
+                  <p className="text-sm text-zinc-500">
+                    Start empty and add exercises as you go
+                  </p>
+                </div>
+                <button
+                  onClick={handleStartQuick}
+                  disabled={startingQuick}
+                  className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  {startingQuick ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                  Start
+                </button>
+              </div>
+            </div>
+
+            {/* Your Plans Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">Your Plans</h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowImportModal(true)}
+                    className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+                    aria-label="Import plan"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                  <Link
+                    to="/plans/new"
+                    className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                    aria-label="Create new plan"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </Link>
                 </div>
               </div>
 
-              {/* Quick Workout */}
-              <div className="p-5 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-green-600/20">
-                    <Zap className="w-6 h-6 text-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-white mb-1">
-                      Quick Workout
-                    </h3>
-                    <p className="text-sm text-zinc-400 mb-3">
-                      Start an empty workout and add exercises as you go
-                    </p>
-                    <button
-                      onClick={handleStartQuick}
-                      disabled={startingQuick}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium transition-colors"
+              {plans.length === 0 ? (
+                <EmptyState
+                  icon={<Dumbbell className="w-8 h-8" />}
+                  title="No workout plans"
+                  description="Create a plan to organize your training with structured workout days."
+                  action={{
+                    label: 'Create Plan',
+                    onClick: () => navigate({ to: '/plans/new' }),
+                  }}
+                  secondaryAction={{
+                    label: 'Import Plan',
+                    onClick: () => setShowImportModal(true),
+                  }}
+                />
+              ) : (
+                <div className="space-y-2">
+                  {plans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="bg-zinc-800/50 rounded-xl overflow-hidden border border-zinc-700/50"
                     >
-                      {startingQuick ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Play className="w-4 h-4" />
+                      {/* Plan header */}
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => handleExpandPlan(plan.id)}
+                          className="flex-1 p-4 flex items-center gap-3 text-left"
+                        >
+                          {expandedPlanId === plan.id ? (
+                            <ChevronDown className="w-5 h-5 text-zinc-500" />
+                          ) : (
+                            <ChevronRight className="w-5 h-5 text-zinc-500" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-white truncate">
+                              {plan.name}
+                            </h3>
+                            <p className="text-sm text-zinc-500">
+                              {plan._count.planDays} day
+                              {plan._count.planDays !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </button>
+                        <Link
+                          to="/plans/$planId"
+                          params={{ planId: plan.id }}
+                          className="p-4 text-zinc-500 hover:text-white transition-colors"
+                          aria-label="Edit plan"
+                        >
+                          <Settings className="w-5 h-5" />
+                        </Link>
+                      </div>
+
+                      {/* Plan days (expanded) */}
+                      {expandedPlanId === plan.id && (
+                        <div className="border-t border-zinc-700/50">
+                          {loadingDays ? (
+                            <div className="p-4 flex justify-center">
+                              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          ) : plan.planDays && plan.planDays.length > 0 ? (
+                            <div className="divide-y divide-zinc-700/50">
+                              {plan.planDays.map((day) => (
+                                <button
+                                  key={day.id}
+                                  onClick={() => handleStartWorkout(day)}
+                                  disabled={
+                                    day.restDay || startingWorkout === day.id
+                                  }
+                                  className={`w-full p-4 flex items-center gap-3 text-left transition-colors ${
+                                    day.restDay
+                                      ? 'opacity-50 cursor-not-allowed'
+                                      : 'hover:bg-zinc-700/30'
+                                  }`}
+                                >
+                                  {/* Day number */}
+                                  <div
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                                      day.restDay
+                                        ? 'bg-zinc-700 text-zinc-400'
+                                        : 'bg-blue-600/20 text-blue-400'
+                                    }`}
+                                  >
+                                    {day.dayOrder}
+                                  </div>
+
+                                  {/* Day info */}
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-white truncate">
+                                      {day.name}
+                                    </h4>
+                                    <p className="text-sm text-zinc-500">
+                                      {day.restDay ? (
+                                        <span className="flex items-center gap-1">
+                                          <Moon className="w-3.5 h-3.5" />
+                                          Rest Day
+                                        </span>
+                                      ) : (
+                                        `${day._count?.planExercises ?? 0} exercises`
+                                      )}
+                                    </p>
+                                  </div>
+
+                                  {/* Start button */}
+                                  {!day.restDay && (
+                                    <div className="flex items-center gap-1 text-blue-400">
+                                      {startingWorkout === day.id ? (
+                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                      ) : (
+                                        <Play className="w-4 h-4" />
+                                      )}
+                                      <span className="text-sm font-medium">
+                                        Start
+                                      </span>
+                                    </div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="p-4 text-sm text-zinc-500 text-center">
+                              No days in this plan
+                            </p>
+                          )}
+                        </div>
                       )}
-                      Start Empty
-                    </button>
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Recent Workouts */}
@@ -194,7 +414,7 @@ function WorkoutPage() {
               {recentWorkouts.length === 0 ? (
                 <div className="p-6 rounded-xl bg-zinc-800/30 border border-zinc-700/30 text-center">
                   <p className="text-zinc-500 text-sm">
-                    Your recent workouts will appear here for quick access
+                    Your recent workouts will appear here
                   </p>
                 </div>
               ) : (
@@ -244,6 +464,13 @@ function WorkoutPage() {
           </>
         )}
       </div>
+
+      {/* Import Plan Modal */}
+      <ImportPlanModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={handleImportSuccess}
+      />
     </AppLayout>
   )
 }

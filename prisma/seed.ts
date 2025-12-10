@@ -1,8 +1,7 @@
 import 'dotenv/config'
 import {
-  Equipment,
-  ExerciseType,
-  MuscleGroup,
+  AchievementCategory,
+  AchievementRarity,
   PrismaClient,
 } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
@@ -13,584 +12,323 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter })
 
-const exercises = [
-  // CHEST
+const achievements = [
+  // === MILESTONE ACHIEVEMENTS ===
   {
-    name: 'Bench Press',
-    description: 'Classic compound chest exercise using a barbell',
-    muscleGroup: MuscleGroup.CHEST,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Lie on a flat bench, grip the bar slightly wider than shoulder width, lower to chest, press up.',
+    code: 'FIRST_WORKOUT',
+    name: 'First Steps',
+    description: 'Complete your first workout',
+    category: AchievementCategory.MILESTONE,
+    rarity: AchievementRarity.COMMON,
+    icon: 'dumbbell',
+    threshold: 1,
+    sortOrder: 1,
   },
   {
-    name: 'Incline Bench Press',
-    description: 'Upper chest focused barbell press on incline bench',
-    muscleGroup: MuscleGroup.CHEST,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Set bench to 30-45 degrees, grip bar slightly wider than shoulders, lower to upper chest, press up.',
+    code: 'WORKOUTS_5',
+    name: 'Getting Warmed Up',
+    description: 'Complete 5 workouts',
+    category: AchievementCategory.MILESTONE,
+    rarity: AchievementRarity.COMMON,
+    icon: 'flame',
+    threshold: 5,
+    sortOrder: 2,
   },
   {
-    name: 'Dumbbell Bench Press',
-    description: 'Chest press with dumbbells for greater range of motion',
-    muscleGroup: MuscleGroup.CHEST,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Lie on flat bench with dumbbells at chest level, press up until arms extended, lower with control.',
+    code: 'WORKOUTS_10',
+    name: 'Double Digits',
+    description: 'Complete 10 workouts',
+    category: AchievementCategory.MILESTONE,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'target',
+    threshold: 10,
+    sortOrder: 3,
   },
   {
-    name: 'Dumbbell Fly',
-    description: 'Isolation exercise for chest using dumbbells',
-    muscleGroup: MuscleGroup.CHEST,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Lie on bench with dumbbells extended above chest, lower arms in arc motion, squeeze back up.',
+    code: 'WORKOUTS_50',
+    name: 'Dedicated',
+    description: 'Complete 50 workouts',
+    category: AchievementCategory.MILESTONE,
+    rarity: AchievementRarity.RARE,
+    icon: 'medal',
+    threshold: 50,
+    sortOrder: 4,
   },
   {
-    name: 'Cable Crossover',
-    description: 'Cable machine exercise for chest isolation and stretch',
-    muscleGroup: MuscleGroup.CHEST,
-    equipment: Equipment.CABLE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand between cable towers, arms extended to sides, bring handles together in front of chest.',
+    code: 'WORKOUTS_100',
+    name: 'Centurion',
+    description: 'Complete 100 workouts',
+    category: AchievementCategory.MILESTONE,
+    rarity: AchievementRarity.EPIC,
+    icon: 'crown',
+    threshold: 100,
+    sortOrder: 5,
   },
   {
-    name: 'Push-ups',
-    description: 'Bodyweight chest and triceps exercise',
-    muscleGroup: MuscleGroup.CHEST,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Start in plank position, lower chest to ground, push back up keeping core tight.',
-  },
-  {
-    name: 'Chest Dip',
-    description: 'Bodyweight exercise emphasizing lower chest',
-    muscleGroup: MuscleGroup.CHEST,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Lean forward on parallel bars, lower body until stretch in chest, press back up.',
+    code: 'WORKOUTS_365',
+    name: 'Year of Iron',
+    description: 'Complete 365 workouts',
+    category: AchievementCategory.MILESTONE,
+    rarity: AchievementRarity.LEGENDARY,
+    icon: 'star',
+    threshold: 365,
+    sortOrder: 6,
   },
 
-  // BACK
+  // === STREAK ACHIEVEMENTS ===
   {
-    name: 'Deadlift',
-    description: 'Fundamental compound lift for back and posterior chain',
-    muscleGroup: MuscleGroup.BACK,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand with feet hip-width, hinge at hips, grip bar, lift by driving through heels and extending hips.',
+    code: 'STREAK_1',
+    name: 'Week One',
+    description: 'Work out at least once in a week',
+    category: AchievementCategory.STREAK,
+    rarity: AchievementRarity.COMMON,
+    icon: 'calendar-check',
+    threshold: 1,
+    sortOrder: 10,
   },
   {
-    name: 'Pull-ups',
-    description: 'Bodyweight back exercise for lats and upper back',
-    muscleGroup: MuscleGroup.BACK,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hang from bar with overhand grip, pull body up until chin over bar, lower with control.',
+    code: 'STREAK_4',
+    name: 'Month Strong',
+    description: 'Maintain a 4-week workout streak',
+    category: AchievementCategory.STREAK,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'fire',
+    threshold: 4,
+    sortOrder: 11,
   },
   {
-    name: 'Chin-ups',
-    description: 'Bodyweight exercise targeting lats and biceps',
-    muscleGroup: MuscleGroup.BACK,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hang from bar with underhand grip, pull body up until chin over bar, lower with control.',
+    code: 'STREAK_13',
+    name: 'Quarter Crusher',
+    description: 'Maintain a 13-week workout streak',
+    category: AchievementCategory.STREAK,
+    rarity: AchievementRarity.RARE,
+    icon: 'zap',
+    threshold: 13,
+    sortOrder: 12,
   },
   {
-    name: 'Lat Pulldown',
-    description: 'Cable machine exercise targeting the latissimus dorsi',
-    muscleGroup: MuscleGroup.BACK,
-    equipment: Equipment.CABLE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Grip bar wide, pull down to upper chest while squeezing shoulder blades together.',
+    code: 'STREAK_26',
+    name: 'Half Year Hero',
+    description: 'Maintain a 26-week workout streak',
+    category: AchievementCategory.STREAK,
+    rarity: AchievementRarity.EPIC,
+    icon: 'trophy',
+    threshold: 26,
+    sortOrder: 13,
   },
   {
-    name: 'Seated Cable Row',
-    description: 'Cable rowing movement for mid-back thickness',
-    muscleGroup: MuscleGroup.BACK,
-    equipment: Equipment.CABLE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Sit with feet on platform, pull handle to lower chest, squeeze shoulder blades, extend arms slowly.',
-  },
-  {
-    name: 'Bent Over Row',
-    description: 'Compound rowing movement for back thickness',
-    muscleGroup: MuscleGroup.BACK,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hinge forward at hips, pull bar to lower chest, squeeze shoulder blades, lower with control.',
-  },
-  {
-    name: 'Dumbbell Row',
-    description: 'Single-arm rowing exercise for back development',
-    muscleGroup: MuscleGroup.BACK,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'One hand and knee on bench, row dumbbell to hip, squeeze lat at top, lower with control.',
-  },
-  {
-    name: 'T-Bar Row',
-    description: 'Barbell rowing variation for back thickness',
-    muscleGroup: MuscleGroup.BACK,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Straddle bar with V-grip handle, hinge forward, row to chest, squeeze back, lower slowly.',
+    code: 'STREAK_52',
+    name: 'Iron Will',
+    description: 'Maintain a 52-week workout streak',
+    category: AchievementCategory.STREAK,
+    rarity: AchievementRarity.LEGENDARY,
+    icon: 'award',
+    threshold: 52,
+    sortOrder: 14,
   },
 
-  // LEGS
+  // === PR ACHIEVEMENTS ===
   {
-    name: 'Barbell Squat',
-    description: 'King of leg exercises, targets quads, glutes, and hamstrings',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Bar on upper back, feet shoulder-width, squat down until thighs parallel, drive up through heels.',
+    code: 'FIRST_PR',
+    name: 'Record Breaker',
+    description: 'Set your first personal record',
+    category: AchievementCategory.PERSONAL_RECORD,
+    rarity: AchievementRarity.COMMON,
+    icon: 'trending-up',
+    threshold: 1,
+    sortOrder: 20,
   },
   {
-    name: 'Front Squat',
-    description: 'Quad-dominant squat variation with bar in front',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Bar on front delts, elbows high, squat down keeping torso upright, drive up through heels.',
+    code: 'PRS_5',
+    name: 'PR Hunter',
+    description: 'Set 5 personal records',
+    category: AchievementCategory.PERSONAL_RECORD,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'trophy',
+    threshold: 5,
+    sortOrder: 21,
   },
   {
-    name: 'Romanian Deadlift',
-    description: 'Hamstring-focused hip hinge movement',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hold bar at hips, hinge forward keeping legs slightly bent, feel stretch in hamstrings, return to start.',
+    code: 'PRS_10',
+    name: 'PR Machine',
+    description: 'Set 10 personal records',
+    category: AchievementCategory.PERSONAL_RECORD,
+    rarity: AchievementRarity.RARE,
+    icon: 'rocket',
+    threshold: 10,
+    sortOrder: 22,
   },
   {
-    name: 'Leg Press',
-    description: 'Machine-based compound leg exercise',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Sit in machine, feet shoulder-width on platform, lower weight by bending knees, press back up.',
+    code: 'PRS_25',
+    name: 'Unstoppable',
+    description: 'Set 25 personal records',
+    category: AchievementCategory.PERSONAL_RECORD,
+    rarity: AchievementRarity.EPIC,
+    icon: 'star',
+    threshold: 25,
+    sortOrder: 23,
   },
   {
-    name: 'Leg Extension',
-    description: 'Machine isolation exercise for quadriceps',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Sit in machine with pad on shins, extend legs until straight, squeeze quads, lower with control.',
-  },
-  {
-    name: 'Leg Curl',
-    description: 'Machine isolation exercise for hamstrings',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Lie face down or sit in machine, curl weight toward glutes, squeeze hamstrings, lower slowly.',
-  },
-  {
-    name: 'Calf Raise',
-    description: 'Isolation exercise for calf muscles',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand on platform with heels hanging off, raise up on toes, squeeze calves, lower with control.',
-  },
-  {
-    name: 'Bulgarian Split Squat',
-    description: 'Single-leg squat with rear foot elevated',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Rear foot on bench, lower until front thigh parallel, drive up through front heel.',
-  },
-  {
-    name: 'Goblet Squat',
-    description: 'Front-loaded squat holding dumbbell or kettlebell',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hold weight at chest, feet shoulder-width, squat down keeping chest up, drive up through heels.',
-  },
-  {
-    name: 'Lunges',
-    description: 'Unilateral leg exercise for balance and strength',
-    muscleGroup: MuscleGroup.LEGS,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Step forward, lower back knee toward ground, front knee stays over ankle, push back to start.',
+    code: 'PRS_50',
+    name: 'Legend',
+    description: 'Set 50 personal records',
+    category: AchievementCategory.PERSONAL_RECORD,
+    rarity: AchievementRarity.LEGENDARY,
+    icon: 'crown',
+    threshold: 50,
+    sortOrder: 24,
   },
 
-  // SHOULDERS
+  // === VOLUME ACHIEVEMENTS ===
   {
-    name: 'Overhead Press',
-    description: 'Standing barbell press for shoulder development',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Bar at shoulders, press overhead in straight line, lower with control back to shoulders.',
+    code: 'VOLUME_1000',
+    name: 'Ton Lifter',
+    description: 'Lift 1,000 kg total volume',
+    category: AchievementCategory.VOLUME,
+    rarity: AchievementRarity.COMMON,
+    icon: 'weight',
+    threshold: 1000,
+    sortOrder: 30,
   },
   {
-    name: 'Dumbbell Shoulder Press',
-    description: 'Seated or standing press with dumbbells',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hold dumbbells at shoulder height, press overhead until arms extended, lower with control.',
+    code: 'VOLUME_10000',
+    name: 'Heavy Hitter',
+    description: 'Lift 10,000 kg total volume',
+    category: AchievementCategory.VOLUME,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'weight',
+    threshold: 10000,
+    sortOrder: 31,
   },
   {
-    name: 'Arnold Press',
-    description: 'Rotating dumbbell press for complete shoulder development',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Start with palms facing you, press up while rotating palms forward, reverse on the way down.',
+    code: 'VOLUME_100000',
+    name: 'Iron Giant',
+    description: 'Lift 100,000 kg total volume',
+    category: AchievementCategory.VOLUME,
+    rarity: AchievementRarity.RARE,
+    icon: 'weight',
+    threshold: 100000,
+    sortOrder: 32,
   },
   {
-    name: 'Lateral Raise',
-    description: 'Isolation exercise for lateral deltoids',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand with dumbbells at sides, raise arms out to sides until parallel with ground, lower slowly.',
+    code: 'VOLUME_500000',
+    name: 'Titan',
+    description: 'Lift 500,000 kg total volume',
+    category: AchievementCategory.VOLUME,
+    rarity: AchievementRarity.EPIC,
+    icon: 'weight',
+    threshold: 500000,
+    sortOrder: 33,
   },
   {
-    name: 'Front Raise',
-    description: 'Isolation exercise for front deltoids',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand with dumbbells in front of thighs, raise arms forward to shoulder height, lower slowly.',
-  },
-  {
-    name: 'Face Pulls',
-    description: 'Cable exercise for rear delts and upper back',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    equipment: Equipment.CABLE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Set cable at face height, pull rope to face with elbows high, squeeze rear delts, return slowly.',
-  },
-  {
-    name: 'Reverse Fly',
-    description: 'Isolation exercise for rear deltoids',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Bend forward at hips, raise dumbbells out to sides squeezing rear delts, lower with control.',
+    code: 'VOLUME_1000000',
+    name: 'Mythical',
+    description: 'Lift 1,000,000 kg total volume',
+    category: AchievementCategory.VOLUME,
+    rarity: AchievementRarity.LEGENDARY,
+    icon: 'weight',
+    threshold: 1000000,
+    sortOrder: 34,
   },
 
-  // ARMS
+  // === CONSISTENCY ACHIEVEMENTS ===
   {
-    name: 'Barbell Curl',
-    description: 'Classic bicep building exercise',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand with bar at thighs, curl up keeping elbows stationary, squeeze at top, lower with control.',
+    code: 'CONSISTENCY_3X4',
+    name: 'Creature of Habit',
+    description: 'Complete 3+ workouts per week for 4 consecutive weeks',
+    category: AchievementCategory.CONSISTENCY,
+    rarity: AchievementRarity.RARE,
+    icon: 'repeat',
+    threshold: 4,
+    sortOrder: 40,
   },
   {
-    name: 'Dumbbell Curl',
-    description: 'Bicep curl with dumbbells for unilateral development',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand with dumbbells at sides, curl up alternating or together, squeeze biceps, lower slowly.',
-  },
-  {
-    name: 'Hammer Curl',
-    description: 'Dumbbell curl variation targeting brachialis and forearms',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hold dumbbells with neutral grip, curl up keeping palms facing each other throughout.',
-  },
-  {
-    name: 'Preacher Curl',
-    description: 'Isolation curl with arm support for strict form',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Rest arms on preacher bench pad, curl bar up squeezing biceps, lower with control.',
-  },
-  {
-    name: 'Cable Curl',
-    description: 'Bicep curl with constant cable tension',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.CABLE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand facing cable with low pulley, curl handle up squeezing biceps, lower with control.',
-  },
-  {
-    name: 'Tricep Dips',
-    description: 'Bodyweight tricep exercise using parallel bars or bench',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Support body on bars/bench, lower by bending elbows to 90 degrees, press back up.',
-  },
-  {
-    name: 'Tricep Pushdown',
-    description: 'Cable exercise for tricep isolation',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.CABLE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Stand at cable machine, push bar/rope down until arms straight, squeeze triceps, return slowly.',
-  },
-  {
-    name: 'Skull Crushers',
-    description: 'Lying tricep extension with barbell or EZ bar',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Lie on bench, lower bar toward forehead by bending elbows, extend arms back up.',
-  },
-  {
-    name: 'Overhead Tricep Extension',
-    description: 'Tricep exercise with weight overhead',
-    muscleGroup: MuscleGroup.ARMS,
-    equipment: Equipment.DUMBBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hold dumbbell overhead with both hands, lower behind head bending elbows, extend back up.',
+    code: 'CONSISTENCY_3X12',
+    name: 'Disciplined',
+    description: 'Complete 3+ workouts per week for 12 consecutive weeks',
+    category: AchievementCategory.CONSISTENCY,
+    rarity: AchievementRarity.EPIC,
+    icon: 'shield',
+    threshold: 12,
+    sortOrder: 41,
   },
 
-  // CORE
+  // === MUSCLE GROUP ACHIEVEMENTS ===
   {
-    name: 'Plank',
-    description: 'Isometric core stabilization exercise',
-    muscleGroup: MuscleGroup.CORE,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    isTimed: true,
-    instructions:
-      'Forearms and toes on ground, body in straight line, hold position engaging core.',
+    code: 'MUSCLE_CHEST_50',
+    name: 'Chest Day Champion',
+    description: 'Complete 50 chest sets',
+    category: AchievementCategory.MUSCLE_FOCUS,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'heart',
+    threshold: 50,
+    sortOrder: 50,
   },
   {
-    name: 'Side Plank',
-    description: 'Lateral core stabilization exercise',
-    muscleGroup: MuscleGroup.CORE,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    isTimed: true,
-    instructions:
-      'Lie on side, prop up on forearm, lift hips creating straight line, hold position.',
+    code: 'MUSCLE_BACK_50',
+    name: 'Back Attack',
+    description: 'Complete 50 back sets',
+    category: AchievementCategory.MUSCLE_FOCUS,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'arrow-up',
+    threshold: 50,
+    sortOrder: 51,
   },
   {
-    name: 'Hanging Leg Raise',
-    description: 'Advanced core exercise targeting lower abs',
-    muscleGroup: MuscleGroup.CORE,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hang from bar, raise legs until parallel with ground (or higher), lower with control.',
+    code: 'MUSCLE_LEGS_50',
+    name: 'Leg Day Legend',
+    description: 'Complete 50 leg sets',
+    category: AchievementCategory.MUSCLE_FOCUS,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'footprints',
+    threshold: 50,
+    sortOrder: 52,
   },
   {
-    name: 'Cable Crunch',
-    description: 'Weighted crunch using cable machine',
-    muscleGroup: MuscleGroup.CORE,
-    equipment: Equipment.CABLE,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Kneel facing cable, hold rope behind head, crunch down contracting abs, return slowly.',
+    code: 'MUSCLE_SHOULDERS_50',
+    name: 'Boulder Shoulders',
+    description: 'Complete 50 shoulder sets',
+    category: AchievementCategory.MUSCLE_FOCUS,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'chevrons-up',
+    threshold: 50,
+    sortOrder: 53,
   },
   {
-    name: 'Russian Twist',
-    description: 'Rotational core exercise for obliques',
-    muscleGroup: MuscleGroup.CORE,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Sit with knees bent, lean back slightly, rotate torso side to side touching ground each side.',
+    code: 'MUSCLE_ARMS_50',
+    name: 'Gun Show',
+    description: 'Complete 50 arm sets',
+    category: AchievementCategory.MUSCLE_FOCUS,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'zap',
+    threshold: 50,
+    sortOrder: 54,
   },
   {
-    name: 'Ab Wheel Rollout',
-    description: 'Advanced core exercise using ab wheel',
-    muscleGroup: MuscleGroup.CORE,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Kneel holding ab wheel, roll forward extending body, contract abs to pull back to start.',
-  },
-  {
-    name: 'Dead Bug',
-    description: 'Core stability exercise with arm and leg movement',
-    muscleGroup: MuscleGroup.CORE,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Lie on back with arms up and knees at 90 degrees, lower opposite arm and leg, return and alternate.',
-  },
-
-  // CARDIO
-  {
-    name: 'Treadmill Run',
-    description: 'Cardiovascular running on treadmill',
-    muscleGroup: MuscleGroup.CARDIO,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.CARDIO,
-    isTimed: true,
-    instructions:
-      'Set desired speed and incline, maintain steady pace, monitor heart rate.',
-  },
-  {
-    name: 'Stationary Bike',
-    description: 'Low-impact cardiovascular cycling',
-    muscleGroup: MuscleGroup.CARDIO,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.CARDIO,
-    isTimed: true,
-    instructions:
-      'Adjust seat height, set resistance, maintain steady cadence, monitor heart rate.',
-  },
-  {
-    name: 'Rowing Machine',
-    description: 'Full body cardiovascular exercise',
-    muscleGroup: MuscleGroup.CARDIO,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.CARDIO,
-    isTimed: true,
-    instructions:
-      'Drive with legs first, then pull handle to chest, extend arms and slide forward to repeat.',
-  },
-  {
-    name: 'Elliptical',
-    description: 'Low-impact full body cardio machine',
-    muscleGroup: MuscleGroup.CARDIO,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.CARDIO,
-    isTimed: true,
-    instructions:
-      'Step on pedals, grip handles, maintain smooth elliptical motion, adjust resistance as needed.',
-  },
-  {
-    name: 'Stair Climber',
-    description: 'Cardio machine simulating stair climbing',
-    muscleGroup: MuscleGroup.CARDIO,
-    equipment: Equipment.MACHINE,
-    exerciseType: ExerciseType.CARDIO,
-    isTimed: true,
-    instructions:
-      'Step on machine, set pace, climb stairs with proper posture, avoid leaning on handles.',
-  },
-  {
-    name: 'Jump Rope',
-    description: 'High-intensity cardio with jump rope',
-    muscleGroup: MuscleGroup.CARDIO,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.CARDIO,
-    isTimed: true,
-    instructions:
-      'Hold rope handles, swing rope overhead, jump with both feet as rope passes under.',
-  },
-
-  // FULL BODY
-  {
-    name: 'Burpees',
-    description: 'High-intensity full body exercise',
-    muscleGroup: MuscleGroup.FULL_BODY,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.PLYOMETRIC,
-    instructions:
-      'Squat down, kick feet back to plank, do push-up, jump feet forward, jump up with arms overhead.',
-  },
-  {
-    name: 'Kettlebell Swing',
-    description: 'Explosive hip hinge movement with kettlebell',
-    muscleGroup: MuscleGroup.FULL_BODY,
-    equipment: Equipment.KETTLEBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hinge at hips, swing kettlebell between legs, drive hips forward to swing to chest height.',
-  },
-  {
-    name: 'Clean and Press',
-    description: 'Olympic lift variation for full body power',
-    muscleGroup: MuscleGroup.FULL_BODY,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Pull bar from floor to shoulders in one motion, then press overhead, lower and repeat.',
-  },
-  {
-    name: 'Thrusters',
-    description: 'Front squat to overhead press combination',
-    muscleGroup: MuscleGroup.FULL_BODY,
-    equipment: Equipment.BARBELL,
-    exerciseType: ExerciseType.STRENGTH,
-    instructions:
-      'Hold bar at shoulders, squat down, drive up and press bar overhead in one fluid motion.',
-  },
-  {
-    name: 'Mountain Climbers',
-    description: 'Dynamic plank exercise with running motion',
-    muscleGroup: MuscleGroup.FULL_BODY,
-    equipment: Equipment.BODYWEIGHT,
-    exerciseType: ExerciseType.CARDIO,
-    isTimed: true,
-    instructions:
-      'Start in plank position, drive knees alternately toward chest in running motion.',
+    code: 'MUSCLE_CORE_50',
+    name: 'Core Crusher',
+    description: 'Complete 50 core sets',
+    category: AchievementCategory.MUSCLE_FOCUS,
+    rarity: AchievementRarity.UNCOMMON,
+    icon: 'circle',
+    threshold: 50,
+    sortOrder: 55,
   },
 ]
 
 async function main() {
   console.log('Seeding database...')
 
-  // Clear existing exercises that are not custom
-  await prisma.exercise.deleteMany({
-    where: { isCustom: false },
-  })
+  // Clear existing achievements and seed new ones
+  await prisma.achievement.deleteMany({})
 
-  // Create exercises
-  for (const exercise of exercises) {
-    await prisma.exercise.create({
-      data: {
-        ...exercise,
-        isCustom: false,
-        isTimed: exercise.isTimed ?? false,
-      },
+  for (const achievement of achievements) {
+    await prisma.achievement.create({
+      data: achievement,
     })
   }
 
-  console.log(`Seeded ${exercises.length} exercises`)
+  console.log(`Seeded ${achievements.length} achievements`)
 }
 
 main()

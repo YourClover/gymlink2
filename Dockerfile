@@ -43,5 +43,5 @@ USER gymlink
 
 EXPOSE 3000
 
-# Run migrations and start the app
-CMD ["sh", "-c", "npx prisma migrate deploy && node .output/server/index.mjs"]
+# Run migrations, seed database, and start the app
+CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts && node .output/server/index.mjs"]

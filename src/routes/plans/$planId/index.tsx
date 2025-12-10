@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ArrowLeft,
@@ -50,6 +50,7 @@ function PlanDetailPage() {
   const { planId } = Route.useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const router = useRouter()
 
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loading, setLoading] = useState(true)
@@ -205,7 +206,7 @@ function PlanDetailPage() {
       <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
         <div className="flex items-center justify-between px-4 py-3">
           <button
-            onClick={() => navigate({ to: '/plans' })}
+            onClick={() => router.history.back()}
             className="p-2 -ml-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-colors"
             aria-label="Back"
           >

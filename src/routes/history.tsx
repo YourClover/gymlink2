@@ -88,7 +88,7 @@ function HistoryPage() {
       <header className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
         <div className="flex items-center gap-3 px-4 py-3">
           <button
-            onClick={() => navigate({ to: '/profile' })}
+            onClick={() => window.history.back()}
             className="p-2 -ml-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

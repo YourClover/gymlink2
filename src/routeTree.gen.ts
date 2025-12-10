@@ -12,19 +12,32 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PrsRouteImport } from './routes/prs'
-import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LeaderboardsRouteImport } from './routes/leaderboards'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as FollowersRouteImport } from './routes/followers'
+import { Route as FeedRouteImport } from './routes/feed'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AchievementsRouteImport } from './routes/achievements'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkoutIndexRouteImport } from './routes/workout/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises/index'
-import { Route as WorkoutSelectDayRouteImport } from './routes/workout/select-day'
+import { Route as ChallengesIndexRouteImport } from './routes/challenges/index'
 import { Route as WorkoutActiveRouteImport } from './routes/workout/active'
+import { Route as UsersSearchRouteImport } from './routes/users/search'
+import { Route as UUsernameRouteImport } from './routes/u/$username'
+import { Route as ProgressExerciseIdRouteImport } from './routes/progress.$exerciseId'
+import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
+import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as PlansNewRouteImport } from './routes/plans/new'
+import { Route as ChallengesNewRouteImport } from './routes/challenges/new'
+import { Route as ChallengesChallengeIdRouteImport } from './routes/challenges/$challengeId'
 import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/index'
 import { Route as WorkoutSummarySessionIdRouteImport } from './routes/workout/summary.$sessionId'
+import { Route as ChallengesJoinCodeRouteImport } from './routes/challenges/join/$code'
 import { Route as PlansPlanIdDayDayIdRouteImport } from './routes/plans/$planId/day/$dayId'
 
 const StatsRoute = StatsRouteImport.update({
@@ -42,9 +55,9 @@ const PrsRoute = PrsRouteImport.update({
   path: '/prs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -52,14 +65,34 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeaderboardsRoute = LeaderboardsRouteImport.update({
+  id: '/leaderboards',
+  path: '/leaderboards',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FollowersRoute = FollowersRouteImport.update({
+  id: '/followers',
+  path: '/followers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedRoute = FeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AchievementsRoute = AchievementsRouteImport.update({
+  id: '/achievements',
+  path: '/achievements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -72,6 +105,11 @@ const WorkoutIndexRoute = WorkoutIndexRouteImport.update({
   path: '/workout/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansIndexRoute = PlansIndexRouteImport.update({
   id: '/plans/',
   path: '/plans/',
@@ -82,9 +120,9 @@ const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
   path: '/exercises/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorkoutSelectDayRoute = WorkoutSelectDayRouteImport.update({
-  id: '/workout/select-day',
-  path: '/workout/select-day',
+const ChallengesIndexRoute = ChallengesIndexRouteImport.update({
+  id: '/challenges/',
+  path: '/challenges/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkoutActiveRoute = WorkoutActiveRouteImport.update({
@@ -92,9 +130,44 @@ const WorkoutActiveRoute = WorkoutActiveRouteImport.update({
   path: '/workout/active',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsersSearchRoute = UsersSearchRouteImport.update({
+  id: '/users/search',
+  path: '/users/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgressExerciseIdRoute = ProgressExerciseIdRouteImport.update({
+  id: '/progress/$exerciseId',
+  path: '/progress/$exerciseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileSetupRoute = ProfileSetupRouteImport.update({
+  id: '/profile/setup',
+  path: '/profile/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileEditRoute = ProfileEditRouteImport.update({
+  id: '/profile/edit',
+  path: '/profile/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansNewRoute = PlansNewRouteImport.update({
   id: '/plans/new',
   path: '/plans/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChallengesNewRoute = ChallengesNewRouteImport.update({
+  id: '/challenges/new',
+  path: '/challenges/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChallengesChallengeIdRoute = ChallengesChallengeIdRouteImport.update({
+  id: '/challenges/$challengeId',
+  path: '/challenges/$challengeId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlansPlanIdIndexRoute = PlansPlanIdIndexRouteImport.update({
@@ -107,6 +180,11 @@ const WorkoutSummarySessionIdRoute = WorkoutSummarySessionIdRouteImport.update({
   path: '/workout/summary/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChallengesJoinCodeRoute = ChallengesJoinCodeRouteImport.update({
+  id: '/challenges/join/$code',
+  path: '/challenges/join/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansPlanIdDayDayIdRoute = PlansPlanIdDayDayIdRouteImport.update({
   id: '/plans/$planId/day/$dayId',
   path: '/plans/$planId/day/$dayId',
@@ -115,38 +193,64 @@ const PlansPlanIdDayDayIdRoute = PlansPlanIdDayDayIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/dashboard': typeof DashboardRoute
+  '/feed': typeof FeedRoute
+  '/followers': typeof FollowersRoute
   '/history': typeof HistoryRoute
+  '/leaderboards': typeof LeaderboardsRoute
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
+  '/notifications': typeof NotificationsRoute
   '/prs': typeof PrsRoute
   '/register': typeof RegisterRoute
   '/stats': typeof StatsRoute
+  '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
+  '/challenges/new': typeof ChallengesNewRoute
   '/plans/new': typeof PlansNewRoute
+  '/profile/edit': typeof ProfileEditRoute
+  '/profile/setup': typeof ProfileSetupRoute
+  '/progress/$exerciseId': typeof ProgressExerciseIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/users/search': typeof UsersSearchRoute
   '/workout/active': typeof WorkoutActiveRoute
-  '/workout/select-day': typeof WorkoutSelectDayRoute
+  '/challenges': typeof ChallengesIndexRoute
   '/exercises': typeof ExercisesIndexRoute
   '/plans': typeof PlansIndexRoute
+  '/profile': typeof ProfileIndexRoute
   '/workout': typeof WorkoutIndexRoute
+  '/challenges/join/$code': typeof ChallengesJoinCodeRoute
   '/workout/summary/$sessionId': typeof WorkoutSummarySessionIdRoute
   '/plans/$planId': typeof PlansPlanIdIndexRoute
   '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/dashboard': typeof DashboardRoute
+  '/feed': typeof FeedRoute
+  '/followers': typeof FollowersRoute
   '/history': typeof HistoryRoute
+  '/leaderboards': typeof LeaderboardsRoute
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
+  '/notifications': typeof NotificationsRoute
   '/prs': typeof PrsRoute
   '/register': typeof RegisterRoute
   '/stats': typeof StatsRoute
+  '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
+  '/challenges/new': typeof ChallengesNewRoute
   '/plans/new': typeof PlansNewRoute
+  '/profile/edit': typeof ProfileEditRoute
+  '/profile/setup': typeof ProfileSetupRoute
+  '/progress/$exerciseId': typeof ProgressExerciseIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/users/search': typeof UsersSearchRoute
   '/workout/active': typeof WorkoutActiveRoute
-  '/workout/select-day': typeof WorkoutSelectDayRoute
+  '/challenges': typeof ChallengesIndexRoute
   '/exercises': typeof ExercisesIndexRoute
   '/plans': typeof PlansIndexRoute
+  '/profile': typeof ProfileIndexRoute
   '/workout': typeof WorkoutIndexRoute
+  '/challenges/join/$code': typeof ChallengesJoinCodeRoute
   '/workout/summary/$sessionId': typeof WorkoutSummarySessionIdRoute
   '/plans/$planId': typeof PlansPlanIdIndexRoute
   '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
@@ -154,19 +258,32 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/dashboard': typeof DashboardRoute
+  '/feed': typeof FeedRoute
+  '/followers': typeof FollowersRoute
   '/history': typeof HistoryRoute
+  '/leaderboards': typeof LeaderboardsRoute
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
+  '/notifications': typeof NotificationsRoute
   '/prs': typeof PrsRoute
   '/register': typeof RegisterRoute
   '/stats': typeof StatsRoute
+  '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
+  '/challenges/new': typeof ChallengesNewRoute
   '/plans/new': typeof PlansNewRoute
+  '/profile/edit': typeof ProfileEditRoute
+  '/profile/setup': typeof ProfileSetupRoute
+  '/progress/$exerciseId': typeof ProgressExerciseIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/users/search': typeof UsersSearchRoute
   '/workout/active': typeof WorkoutActiveRoute
-  '/workout/select-day': typeof WorkoutSelectDayRoute
+  '/challenges/': typeof ChallengesIndexRoute
   '/exercises/': typeof ExercisesIndexRoute
   '/plans/': typeof PlansIndexRoute
+  '/profile/': typeof ProfileIndexRoute
   '/workout/': typeof WorkoutIndexRoute
+  '/challenges/join/$code': typeof ChallengesJoinCodeRoute
   '/workout/summary/$sessionId': typeof WorkoutSummarySessionIdRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
   '/plans/$planId/day/$dayId': typeof PlansPlanIdDayDayIdRoute
@@ -175,57 +292,96 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/achievements'
     | '/dashboard'
+    | '/feed'
+    | '/followers'
     | '/history'
+    | '/leaderboards'
     | '/login'
-    | '/profile'
+    | '/notifications'
     | '/prs'
     | '/register'
     | '/stats'
+    | '/challenges/$challengeId'
+    | '/challenges/new'
     | '/plans/new'
+    | '/profile/edit'
+    | '/profile/setup'
+    | '/progress/$exerciseId'
+    | '/u/$username'
+    | '/users/search'
     | '/workout/active'
-    | '/workout/select-day'
+    | '/challenges'
     | '/exercises'
     | '/plans'
+    | '/profile'
     | '/workout'
+    | '/challenges/join/$code'
     | '/workout/summary/$sessionId'
     | '/plans/$planId'
     | '/plans/$planId/day/$dayId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/achievements'
     | '/dashboard'
+    | '/feed'
+    | '/followers'
     | '/history'
+    | '/leaderboards'
     | '/login'
-    | '/profile'
+    | '/notifications'
     | '/prs'
     | '/register'
     | '/stats'
+    | '/challenges/$challengeId'
+    | '/challenges/new'
     | '/plans/new'
+    | '/profile/edit'
+    | '/profile/setup'
+    | '/progress/$exerciseId'
+    | '/u/$username'
+    | '/users/search'
     | '/workout/active'
-    | '/workout/select-day'
+    | '/challenges'
     | '/exercises'
     | '/plans'
+    | '/profile'
     | '/workout'
+    | '/challenges/join/$code'
     | '/workout/summary/$sessionId'
     | '/plans/$planId'
     | '/plans/$planId/day/$dayId'
   id:
     | '__root__'
     | '/'
+    | '/achievements'
     | '/dashboard'
+    | '/feed'
+    | '/followers'
     | '/history'
+    | '/leaderboards'
     | '/login'
-    | '/profile'
+    | '/notifications'
     | '/prs'
     | '/register'
     | '/stats'
+    | '/challenges/$challengeId'
+    | '/challenges/new'
     | '/plans/new'
+    | '/profile/edit'
+    | '/profile/setup'
+    | '/progress/$exerciseId'
+    | '/u/$username'
+    | '/users/search'
     | '/workout/active'
-    | '/workout/select-day'
+    | '/challenges/'
     | '/exercises/'
     | '/plans/'
+    | '/profile/'
     | '/workout/'
+    | '/challenges/join/$code'
     | '/workout/summary/$sessionId'
     | '/plans/$planId/'
     | '/plans/$planId/day/$dayId'
@@ -233,19 +389,32 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AchievementsRoute: typeof AchievementsRoute
   DashboardRoute: typeof DashboardRoute
+  FeedRoute: typeof FeedRoute
+  FollowersRoute: typeof FollowersRoute
   HistoryRoute: typeof HistoryRoute
+  LeaderboardsRoute: typeof LeaderboardsRoute
   LoginRoute: typeof LoginRoute
-  ProfileRoute: typeof ProfileRoute
+  NotificationsRoute: typeof NotificationsRoute
   PrsRoute: typeof PrsRoute
   RegisterRoute: typeof RegisterRoute
   StatsRoute: typeof StatsRoute
+  ChallengesChallengeIdRoute: typeof ChallengesChallengeIdRoute
+  ChallengesNewRoute: typeof ChallengesNewRoute
   PlansNewRoute: typeof PlansNewRoute
+  ProfileEditRoute: typeof ProfileEditRoute
+  ProfileSetupRoute: typeof ProfileSetupRoute
+  ProgressExerciseIdRoute: typeof ProgressExerciseIdRoute
+  UUsernameRoute: typeof UUsernameRoute
+  UsersSearchRoute: typeof UsersSearchRoute
   WorkoutActiveRoute: typeof WorkoutActiveRoute
-  WorkoutSelectDayRoute: typeof WorkoutSelectDayRoute
+  ChallengesIndexRoute: typeof ChallengesIndexRoute
   ExercisesIndexRoute: typeof ExercisesIndexRoute
   PlansIndexRoute: typeof PlansIndexRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
   WorkoutIndexRoute: typeof WorkoutIndexRoute
+  ChallengesJoinCodeRoute: typeof ChallengesJoinCodeRoute
   WorkoutSummarySessionIdRoute: typeof WorkoutSummarySessionIdRoute
   PlansPlanIdIndexRoute: typeof PlansPlanIdIndexRoute
   PlansPlanIdDayDayIdRoute: typeof PlansPlanIdDayDayIdRoute
@@ -274,11 +443,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -288,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leaderboards': {
+      id: '/leaderboards'
+      path: '/leaderboards'
+      fullPath: '/leaderboards'
+      preLoaderRoute: typeof LeaderboardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/history': {
       id: '/history'
       path: '/history'
@@ -295,11 +471,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/followers': {
+      id: '/followers'
+      path: '/followers'
+      fullPath: '/followers'
+      preLoaderRoute: typeof FollowersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feed': {
+      id: '/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof FeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/achievements': {
+      id: '/achievements'
+      path: '/achievements'
+      fullPath: '/achievements'
+      preLoaderRoute: typeof AchievementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -316,6 +513,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/': {
+      id: '/profile/'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/': {
       id: '/plans/'
       path: '/plans'
@@ -330,11 +534,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExercisesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/workout/select-day': {
-      id: '/workout/select-day'
-      path: '/workout/select-day'
-      fullPath: '/workout/select-day'
-      preLoaderRoute: typeof WorkoutSelectDayRouteImport
+    '/challenges/': {
+      id: '/challenges/'
+      path: '/challenges'
+      fullPath: '/challenges'
+      preLoaderRoute: typeof ChallengesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/workout/active': {
@@ -344,11 +548,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutActiveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/users/search': {
+      id: '/users/search'
+      path: '/users/search'
+      fullPath: '/users/search'
+      preLoaderRoute: typeof UsersSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progress/$exerciseId': {
+      id: '/progress/$exerciseId'
+      path: '/progress/$exerciseId'
+      fullPath: '/progress/$exerciseId'
+      preLoaderRoute: typeof ProgressExerciseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/setup': {
+      id: '/profile/setup'
+      path: '/profile/setup'
+      fullPath: '/profile/setup'
+      preLoaderRoute: typeof ProfileSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/edit': {
+      id: '/profile/edit'
+      path: '/profile/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/new': {
       id: '/plans/new'
       path: '/plans/new'
       fullPath: '/plans/new'
       preLoaderRoute: typeof PlansNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/challenges/new': {
+      id: '/challenges/new'
+      path: '/challenges/new'
+      fullPath: '/challenges/new'
+      preLoaderRoute: typeof ChallengesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/challenges/$challengeId': {
+      id: '/challenges/$challengeId'
+      path: '/challenges/$challengeId'
+      fullPath: '/challenges/$challengeId'
+      preLoaderRoute: typeof ChallengesChallengeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plans/$planId/': {
@@ -365,6 +618,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutSummarySessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/challenges/join/$code': {
+      id: '/challenges/join/$code'
+      path: '/challenges/join/$code'
+      fullPath: '/challenges/join/$code'
+      preLoaderRoute: typeof ChallengesJoinCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/$planId/day/$dayId': {
       id: '/plans/$planId/day/$dayId'
       path: '/plans/$planId/day/$dayId'
@@ -377,19 +637,32 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AchievementsRoute: AchievementsRoute,
   DashboardRoute: DashboardRoute,
+  FeedRoute: FeedRoute,
+  FollowersRoute: FollowersRoute,
   HistoryRoute: HistoryRoute,
+  LeaderboardsRoute: LeaderboardsRoute,
   LoginRoute: LoginRoute,
-  ProfileRoute: ProfileRoute,
+  NotificationsRoute: NotificationsRoute,
   PrsRoute: PrsRoute,
   RegisterRoute: RegisterRoute,
   StatsRoute: StatsRoute,
+  ChallengesChallengeIdRoute: ChallengesChallengeIdRoute,
+  ChallengesNewRoute: ChallengesNewRoute,
   PlansNewRoute: PlansNewRoute,
+  ProfileEditRoute: ProfileEditRoute,
+  ProfileSetupRoute: ProfileSetupRoute,
+  ProgressExerciseIdRoute: ProgressExerciseIdRoute,
+  UUsernameRoute: UUsernameRoute,
+  UsersSearchRoute: UsersSearchRoute,
   WorkoutActiveRoute: WorkoutActiveRoute,
-  WorkoutSelectDayRoute: WorkoutSelectDayRoute,
+  ChallengesIndexRoute: ChallengesIndexRoute,
   ExercisesIndexRoute: ExercisesIndexRoute,
   PlansIndexRoute: PlansIndexRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
   WorkoutIndexRoute: WorkoutIndexRoute,
+  ChallengesJoinCodeRoute: ChallengesJoinCodeRoute,
   WorkoutSummarySessionIdRoute: WorkoutSummarySessionIdRoute,
   PlansPlanIdIndexRoute: PlansPlanIdIndexRoute,
   PlansPlanIdDayDayIdRoute: PlansPlanIdDayDayIdRoute,
