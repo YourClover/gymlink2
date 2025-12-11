@@ -17,7 +17,16 @@ export default function AppLayout({
   showNav = true,
   showNotifications = true,
 }: AppLayoutProps) {
-  const { user } = useAuth()
+  const { user, isInitializing } = useAuth()
+
+  // Show loading state while checking auth
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   // Redirect to login if not authenticated
   if (!user) {

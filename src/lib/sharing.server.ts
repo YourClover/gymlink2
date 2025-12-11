@@ -175,7 +175,6 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
     }
 
     const sourcePlan = shareCode.workoutPlan
-    let skippedCustomExercises = 0
 
     // Create the new plan
     const newPlan = await prisma.workoutPlan.create({
@@ -198,20 +197,12 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
         },
       })
 
-      // Copy exercises (skip custom exercises from other users)
+      // Copy all exercises (custom exercises are now globally available)
       for (const sourcePlanExercise of sourceDay.planExercises) {
-        const exercise = sourcePlanExercise.exercise
-
-        // Skip custom exercises (they belong to the original user)
-        if (exercise.isCustom) {
-          skippedCustomExercises++
-          continue
-        }
-
         await prisma.planExercise.create({
           data: {
             planDayId: newDay.id,
-            exerciseId: exercise.id,
+            exerciseId: sourcePlanExercise.exercise.id,
             exerciseOrder: sourcePlanExercise.exerciseOrder,
             targetSets: sourcePlanExercise.targetSets,
             targetReps: sourcePlanExercise.targetReps,
@@ -232,7 +223,6 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
 
     return {
       newPlanId: newPlan.id,
-      skippedCustomExercises,
     }
   })
 

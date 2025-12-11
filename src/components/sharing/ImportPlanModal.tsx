@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, Calendar, Dumbbell, User, AlertTriangle } from 'lucide-react'
+import { Download, Calendar, Dumbbell, User } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import { getShareCodePreview, importPlanFromCode } from '@/lib/sharing.server'
 import { useAuth } from '@/context/AuthContext'
@@ -30,7 +30,6 @@ export default function ImportPlanModal({
   const [customName, setCustomName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [skippedCount, setSkippedCount] = useState<number | null>(null)
 
   const handleLookup = async () => {
     if (!code.trim()) return
@@ -70,17 +69,8 @@ export default function ImportPlanModal({
         },
       })
 
-      if (result.skippedCustomExercises > 0) {
-        setSkippedCount(result.skippedCustomExercises)
-        // Show warning briefly, then redirect
-        setTimeout(() => {
-          onImportSuccess(result.newPlanId)
-          handleClose()
-        }, 2000)
-      } else {
-        onImportSuccess(result.newPlanId)
-        handleClose()
-      }
+      onImportSuccess(result.newPlanId)
+      handleClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import plan')
       setIsLoading(false)
@@ -92,7 +82,6 @@ export default function ImportPlanModal({
     setPreview(null)
     setCustomName('')
     setError(null)
-    setSkippedCount(null)
     setIsLoading(false)
     onClose()
   }
@@ -110,19 +99,7 @@ export default function ImportPlanModal({
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Import Plan">
       <div className="space-y-4">
-        {skippedCount !== null ? (
-          // Success with warning
-          <div className="text-center py-4">
-            <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <AlertTriangle className="w-6 h-6 text-yellow-400" />
-            </div>
-            <p className="text-white font-medium">Plan imported!</p>
-            <p className="text-zinc-400 text-sm mt-1">
-              {skippedCount} custom exercise{skippedCount !== 1 ? 's were' : ' was'} skipped
-              (custom exercises cannot be shared).
-            </p>
-          </div>
-        ) : !preview ? (
+        {!preview ? (
           // Code input state
           <>
             <p className="text-zinc-400 text-sm">

@@ -215,6 +215,39 @@ export const getChallengeDetails = createServerFn({ method: 'GET' })
     }
   })
 
+// Get public challenges (for discovery)
+export const getPublicChallenges = createServerFn({ method: 'GET' })
+  .inputValidator((data: { userId: string }) => data)
+  .handler(async ({ data }) => {
+    // Get challenges user is already participating in
+    const userParticipations = await prisma.challengeParticipant.findMany({
+      where: { userId: data.userId },
+      select: { challengeId: true },
+    })
+    const participatingIds = userParticipations.map((p) => p.challengeId)
+
+    // Find public challenges the user hasn't joined
+    const challenges = await prisma.challenge.findMany({
+      where: {
+        isPublic: true,
+        status: { in: ['ACTIVE', 'UPCOMING'] },
+        id: { notIn: participatingIds },
+      },
+      include: {
+        creator: { select: { name: true } },
+        _count: { select: { participants: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return {
+      challenges: challenges.map((c) => ({
+        ...c,
+        participantCount: c._count.participants,
+      })),
+    }
+  })
+
 // Get user's challenges
 export const getUserChallenges = createServerFn({ method: 'GET' })
   .inputValidator(

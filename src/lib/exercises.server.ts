@@ -30,7 +30,6 @@ export const getExercises = createServerFn({ method: 'GET' })
       equipment?: Equipment
       exerciseType?: ExerciseType
       name?: { contains: string; mode: 'insensitive' }
-      OR?: Array<{ isCustom: boolean; userId?: string | null }>
     } = {}
 
     if (muscleGroup) where.muscleGroup = muscleGroup
@@ -38,15 +37,8 @@ export const getExercises = createServerFn({ method: 'GET' })
     if (exerciseType) where.exerciseType = exerciseType
     if (search) where.name = { contains: search, mode: 'insensitive' }
 
-    // Filter by ownership: built-in exercises OR user's custom exercises
-    if (userId) {
-      where.OR = [
-        { isCustom: false }, // Built-in exercises
-        { isCustom: true, userId }, // User's custom exercises
-      ]
-    } else if (includeBuiltIn) {
-      where.OR = [{ isCustom: false }]
-    }
+    // Show all exercises (built-in + all custom) - custom exercises are globally available
+    // No user filtering needed - everyone can see all exercises
 
     const exercises = await prisma.exercise.findMany({
       where,
@@ -64,10 +56,7 @@ export const getExercise = createServerFn({ method: 'GET' })
       where: { id: data.id },
     })
 
-    // Allow built-in exercises, but verify ownership for custom exercises
-    if (exercise?.isCustom && exercise.userId !== data.userId) {
-      throw new Error('Not authorized to view this exercise')
-    }
+    // All exercises (built-in and custom) are viewable by everyone
 
     return { exercise }
   })
