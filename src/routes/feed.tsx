@@ -1,11 +1,11 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { Loader2, Trophy, UserPlus, Users } from 'lucide-react'
+import type { ActivityType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import { getActivityFeed } from '@/lib/feed.server'
 import AppLayout from '@/components/AppLayout'
 import { ActivityFeedItem } from '@/components/feed/ActivityFeedItem'
-import { Loader2, Trophy, UserPlus, Users } from 'lucide-react'
-import type { ActivityType } from '@prisma/client'
 
 export const Route = createFileRoute('/feed')({
   component: FeedPage,
@@ -24,7 +24,7 @@ interface ActivityData {
 
 function FeedPage() {
   const { user } = useAuth()
-  const [activities, setActivities] = useState<ActivityData[]>([])
+  const [activities, setActivities] = useState<Array<ActivityData>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
@@ -37,14 +37,17 @@ function FeedPage() {
       const result = await getActivityFeed({
         data: {
           userId: user.id,
-          cursor: append ? cursor ?? undefined : undefined,
+          cursor: append ? (cursor ?? undefined) : undefined,
         },
       })
 
       if (append) {
-        setActivities((prev) => [...prev, ...(result.activities as ActivityData[])])
+        setActivities((prev) => [
+          ...prev,
+          ...(result.activities as Array<ActivityData>),
+        ])
       } else {
-        setActivities(result.activities as ActivityData[])
+        setActivities(result.activities as Array<ActivityData>)
       }
       setCursor(result.nextCursor)
       setHasMore(result.activities.length === 20)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, Calendar, Dumbbell, User } from 'lucide-react'
+import { Calendar, Download, Dumbbell, User } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import { getShareCodePreview, importPlanFromCode } from '@/lib/sharing.server'
 import { useAuth } from '@/context/AuthContext'

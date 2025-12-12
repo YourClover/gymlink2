@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { Clock, Loader2, UserCheck, UserPlus } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { sendFollowRequest, unfollow } from '@/lib/social.server'
-import { UserPlus, UserCheck, Clock, Loader2 } from 'lucide-react'
 
 interface FollowButtonProps {
   userId: string

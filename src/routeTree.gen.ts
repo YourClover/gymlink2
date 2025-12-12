@@ -32,6 +32,7 @@ import { Route as UUsernameRouteImport } from './routes/u/$username'
 import { Route as ProgressExerciseIdRouteImport } from './routes/progress.$exerciseId'
 import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as ProfileAchievementsAdminRouteImport } from './routes/profile/achievements-admin'
 import { Route as PlansNewRouteImport } from './routes/plans/new'
 import { Route as ChallengesNewRouteImport } from './routes/challenges/new'
 import { Route as ChallengesChallengeIdRouteImport } from './routes/challenges/$challengeId'
@@ -155,6 +156,12 @@ const ProfileEditRoute = ProfileEditRouteImport.update({
   path: '/profile/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileAchievementsAdminRoute =
+  ProfileAchievementsAdminRouteImport.update({
+    id: '/profile/achievements-admin',
+    path: '/profile/achievements-admin',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PlansNewRoute = PlansNewRouteImport.update({
   id: '/plans/new',
   path: '/plans/new',
@@ -207,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
   '/challenges/new': typeof ChallengesNewRoute
   '/plans/new': typeof PlansNewRoute
+  '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/progress/$exerciseId': typeof ProgressExerciseIdRoute
@@ -239,6 +247,7 @@ export interface FileRoutesByTo {
   '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
   '/challenges/new': typeof ChallengesNewRoute
   '/plans/new': typeof PlansNewRoute
+  '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/progress/$exerciseId': typeof ProgressExerciseIdRoute
@@ -272,6 +281,7 @@ export interface FileRoutesById {
   '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
   '/challenges/new': typeof ChallengesNewRoute
   '/plans/new': typeof PlansNewRoute
+  '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/progress/$exerciseId': typeof ProgressExerciseIdRoute
@@ -306,6 +316,7 @@ export interface FileRouteTypes {
     | '/challenges/$challengeId'
     | '/challenges/new'
     | '/plans/new'
+    | '/profile/achievements-admin'
     | '/profile/edit'
     | '/profile/setup'
     | '/progress/$exerciseId'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/challenges/$challengeId'
     | '/challenges/new'
     | '/plans/new'
+    | '/profile/achievements-admin'
     | '/profile/edit'
     | '/profile/setup'
     | '/progress/$exerciseId'
@@ -370,6 +382,7 @@ export interface FileRouteTypes {
     | '/challenges/$challengeId'
     | '/challenges/new'
     | '/plans/new'
+    | '/profile/achievements-admin'
     | '/profile/edit'
     | '/profile/setup'
     | '/progress/$exerciseId'
@@ -403,6 +416,7 @@ export interface RootRouteChildren {
   ChallengesChallengeIdRoute: typeof ChallengesChallengeIdRoute
   ChallengesNewRoute: typeof ChallengesNewRoute
   PlansNewRoute: typeof PlansNewRoute
+  ProfileAchievementsAdminRoute: typeof ProfileAchievementsAdminRoute
   ProfileEditRoute: typeof ProfileEditRoute
   ProfileSetupRoute: typeof ProfileSetupRoute
   ProgressExerciseIdRoute: typeof ProgressExerciseIdRoute
@@ -583,6 +597,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/achievements-admin': {
+      id: '/profile/achievements-admin'
+      path: '/profile/achievements-admin'
+      fullPath: '/profile/achievements-admin'
+      preLoaderRoute: typeof ProfileAchievementsAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/new': {
       id: '/plans/new'
       path: '/plans/new'
@@ -651,6 +672,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChallengesChallengeIdRoute: ChallengesChallengeIdRoute,
   ChallengesNewRoute: ChallengesNewRoute,
   PlansNewRoute: PlansNewRoute,
+  ProfileAchievementsAdminRoute: ProfileAchievementsAdminRoute,
   ProfileEditRoute: ProfileEditRoute,
   ProfileSetupRoute: ProfileSetupRoute,
   ProgressExerciseIdRoute: ProgressExerciseIdRoute,

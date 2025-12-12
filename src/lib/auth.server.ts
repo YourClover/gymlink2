@@ -58,6 +58,7 @@ export const registerUser = createServerFn({ method: 'POST' })
         id: user.id,
         email: user.email,
         name: user.name,
+        isAdmin: user.isAdmin,
       },
       token,
     }
@@ -96,6 +97,7 @@ export const loginUser = createServerFn({ method: 'POST' })
         id: user.id,
         email: user.email,
         name: user.name,
+        isAdmin: user.isAdmin,
       },
       token,
     }
@@ -149,6 +151,7 @@ export const getCurrentUser = createServerFn({ method: 'POST' })
         id: true,
         email: true,
         name: true,
+        isAdmin: true,
         preferences: true,
       },
     })

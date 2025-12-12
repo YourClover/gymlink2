@@ -1,20 +1,21 @@
 import {
-  ResponsiveContainer,
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  CartesianGrid,
 } from 'recharts'
 import type { ProgressionDataPoint } from '@/lib/progression.server'
+import type {ProgressionMetric} from '@/lib/progression-utils';
 import {
-  formatMetricValue,
-  type ProgressionMetric,
+  
+  formatMetricValue
 } from '@/lib/progression-utils'
 
 type Props = {
-  data: ProgressionDataPoint[]
+  data: Array<ProgressionDataPoint>
   metric: ProgressionMetric
 }
 
@@ -40,7 +41,7 @@ type TooltipPayloadEntry = {
 
 type CustomTooltipProps = {
   active?: boolean
-  payload?: TooltipPayloadEntry[]
+  payload?: Array<TooltipPayloadEntry>
   metric: ProgressionMetric
 }
 

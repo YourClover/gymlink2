@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, Loader2, Search, X } from 'lucide-react'
+import type { ChallengeType, Exercise } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import { createChallenge } from '@/lib/challenges.server'
 import { getExercises } from '@/lib/exercises.server'
 import AppLayout from '@/components/AppLayout'
-import { ArrowLeft, Loader2, Search, X } from 'lucide-react'
-import type { ChallengeType, Exercise } from '@prisma/client'
 
 export const Route = createFileRoute('/challenges/new')({
   component: NewChallengePage,
@@ -28,18 +28,26 @@ function NewChallengePage() {
   const [error, setError] = useState<string | null>(null)
 
   // Exercise selector state
-  const [exercises, setExercises] = useState<Exercise[]>([])
+  const [exercises, setExercises] = useState<Array<Exercise>>([])
   const [exerciseId, setExerciseId] = useState<string>('')
   const [exerciseSearch, setExerciseSearch] = useState('')
   const [showExerciseDropdown, setShowExerciseDropdown] = useState(false)
   const exerciseInputRef = useRef<HTMLInputElement>(null)
 
-  const challengeTypes: { value: ChallengeType; label: string; unit: string }[] = [
+  const challengeTypes: Array<{
+    value: ChallengeType
+    label: string
+    unit: string
+  }> = [
     { value: 'TOTAL_WORKOUTS', label: 'Total Workouts', unit: 'workouts' },
     { value: 'TOTAL_VOLUME', label: 'Total Volume', unit: 'kg' },
     { value: 'TOTAL_SETS', label: 'Total Sets', unit: 'sets' },
     { value: 'WORKOUT_STREAK', label: 'Workout Streak', unit: 'days' },
-    { value: 'SPECIFIC_EXERCISE', label: 'Specific Exercise', unit: 'kg volume' },
+    {
+      value: 'SPECIFIC_EXERCISE',
+      label: 'Specific Exercise',
+      unit: 'kg volume',
+    },
   ]
 
   // Fetch exercises when SPECIFIC_EXERCISE is selected
@@ -89,7 +97,9 @@ function NewChallengePage() {
         params: { challengeId: result.challenge.id },
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create challenge')
+      setError(
+        err instanceof Error ? err.message : 'Failed to create challenge',
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -173,7 +183,9 @@ function NewChallengePage() {
                   }`}
                 >
                   <p className="font-medium text-white">{type.label}</p>
-                  <p className="text-xs text-zinc-500">Measured in {type.unit}</p>
+                  <p className="text-xs text-zinc-500">
+                    Measured in {type.unit}
+                  </p>
                 </button>
               ))}
             </div>

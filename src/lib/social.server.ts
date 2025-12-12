@@ -171,10 +171,21 @@ export const getFollowers = createServerFn({ method: 'GET' })
     })
     const profileMap = new Map(profiles.map((p) => [p.userId, p]))
 
+    // Get mutual follows (users I also follow back)
+    const mutualFollows = await prisma.follow.findMany({
+      where: {
+        followerId: data.userId,
+        followingId: { in: profileIds },
+        status: 'ACCEPTED',
+      },
+    })
+    const mutualSet = new Set(mutualFollows.map((f) => f.followingId))
+
     return {
       followers: followers.map((f) => ({
         ...f,
         profile: profileMap.get(f.followerId),
+        isMutual: mutualSet.has(f.followerId),
       })),
     }
   })
@@ -211,10 +222,21 @@ export const getFollowing = createServerFn({ method: 'GET' })
     })
     const profileMap = new Map(profiles.map((p) => [p.userId, p]))
 
+    // Get mutual follows (users who also follow me back)
+    const mutualFollows = await prisma.follow.findMany({
+      where: {
+        followerId: { in: profileIds },
+        followingId: data.userId,
+        status: 'ACCEPTED',
+      },
+    })
+    const mutualSet = new Set(mutualFollows.map((f) => f.followerId))
+
     return {
       following: following.map((f) => ({
         ...f,
         profile: profileMap.get(f.followingId),
+        isMutual: mutualSet.has(f.followingId),
       })),
     }
   })
@@ -257,4 +279,43 @@ export const getFollowCounts = createServerFn({ method: 'GET' })
       }),
     ])
     return { followersCount, followingCount, pendingCount }
+  })
+
+// Get mutual followers (users who follow each other)
+export const getMutualFollowers = createServerFn({ method: 'GET' })
+  .inputValidator((data: { userId: string }) => data)
+  .handler(async ({ data }) => {
+    // Get all my followers
+    const followers = await prisma.follow.findMany({
+      where: { followingId: data.userId, status: 'ACCEPTED' },
+      select: { followerId: true },
+    })
+    const followerIds = followers.map((f) => f.followerId)
+
+    // Get users I also follow back (mutuals)
+    const mutual = await prisma.follow.findMany({
+      where: {
+        followerId: data.userId,
+        followingId: { in: followerIds },
+        status: 'ACCEPTED',
+      },
+      include: {
+        following: { select: { id: true, name: true } },
+      },
+    })
+
+    const profileIds = mutual.map((f) => f.followingId)
+    const profiles = await prisma.userProfile.findMany({
+      where: { userId: { in: profileIds } },
+    })
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]))
+
+    return {
+      mutuals: mutual.map((f) => ({
+        id: f.id,
+        userId: f.followingId,
+        user: f.following,
+        profile: profileMap.get(f.followingId),
+      })),
+    }
   })

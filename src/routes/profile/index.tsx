@@ -2,25 +2,26 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   Award,
+  Check,
   ChevronRight,
   Dumbbell,
+  Edit,
   History,
   LogOut,
   Mail,
   Settings,
+  Share2,
+  Shield,
   Trophy,
   User,
   Users,
-  Edit,
-  Share2,
-  Check,
 } from 'lucide-react'
+import type { AchievementRarity } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import { AchievementBadge } from '@/components/achievements'
 import { getUserAchievements } from '@/lib/achievements.server'
 import { getUserProfile } from '@/lib/profile.server'
-import type { AchievementRarity } from '@prisma/client'
 
 export const Route = createFileRoute('/profile/')({
   component: ProfilePage,
@@ -42,8 +43,13 @@ interface ProfileData {
 
 function ProfilePage() {
   const { user, logout, isLoading } = useAuth()
-  const [recentAchievements, setRecentAchievements] = useState<RecentAchievement[]>([])
-  const [achievementStats, setAchievementStats] = useState({ earned: 0, total: 0 })
+  const [recentAchievements, setRecentAchievements] = useState<
+    Array<RecentAchievement>
+  >([])
+  const [achievementStats, setAchievementStats] = useState({
+    earned: 0,
+    total: 0,
+  })
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -53,7 +59,9 @@ function ProfilePage() {
 
       try {
         // Load achievements
-        const achievementResult = await getUserAchievements({ data: { userId: user.id } })
+        const achievementResult = await getUserAchievements({
+          data: { userId: user.id },
+        })
         setAchievementStats({
           earned: achievementResult.earnedCount,
           total: achievementResult.totalCount,
@@ -67,7 +75,9 @@ function ProfilePage() {
         setRecentAchievements(recent)
 
         // Load profile
-        const profileResult = await getUserProfile({ data: { userId: user.id } })
+        const profileResult = await getUserProfile({
+          data: { userId: user.id },
+        })
         if (profileResult.profile) {
           setProfile({
             username: profileResult.profile.username,
@@ -106,7 +116,12 @@ function ProfilePage() {
                 {user?.name}
               </h2>
               {profile ? (
-                <p className="text-zinc-400 text-sm">@{profile.username}</p>
+                <>
+                  <p className="text-zinc-400 text-sm">@{profile.username}</p>
+                  <p className="text-zinc-500 text-xs font-mono">
+                    Code: {profile.profileCode}
+                  </p>
+                </>
               ) : (
                 <div className="flex items-center gap-1 text-zinc-400 text-sm">
                   <Mail className="w-4 h-4" />
@@ -184,7 +199,9 @@ function ProfilePage() {
 
         {/* Achievements Section */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-zinc-400 px-1">Achievements</h3>
+          <h3 className="text-sm font-medium text-zinc-400 px-1">
+            Achievements
+          </h3>
           <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-4">
             <Link
               to="/achievements"
@@ -205,7 +222,10 @@ function ProfilePage() {
             {recentAchievements.length > 0 ? (
               <div className="flex gap-3">
                 {recentAchievements.map((achievement) => (
-                  <div key={achievement.id} className="flex flex-col items-center gap-1">
+                  <div
+                    key={achievement.id}
+                    className="flex flex-col items-center gap-1"
+                  >
                     <AchievementBadge
                       icon={achievement.icon}
                       rarity={achievement.rarity}
@@ -274,6 +294,18 @@ function ProfilePage() {
               </div>
               <span className="text-xs text-zinc-500">Coming soon</span>
             </div>
+            {user?.isAdmin && (
+              <Link
+                to="/profile/achievements-admin"
+                className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Shield className="w-5 h-5 text-amber-400" />
+                  <span className="text-white">Manage Achievements</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-zinc-500" />
+              </Link>
+            )}
           </div>
         </div>
 

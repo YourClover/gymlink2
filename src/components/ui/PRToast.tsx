@@ -104,11 +104,25 @@ export default function PRToast({
             </div>
             <p className="text-white font-medium truncate">{exerciseName}</p>
             <p className="text-sm text-zinc-400">
-              {formatRecordDisplay(recordType, newRecord, weight, reps, timeSeconds)}
+              {formatRecordDisplay(
+                recordType,
+                newRecord,
+                weight,
+                reps,
+                timeSeconds,
+              )}
               {previousRecord && (
                 <span className="text-zinc-500">
                   {' '}
-                  (previous: {formatRecordDisplay(recordType, previousRecord, weight, reps, timeSeconds)})
+                  (previous:{' '}
+                  {formatRecordDisplay(
+                    recordType,
+                    previousRecord,
+                    weight,
+                    reps,
+                    timeSeconds,
+                  )}
+                  )
                 </span>
               )}
             </p>

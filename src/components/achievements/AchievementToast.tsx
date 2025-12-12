@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import type { AchievementRarity } from '@prisma/client'
 import { X } from 'lucide-react'
 import AchievementBadge from './AchievementBadge'
+import type { AchievementRarity } from '@prisma/client'
 
 interface AchievementToastProps {
   name: string
@@ -57,7 +57,12 @@ export default function AchievementToast({
       >
         <div className="flex items-start gap-3">
           {/* Achievement badge */}
-          <AchievementBadge icon={icon} rarity={rarity} earned={true} size="md" />
+          <AchievementBadge
+            icon={icon}
+            rarity={rarity}
+            earned={true}
+            size="md"
+          />
 
           {/* Content */}
           <div className="flex-1 min-w-0">

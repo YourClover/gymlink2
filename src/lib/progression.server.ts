@@ -1,9 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import {
-  calculateMetricValue,
-  type ProgressionMetric,
+  
+  calculateMetricValue
 } from './progression-utils'
+import type {ProgressionMetric} from './progression-utils';
 
 export type ProgressionDataPoint = {
   date: string
@@ -96,7 +97,7 @@ export const getExerciseProgression = createServerFn({ method: 'GET' })
     }
 
     // Convert to array and format dates
-    const dataPoints: ProgressionDataPoint[] = Array.from(
+    const dataPoints: Array<ProgressionDataPoint> = Array.from(
       sessionData.values(),
     ).map((item) => ({
       date: item.date.toISOString().split('T')[0],
@@ -112,12 +113,7 @@ export const getExerciseProgression = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getExerciseSummary = createServerFn({ method: 'GET' })
-  .inputValidator(
-    (data: {
-      userId: string
-      exerciseId: string
-    }) => data,
-  )
+  .inputValidator((data: { userId: string; exerciseId: string }) => data)
   .handler(async ({ data }) => {
     // Get exercise details
     const exercise = await prisma.exercise.findUnique({
@@ -202,11 +198,7 @@ export const getExerciseSummary = createServerFn({ method: 'GET' })
 
 export const getExerciseRecentSessions = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: {
-      userId: string
-      exerciseId: string
-      limit?: number
-    }) => data,
+    (data: { userId: string; exerciseId: string; limit?: number }) => data,
   )
   .handler(async ({ data }) => {
     const limit = data.limit ?? 5

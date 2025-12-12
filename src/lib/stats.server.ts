@@ -366,7 +366,10 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
     // For each exercise, select the most relevant PR type
     // Priority: MAX_VOLUME > MAX_TIME/MAX_REPS > MAX_WEIGHT
     const exerciseIds = [...new Set(prs.map((pr) => pr.exerciseId))]
-    const exercisePRs = new Map<string, (typeof exercisePRsByType extends Map<string, infer V> ? V : never)>()
+    const exercisePRs = new Map<
+      string,
+      typeof exercisePRsByType extends Map<string, infer V> ? V : never
+    >()
 
     const priorityOrder = {
       [RecordType.MAX_VOLUME]: 0,

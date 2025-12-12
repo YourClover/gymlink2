@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, Loader2, Save } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getUserProfile, updateUserProfile } from '@/lib/profile.server'
 import AppLayout from '@/components/AppLayout'
-import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 
 export const Route = createFileRoute('/profile/edit')({
   component: ProfileEditPage,
@@ -123,12 +123,16 @@ function ProfileEditPage() {
           <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-zinc-500">
             @{profile.username}
           </div>
-          <p className="text-xs text-zinc-600 mt-1">Username cannot be changed</p>
+          <p className="text-xs text-zinc-600 mt-1">
+            Username cannot be changed
+          </p>
         </div>
 
         {/* Profile Code */}
         <div className="mb-6">
-          <label className="block text-sm text-zinc-400 mb-1">Profile Code</label>
+          <label className="block text-sm text-zinc-400 mb-1">
+            Profile Code
+          </label>
           <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-zinc-300 font-mono">
             {profile.profileCode}
           </div>

@@ -1,4 +1,4 @@
-import { Repeat, Timer, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Repeat, Timer, Trash2 } from 'lucide-react'
 import type { Exercise } from '@prisma/client'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 
@@ -15,12 +15,22 @@ interface PlanExerciseCardProps {
   }
   onPress?: () => void
   onRemove?: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  showReorder?: boolean
+  isFirst?: boolean
+  isLast?: boolean
 }
 
 export default function PlanExerciseCard({
   planExercise,
   onPress,
   onRemove,
+  onMoveUp,
+  onMoveDown,
+  showReorder = false,
+  isFirst = false,
+  isLast = false,
 }: PlanExerciseCardProps) {
   const { exercise, targetSets, targetReps, targetTimeSeconds, targetWeight } =
     planExercise
@@ -43,6 +53,42 @@ export default function PlanExerciseCard({
 
   return (
     <div className="flex items-center gap-2">
+      {/* Reorder buttons */}
+      {showReorder && (
+        <div className="flex flex-col gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onMoveUp?.()
+            }}
+            disabled={isFirst}
+            className={`p-1 rounded ${
+              isFirst
+                ? 'text-zinc-700'
+                : 'text-zinc-500 hover:text-white hover:bg-zinc-700'
+            }`}
+            aria-label="Move up"
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onMoveDown?.()
+            }}
+            disabled={isLast}
+            className={`p-1 rounded ${
+              isLast
+                ? 'text-zinc-700'
+                : 'text-zinc-500 hover:text-white hover:bg-zinc-700'
+            }`}
+            aria-label="Move down"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <button
         onClick={onPress}
         className="flex-1 text-left p-4 bg-zinc-800/50 rounded-xl hover:bg-zinc-800 transition-colors"

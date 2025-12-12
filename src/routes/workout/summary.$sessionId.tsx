@@ -77,8 +77,11 @@ function WorkoutSummaryPage() {
   )
 
   // Achievement toasts
-  const [pendingAchievements, setPendingAchievements] = useState<NewAchievement[]>([])
-  const [currentAchievement, setCurrentAchievement] = useState<NewAchievement | null>(null)
+  const [pendingAchievements, setPendingAchievements] = useState<
+    Array<NewAchievement>
+  >([])
+  const [currentAchievement, setCurrentAchievement] =
+    useState<NewAchievement | null>(null)
 
   // Show achievements one by one
   useEffect(() => {
@@ -112,7 +115,8 @@ function WorkoutSummaryPage() {
         if (!result.session.durationSeconds) {
           setCalculatedDuration(
             Math.floor(
-              (Date.now() - new Date(result.session.startedAt).getTime()) / 1000,
+              (Date.now() - new Date(result.session.startedAt).getTime()) /
+                1000,
             ),
           )
         }

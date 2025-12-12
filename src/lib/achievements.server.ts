@@ -1,7 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
-import type { AchievementCategory, AchievementRarity, MuscleGroup } from '@prisma/client'
 import { prisma } from './db'
 import { calculateStreak, getWeekStart } from './date-utils'
+import type {
+  AchievementCategory,
+  AchievementRarity,
+  MuscleGroup,
+} from '@prisma/client'
 
 // ============================================
 // TYPES
@@ -96,7 +100,7 @@ export const getUnnotifiedAchievements = createServerFn({ method: 'GET' })
 // ============================================
 
 export const markAchievementsNotified = createServerFn({ method: 'POST' })
-  .inputValidator((data: { achievementIds: string[] }) => data)
+  .inputValidator((data: { achievementIds: Array<string> }) => data)
   .handler(async ({ data }) => {
     await prisma.userAchievement.updateMany({
       where: {
@@ -120,7 +124,7 @@ export const checkAchievements = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const newlyEarned: NewlyEarnedAchievement[] = []
+    const newlyEarned: Array<NewlyEarnedAchievement> = []
 
     // Get user's current stats
     const [
@@ -168,10 +172,16 @@ export const checkAchievements = createServerFn({ method: 'POST' })
           earned = checkVolumeAchievement(achievement.code, totalVolume)
           break
         case 'CONSISTENCY':
-          earned = checkConsistencyAchievement(achievement.code, consistencyWeeks)
+          earned = checkConsistencyAchievement(
+            achievement.code,
+            consistencyWeeks,
+          )
           break
         case 'MUSCLE_FOCUS':
-          earned = checkMuscleFocusAchievement(achievement.code, muscleGroupSets)
+          earned = checkMuscleFocusAchievement(
+            achievement.code,
+            muscleGroupSets,
+          )
           break
       }
 
@@ -315,7 +325,10 @@ async function getConsistencyStreak(userId: string): Promise<number> {
   lastWeekStart.setDate(lastWeekStart.getDate() - 7)
   const lastWeekStr = lastWeekStart.toISOString().split('T')[0]
 
-  if (qualifyingWeeks[0] !== currentWeekStr && qualifyingWeeks[0] !== lastWeekStr) {
+  if (
+    qualifyingWeeks[0] !== currentWeekStr &&
+    qualifyingWeeks[0] !== lastWeekStr
+  ) {
     return 0
   }
 
@@ -340,7 +353,10 @@ async function getConsistencyStreak(userId: string): Promise<number> {
 }
 
 // Achievement check functions
-function checkMilestoneAchievement(code: string, totalWorkouts: number): boolean {
+function checkMilestoneAchievement(
+  code: string,
+  totalWorkouts: number,
+): boolean {
   const thresholds: Record<string, number> = {
     FIRST_WORKOUT: 1,
     WORKOUTS_5: 5,
@@ -385,7 +401,10 @@ function checkVolumeAchievement(code: string, totalVolume: number): boolean {
   return totalVolume >= (thresholds[code] ?? Infinity)
 }
 
-function checkConsistencyAchievement(code: string, consistencyWeeks: number): boolean {
+function checkConsistencyAchievement(
+  code: string,
+  consistencyWeeks: number,
+): boolean {
   const thresholds: Record<string, number> = {
     CONSISTENCY_3X4: 4,
     CONSISTENCY_3X12: 12,
@@ -411,3 +430,170 @@ function checkMuscleFocusAchievement(
 
   return (muscleGroupSets[config.muscle] || 0) >= config.threshold
 }
+
+// ============================================
+// ADMIN FUNCTIONS
+// ============================================
+
+// Get all achievements (for admin panel)
+export const getAllAchievements = createServerFn({ method: 'GET' })
+  .inputValidator((data: { userId: string }) => data)
+  .handler(async ({ data }) => {
+    // Verify admin
+    const user = await prisma.user.findUnique({
+      where: { id: data.userId },
+      select: { isAdmin: true },
+    })
+    if (!user?.isAdmin) {
+      throw new Error('Admin access required')
+    }
+
+    const achievements = await prisma.achievement.findMany({
+      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }],
+      include: {
+        exercise: {
+          select: { id: true, name: true },
+        },
+      },
+    })
+
+    return { achievements }
+  })
+
+// Create achievement (admin only)
+export const createAchievement = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: {
+      userId: string
+      code: string
+      name: string
+      description: string
+      category: AchievementCategory
+      rarity: AchievementRarity
+      icon: string
+      threshold: number
+      sortOrder?: number
+      isHidden?: boolean
+      exerciseId?: string | null
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { userId, sortOrder = 0, isHidden = false, exerciseId, ...achievementData } = data
+
+    // Verify admin
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isAdmin: true },
+    })
+    if (!user?.isAdmin) {
+      throw new Error('Admin access required')
+    }
+
+    // Check code uniqueness
+    const existing = await prisma.achievement.findUnique({
+      where: { code: achievementData.code },
+    })
+    if (existing) {
+      throw new Error('Achievement code already exists')
+    }
+
+    const achievement = await prisma.achievement.create({
+      data: {
+        ...achievementData,
+        sortOrder,
+        isHidden,
+        exerciseId: exerciseId || null,
+      },
+    })
+
+    return { achievement }
+  })
+
+// Update achievement (admin only)
+export const updateAchievement = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: {
+      userId: string
+      id: string
+      code?: string
+      name?: string
+      description?: string
+      category?: AchievementCategory
+      rarity?: AchievementRarity
+      icon?: string
+      threshold?: number
+      sortOrder?: number
+      isHidden?: boolean
+      exerciseId?: string | null
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { userId, id, ...updateData } = data
+
+    // Verify admin
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isAdmin: true },
+    })
+    if (!user?.isAdmin) {
+      throw new Error('Admin access required')
+    }
+
+    // Check if achievement exists
+    const existing = await prisma.achievement.findUnique({
+      where: { id },
+    })
+    if (!existing) {
+      throw new Error('Achievement not found')
+    }
+
+    // If code is being changed, check uniqueness
+    if (updateData.code && updateData.code !== existing.code) {
+      const codeExists = await prisma.achievement.findUnique({
+        where: { code: updateData.code },
+      })
+      if (codeExists) {
+        throw new Error('Achievement code already exists')
+      }
+    }
+
+    const achievement = await prisma.achievement.update({
+      where: { id },
+      data: updateData,
+    })
+
+    return { achievement }
+  })
+
+// Delete achievement (admin only)
+export const deleteAchievement = createServerFn({ method: 'POST' })
+  .inputValidator((data: { userId: string; id: string }) => data)
+  .handler(async ({ data }) => {
+    // Verify admin
+    const user = await prisma.user.findUnique({
+      where: { id: data.userId },
+      select: { isAdmin: true },
+    })
+    if (!user?.isAdmin) {
+      throw new Error('Admin access required')
+    }
+
+    // Check if achievement exists
+    const existing = await prisma.achievement.findUnique({
+      where: { id: data.id },
+    })
+    if (!existing) {
+      throw new Error('Achievement not found')
+    }
+
+    // Delete associated user achievements first
+    await prisma.userAchievement.deleteMany({
+      where: { achievementId: data.id },
+    })
+
+    await prisma.achievement.delete({
+      where: { id: data.id },
+    })
+
+    return { success: true }
+  })

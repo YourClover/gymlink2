@@ -255,7 +255,8 @@ export default function ExerciseForm({
         >
           {isLoading
             ? 'Saving...'
-            : (submitLabel ?? (initialData ? 'Save Changes' : 'Create Exercise'))}
+            : (submitLabel ??
+              (initialData ? 'Save Changes' : 'Create Exercise'))}
         </button>
       </div>
     </form>

@@ -7,8 +7,11 @@ type TimeRange = 'week' | 'month' | 'all'
 // Get global leaderboard
 export const getGlobalLeaderboard = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { metric: LeaderboardMetric; timeRange: TimeRange; limit?: number }) =>
-      data,
+    (data: {
+      metric: LeaderboardMetric
+      timeRange: TimeRange
+      limit?: number
+    }) => data,
   )
   .handler(async ({ data }) => {
     const limit = data.limit ?? 50
@@ -76,7 +79,7 @@ function getDateFilter(timeRange: TimeRange): Date | null {
 async function getVolumeLeaderboard(
   dateFilter: Date | null,
   limit: number,
-  userIds?: string[],
+  userIds?: Array<string>,
 ) {
   // Get all workout sets with their volumes
   const sets = await prisma.workoutSet.findMany({
@@ -119,7 +122,7 @@ async function getVolumeLeaderboard(
 async function getWorkoutsLeaderboard(
   dateFilter: Date | null,
   limit: number,
-  userIds?: string[],
+  userIds?: Array<string>,
 ) {
   const workoutCounts = await prisma.workoutSession.groupBy({
     by: ['userId'],
@@ -142,7 +145,7 @@ async function getWorkoutsLeaderboard(
 }
 
 // Streak leaderboard (current streak)
-async function getStreakLeaderboard(limit: number, userIds?: string[]) {
+async function getStreakLeaderboard(limit: number, userIds?: Array<string>) {
   // Get all users to calculate streaks for
   const users = await prisma.user.findMany({
     where: userIds ? { id: { in: userIds } } : undefined,
@@ -151,7 +154,7 @@ async function getStreakLeaderboard(limit: number, userIds?: string[]) {
   })
 
   // Calculate streak for each user
-  const streaks: { userId: string; value: number }[] = []
+  const streaks: Array<{ userId: string; value: number }> = []
 
   for (const user of users) {
     const streak = await calculateStreak(user.id)
@@ -169,7 +172,7 @@ async function getStreakLeaderboard(limit: number, userIds?: string[]) {
 async function getPRsLeaderboard(
   dateFilter: Date | null,
   limit: number,
-  userIds?: string[],
+  userIds?: Array<string>,
 ) {
   const prCounts = await prisma.personalRecord.groupBy({
     by: ['userId'],
@@ -189,7 +192,7 @@ async function getPRsLeaderboard(
 }
 
 // Helper: Add user and profile info to leaderboard entries
-async function enrichLeaderboard(entries: { userId: string; value: number }[]) {
+async function enrichLeaderboard(entries: Array<{ userId: string; value: number }>) {
   if (entries.length === 0) return { leaderboard: [] }
 
   const userIds = entries.map((e) => e.userId)
@@ -226,7 +229,7 @@ async function calculateStreak(userId: string): Promise<number> {
   weekStart.setHours(0, 0, 0, 0)
 
   let streak = 0
-  let checkDate = new Date(weekStart)
+  const checkDate = new Date(weekStart)
 
   // Check up to 52 weeks back
   for (let i = 0; i < 52; i++) {

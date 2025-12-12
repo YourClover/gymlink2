@@ -151,13 +151,15 @@ function ExercisesPage() {
                 placeholder="Search exercises..."
               />
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-              aria-label="Create exercise"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+            {user?.isAdmin && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                aria-label="Create exercise"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            )}
           </div>
           <ExerciseFilters
             muscleGroup={muscleGroup}

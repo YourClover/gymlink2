@@ -161,7 +161,7 @@ export const getUserPRs = createServerFn({ method: 'GET' })
     // For each exercise, return only the most relevant PR type
     // (prefer MAX_VOLUME, then MAX_TIME/MAX_REPS, then MAX_WEIGHT)
     const exerciseIds = [...new Set(prs.map((pr) => pr.exerciseId))]
-    const result: (typeof prs)[0][] = []
+    const result: Array<(typeof prs)[0]> = []
 
     for (const exerciseId of exerciseIds) {
       // Get all PRs for this exercise
@@ -226,7 +226,7 @@ export const getExercisePR = createServerFn({ method: 'GET' })
     }
 
     // Return the most relevant PR type (prefer MAX_VOLUME > MAX_TIME/MAX_REPS > MAX_WEIGHT)
-    const priorityOrder: RecordType[] = [
+    const priorityOrder: Array<RecordType> = [
       RecordType.MAX_VOLUME,
       RecordType.MAX_TIME,
       RecordType.MAX_REPS,

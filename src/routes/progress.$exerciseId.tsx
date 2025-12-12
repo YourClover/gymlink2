@@ -1,25 +1,28 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState, useMemo } from 'react'
-import { ArrowLeft, Calendar, TrendingUp, Dumbbell, Clock } from 'lucide-react'
-import type { MuscleGroup, Equipment, RecordType } from '@prisma/client'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, Calendar, Clock, Dumbbell, TrendingUp } from 'lucide-react'
+import type { Equipment, MuscleGroup, RecordType } from '@prisma/client'
+import type {TimeRange} from '@/components/progression/TimeRangeSelector';
+import type {ProgressionDataPoint} from '@/lib/progression.server';
+import type {ProgressionMetric} from '@/lib/progression-utils';
 import { useAuth } from '@/context/AuthContext'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import ProgressionChart from '@/components/progression/ProgressionChart'
 import TimeRangeSelector, {
-  getStartDateForRange,
-  type TimeRange,
+  
+  getStartDateForRange
 } from '@/components/progression/TimeRangeSelector'
 import MetricSelector from '@/components/progression/MetricSelector'
 import {
+  
   getExerciseProgression,
-  getExerciseSummary,
   getExerciseRecentSessions,
-  type ProgressionDataPoint,
+  getExerciseSummary
 } from '@/lib/progression.server'
 import {
-  getAvailableMetrics,
+  
   calculateImprovement,
-  type ProgressionMetric,
+  getAvailableMetrics
 } from '@/lib/progression-utils'
 
 export const Route = createFileRoute('/progress/$exerciseId')({
@@ -64,8 +67,8 @@ function ProgressPage() {
 
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<ExerciseSummary | null>(null)
-  const [dataPoints, setDataPoints] = useState<ProgressionDataPoint[]>([])
-  const [recentSessions, setRecentSessions] = useState<RecentSession[]>([])
+  const [dataPoints, setDataPoints] = useState<Array<ProgressionDataPoint>>([])
+  const [recentSessions, setRecentSessions] = useState<Array<RecentSession>>([])
   const [timeRange, setTimeRange] = useState<TimeRange>('all')
   const [metric, setMetric] = useState<ProgressionMetric>('max_weight')
 
@@ -77,7 +80,10 @@ function ProgressPage() {
 
   // Set default metric when exercise loads
   useEffect(() => {
-    if (availableMetrics.length > 0 && !availableMetrics.find((m) => m.value === metric)) {
+    if (
+      availableMetrics.length > 0 &&
+      !availableMetrics.find((m) => m.value === metric)
+    ) {
       setMetric(availableMetrics[0].value)
     }
   }, [availableMetrics, metric])
@@ -314,9 +320,7 @@ function ProgressPage() {
             <p className="text-xs text-zinc-400">Progress</p>
           </div>
           <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50 text-center">
-            <p className="text-xl font-bold text-white">
-              {dataPoints.length}
-            </p>
+            <p className="text-xl font-bold text-white">{dataPoints.length}</p>
             <p className="text-xs text-zinc-400">Data Points</p>
           </div>
         </div>
@@ -330,10 +334,7 @@ function ProgressPage() {
             </h2>
             <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
               {recentSessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="p-3 flex items-center gap-3"
-                >
+                <div key={session.id} className="p-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-white">
                       {formatDate(session.completedAt)}

@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { AlertCircle, Loader2, Target } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { joinChallengeByCode } from '@/lib/challenges.server'
-import { Loader2, Target, AlertCircle } from 'lucide-react'
 
 export const Route = createFileRoute('/challenges/join/$code')({
   component: JoinChallengeByCodePage,

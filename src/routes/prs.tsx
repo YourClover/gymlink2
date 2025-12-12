@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Trophy, LineChart } from 'lucide-react'
+import { ArrowLeft, LineChart, Trophy } from 'lucide-react'
 import type { MuscleGroup, RecordType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
@@ -174,7 +174,10 @@ function PRsPage() {
                     </div>
                     <button
                       onClick={() =>
-                        navigate({ to: '/progress/$exerciseId', params: { exerciseId: pr.exerciseId } })
+                        navigate({
+                          to: '/progress/$exerciseId',
+                          params: { exerciseId: pr.exerciseId },
+                        })
                       }
                       className="p-2 text-zinc-400 hover:text-blue-400 rounded-lg hover:bg-zinc-700/50 transition-colors focus:outline-none active:scale-95"
                       title="View progress"

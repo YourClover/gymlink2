@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { Bell } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getUnreadNotificationCount } from '@/lib/notifications.server'
-import { Bell } from 'lucide-react'
 
 export function NotificationBell() {
   const { user } = useAuth()
@@ -29,7 +29,10 @@ export function NotificationBell() {
   }, [user])
 
   return (
-    <Link to="/notifications" className="relative p-2 hover:bg-zinc-800 rounded-lg">
+    <Link
+      to="/notifications"
+      className="relative p-2 hover:bg-zinc-800 rounded-lg"
+    >
       <Bell className="w-6 h-6 text-zinc-400" />
       {unreadCount > 0 && (
         <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-medium">

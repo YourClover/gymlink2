@@ -10,7 +10,8 @@ const DEFAULT_EXPIRY_DAYS = 7
 function generateCode(): string {
   let code = ''
   for (let i = 0; i < SHARE_CODE_LENGTH; i++) {
-    code += SHARE_CODE_CHARSET[Math.floor(Math.random() * SHARE_CODE_CHARSET.length)]
+    code +=
+      SHARE_CODE_CHARSET[Math.floor(Math.random() * SHARE_CODE_CHARSET.length)]
   }
   return code
 }

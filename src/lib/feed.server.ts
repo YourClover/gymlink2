@@ -10,7 +10,10 @@ export const getActivityFeed = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     // Get list of users this person follows (accepted only)
     const following = await prisma.follow.findMany({
-      where: { followerId: data.userId, status: 'ACCEPTED' },
+      where: {
+        followerId: data.userId,
+        status: 'ACCEPTED',
+      },
       select: { followingId: true },
     })
 

@@ -106,7 +106,12 @@ export const getProfileByUsername = createServerFn({ method: 'GET' })
       },
     })
 
-    if (!profile) return { profile: null, canView: false, followStatus: null }
+    if (!profile)
+      return {
+        profile: null,
+        canView: false,
+        followStatus: null,
+      }
 
     // Check if viewer can see this profile
     let canView = !profile.isPrivate
@@ -196,7 +201,9 @@ export const searchUsers = createServerFn({ method: 'GET' })
           { username: { contains: query, mode: 'insensitive' } },
           { user: { name: { contains: query, mode: 'insensitive' } } },
         ],
-        userId: { not: data.userId }, // Exclude self
+        userId: {
+          not: data.userId, // Exclude self
+        },
       },
       take: limit,
       include: {

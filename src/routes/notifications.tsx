@@ -1,24 +1,24 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import {
+  ArrowLeft,
+  Award,
+  Bell,
+  Check,
+  Loader2,
+  Target,
+  Trophy,
+  UserCheck,
+  UserPlus,
+} from 'lucide-react'
+import type { NotificationType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import {
   getNotifications,
-  markNotificationRead,
   markAllNotificationsRead,
+  markNotificationRead,
 } from '@/lib/notifications.server'
 import AppLayout from '@/components/AppLayout'
-import {
-  ArrowLeft,
-  Bell,
-  UserPlus,
-  UserCheck,
-  Trophy,
-  Target,
-  Award,
-  Check,
-  Loader2,
-} from 'lucide-react'
-import type { NotificationType } from '@prisma/client'
 
 export const Route = createFileRoute('/notifications')({
   component: NotificationsPage,
@@ -37,7 +37,7 @@ interface NotificationData {
 function NotificationsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [notifications, setNotifications] = useState<NotificationData[]>([])
+  const [notifications, setNotifications] = useState<Array<NotificationData>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const loadNotifications = async () => {
@@ -47,7 +47,7 @@ function NotificationsPage() {
       const result = await getNotifications({
         data: { userId: user.id, limit: 50 },
       })
-      setNotifications(result.notifications as NotificationData[])
+      setNotifications(result.notifications as Array<NotificationData>)
     } catch (error) {
       console.error('Failed to load notifications:', error)
     } finally {
@@ -102,7 +102,9 @@ function NotificationsPage() {
     }
   }
 
-  const getNotificationLink = (notification: NotificationData): string | null => {
+  const getNotificationLink = (
+    notification: NotificationData,
+  ): string | null => {
     switch (notification.type) {
       case 'FOLLOW_REQUEST':
         return '/followers'

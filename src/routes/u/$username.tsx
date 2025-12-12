@@ -1,25 +1,22 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { useAuth } from '@/context/AuthContext'
+import { useEffect, useState } from 'react'
 import {
-  getProfileByUsername,
-  getProfileStats,
-} from '@/lib/profile.server'
+  ArrowLeft,
+  Calendar,
+  Dumbbell,
+  Flame,
+  Loader2,
+  Lock,
+  Medal,
+  Trophy,
+} from 'lucide-react'
+import type { AchievementRarity } from '@prisma/client'
+import { useAuth } from '@/context/AuthContext'
+import { getProfileByUsername, getProfileStats } from '@/lib/profile.server'
 import { getUserAchievements } from '@/lib/achievements.server'
 import AppLayout from '@/components/AppLayout'
 import { AchievementBadge } from '@/components/achievements'
 import { FollowButton } from '@/components/social/FollowButton'
-import {
-  ArrowLeft,
-  Lock,
-  Dumbbell,
-  Trophy,
-  Flame,
-  Medal,
-  Calendar,
-  Loader2,
-} from 'lucide-react'
-import type { AchievementRarity } from '@prisma/client'
 
 export const Route = createFileRoute('/u/$username')({
   component: PublicProfilePage,
@@ -69,7 +66,7 @@ function PublicProfilePage() {
   const [canView, setCanView] = useState(false)
   const [followStatus, setFollowStatus] = useState<string | null>(null)
   const [stats, setStats] = useState<StatsData | null>(null)
-  const [achievements, setAchievements] = useState<AchievementData[]>([])
+  const [achievements, setAchievements] = useState<Array<AchievementData>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const isOwnProfile = user?.id === profile?.userId
@@ -186,12 +183,14 @@ function PublicProfilePage() {
       <div className="p-4">
         {/* Header */}
         {!isOwnProfile && (
-          <button
-            onClick={() => window.history.back()}
-            className="p-2 -ml-2 hover:bg-zinc-800 rounded-lg mb-4"
-          >
-            <ArrowLeft className="w-5 h-5 text-zinc-400" />
-          </button>
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 -ml-2 hover:bg-zinc-800 rounded-lg"
+            >
+              <ArrowLeft className="w-5 h-5 text-zinc-400" />
+            </button>
+          </div>
         )}
 
         {/* Profile Header */}
@@ -281,7 +280,9 @@ function PublicProfilePage() {
                   <Trophy className="w-4 h-4 text-yellow-400" />
                   <span className="text-sm text-zinc-400">PRs</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats.totalPRs}</p>
+                <p className="text-2xl font-bold text-white">
+                  {stats.totalPRs}
+                </p>
               </div>
               <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-1">

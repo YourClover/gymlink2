@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ProgressionMetric } from '@/lib/progression-utils'
 
 type MetricOption = {
@@ -8,7 +8,7 @@ type MetricOption = {
 }
 
 type Props = {
-  options: MetricOption[]
+  options: Array<MetricOption>
   value: ProgressionMetric
   onChange: (metric: ProgressionMetric) => void
 }

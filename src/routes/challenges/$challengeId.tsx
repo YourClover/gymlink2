@@ -1,5 +1,18 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import {
+  ArrowLeft,
+  Check,
+  Clock,
+  Crown,
+  Loader2,
+  Medal,
+  Share2,
+  Target,
+  Trophy,
+  Users,
+} from 'lucide-react'
+import type { ChallengeStatus, ChallengeType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import {
   getChallengeDetails,
@@ -7,19 +20,6 @@ import {
   leaveChallenge,
 } from '@/lib/challenges.server'
 import AppLayout from '@/components/AppLayout'
-import {
-  ArrowLeft,
-  Trophy,
-  Clock,
-  Users,
-  Target,
-  Crown,
-  Medal,
-  Share2,
-  Check,
-  Loader2,
-} from 'lucide-react'
-import type { ChallengeType, ChallengeStatus } from '@prisma/client'
 
 export const Route = createFileRoute('/challenges/$challengeId')({
   component: ChallengeDetailPage,
@@ -50,7 +50,7 @@ interface ChallengeData {
   creatorId: string
   creator: { id: string; name: string }
   exercise: { id: string; name: string } | null
-  participants: ParticipantData[]
+  participants: Array<ParticipantData>
 }
 
 function ChallengeDetailPage() {
@@ -247,9 +247,7 @@ function ChallengeDetailPage() {
               </h1>
               {getStatusBadge(challenge.status)}
             </div>
-            <p className="text-sm text-zinc-500">
-              by {challenge.creator.name}
-            </p>
+            <p className="text-sm text-zinc-500">by {challenge.creator.name}</p>
           </div>
         </div>
 
@@ -290,7 +288,8 @@ function ChallengeDetailPage() {
               <span className="text-sm">Duration</span>
             </div>
             <p className="text-white">
-              {formatDate(challenge.startDate)} - {formatDate(challenge.endDate)}
+              {formatDate(challenge.startDate)} -{' '}
+              {formatDate(challenge.endDate)}
             </p>
           </div>
         </div>
@@ -407,7 +406,9 @@ function ChallengeDetailPage() {
                     <div className="h-1.5 bg-zinc-700 rounded-full overflow-hidden mt-1">
                       <div
                         className={`h-full transition-all ${
-                          participant.completedAt ? 'bg-green-500' : 'bg-blue-600'
+                          participant.completedAt
+                            ? 'bg-green-500'
+                            : 'bg-blue-600'
                         }`}
                         style={{
                           width: `${Math.min(100, participantProgress)}%`,

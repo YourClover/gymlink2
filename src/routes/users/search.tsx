@@ -1,10 +1,10 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useCallback } from 'react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useCallback, useState } from 'react'
+import { ArrowLeft, Loader2, QrCode, Search, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { searchUsers, getProfileByCode } from '@/lib/profile.server'
+import { getProfileByCode, searchUsers } from '@/lib/profile.server'
 import AppLayout from '@/components/AppLayout'
 import { FollowButton } from '@/components/social/FollowButton'
-import { ArrowLeft, Search, Loader2, QrCode, User } from 'lucide-react'
 
 export const Route = createFileRoute('/users/search')({
   component: UserSearchPage,
@@ -23,7 +23,7 @@ function UserSearchPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<UserResult[]>([])
+  const [results, setResults] = useState<Array<UserResult>>([])
   const [isSearching, setIsSearching] = useState(false)
   const [profileCodeInput, setProfileCodeInput] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
@@ -41,7 +41,7 @@ function UserSearchPage() {
         const result = await searchUsers({
           data: { query: searchQuery, userId: user.id, limit: 20 },
         })
-        setResults(result.users as UserResult[])
+        setResults(result.users as Array<UserResult>)
       } catch (error) {
         console.error('Search failed:', error)
       } finally {
@@ -209,7 +209,9 @@ function UserSearchPage() {
           </div>
         ) : query.length > 0 && query.length < 2 ? (
           <div className="text-center py-8">
-            <p className="text-zinc-500">Type at least 2 characters to search</p>
+            <p className="text-zinc-500">
+              Type at least 2 characters to search
+            </p>
           </div>
         ) : null}
       </div>

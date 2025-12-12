@@ -58,7 +58,7 @@ function ActiveWorkoutPage() {
   const [exercises, setExercises] = useState<Array<WorkoutExercise>>([])
 
   // Modal states
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
+  const [showExitDialog, setShowExitDialog] = useState(false)
   const [showIncompleteConfirm, setShowIncompleteConfirm] = useState(false)
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [loggingExercise, setLoggingExercise] =
@@ -344,7 +344,13 @@ function ActiveWorkoutPage() {
 
   // Handle back button
   const handleBack = () => {
-    setShowDiscardConfirm(true)
+    setShowExitDialog(true)
+  }
+
+  // Handle continue later (leave workout but keep session)
+  const handleContinueLater = () => {
+    setShowExitDialog(false)
+    navigate({ to: '/workout' })
   }
 
   if (loading) {
@@ -474,17 +480,43 @@ function ActiveWorkoutPage() {
         nextSetInfo={nextSetInfo ?? undefined}
       />
 
-      {/* Discard Confirmation */}
-      <ConfirmDialog
-        isOpen={showDiscardConfirm}
-        title="Discard Workout?"
-        message="Are you sure you want to discard this workout? All logged sets will be lost."
-        confirmText="Discard"
-        cancelText="Keep Going"
-        onConfirm={handleDiscard}
-        onCancel={() => setShowDiscardConfirm(false)}
-        variant="danger"
-      />
+      {/* Exit Workout Dialog */}
+      {showExitDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowExitDialog(false)}
+          />
+          <div className="relative w-full max-w-sm bg-zinc-900 rounded-2xl p-6 animate-fade-in">
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Leave Workout?
+            </h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              What would you like to do with your current workout?
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setShowExitDialog(false)}
+                className="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors"
+              >
+                Keep Going
+              </button>
+              <button
+                onClick={handleDiscard}
+                className="w-full px-4 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors"
+              >
+                Discard Workout
+              </button>
+              <button
+                onClick={handleContinueLater}
+                className="w-full px-4 py-3 bg-zinc-800 text-white font-medium rounded-xl hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+              >
+                Continue Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Incomplete Sets Confirmation */}
       <ConfirmDialog

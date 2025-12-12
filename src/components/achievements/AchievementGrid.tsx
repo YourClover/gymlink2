@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { AchievementCategory, AchievementRarity } from '@prisma/client'
 import AchievementCard from './AchievementCard'
+import type { AchievementCategory, AchievementRarity } from '@prisma/client'
 
 interface Achievement {
   id: string
@@ -22,8 +22,8 @@ interface UserAchievement {
 }
 
 interface AchievementGridProps {
-  allAchievements: Achievement[]
-  earnedAchievements: UserAchievement[]
+  allAchievements: Array<Achievement>
+  earnedAchievements: Array<UserAchievement>
   earnedSet: Set<string>
 }
 
@@ -36,7 +36,7 @@ const categoryLabels: Record<AchievementCategory, string> = {
   MUSCLE_FOCUS: 'Muscle Focus',
 }
 
-const categoryOrder: AchievementCategory[] = [
+const categoryOrder: Array<AchievementCategory> = [
   'MILESTONE',
   'STREAK',
   'PERSONAL_RECORD',
@@ -50,7 +50,9 @@ export default function AchievementGrid({
   earnedAchievements,
   earnedSet,
 }: AchievementGridProps) {
-  const [selectedCategory, setSelectedCategory] = useState<AchievementCategory | 'ALL'>('ALL')
+  const [selectedCategory, setSelectedCategory] = useState<
+    AchievementCategory | 'ALL'
+  >('ALL')
 
   // Create a map for quick lookup of earned dates
   const earnedDates = new Map<string, Date>()
@@ -59,7 +61,7 @@ export default function AchievementGrid({
   }
 
   // Group achievements by category
-  const grouped = new Map<AchievementCategory, Achievement[]>()
+  const grouped = new Map<AchievementCategory, Array<Achievement>>()
   for (const category of categoryOrder) {
     grouped.set(category, [])
   }

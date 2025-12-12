@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Dumbbell, Trophy, Medal, Target, PartyPopper } from 'lucide-react'
+import { Dumbbell, Medal, PartyPopper, Target, Trophy } from 'lucide-react'
 import type { ActivityType } from '@prisma/client'
 
 interface ActivityMetadata {
@@ -11,6 +11,9 @@ interface ActivityMetadata {
   value?: number
   previousRecord?: number
   recordType?: string
+  weight?: number
+  reps?: number
+  timeSeconds?: number
   achievementName?: string
   achievementRarity?: string
   challengeName?: string
@@ -72,6 +75,33 @@ export function ActivityFeedItem({ activity }: ActivityFeedItemProps) {
     return `${Math.round(volume)} kg`
   }
 
+  const formatPRTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const formatPRValue = (metadata: ActivityMetadata) => {
+    switch (metadata.recordType) {
+      case 'MAX_VOLUME':
+        if (metadata.weight && metadata.reps) {
+          return `${metadata.weight}kg × ${metadata.reps} reps`
+        }
+        if (metadata.weight && metadata.timeSeconds) {
+          return `${metadata.weight}kg × ${formatPRTime(metadata.timeSeconds)}`
+        }
+        return `${metadata.value}`
+      case 'MAX_TIME':
+        return formatPRTime(metadata.value ?? 0)
+      case 'MAX_REPS':
+        return `${metadata.value} reps`
+      case 'MAX_WEIGHT':
+        return `${metadata.value}kg`
+      default:
+        return `${metadata.value}`
+    }
+  }
+
   const renderContent = (): React.ReactNode => {
     const metadata = activity.metadata
 
@@ -117,16 +147,7 @@ export function ActivityFeedItem({ activity }: ActivityFeedItemProps) {
                   {metadata.exerciseName ?? 'an exercise'}
                 </span>
               </p>
-              <p className="text-sm text-zinc-500">
-                {metadata.value}{' '}
-                {metadata.recordType === 'MAX_TIME' ? 'seconds' : 'kg'}
-                {metadata.previousRecord !== undefined && metadata.value !== undefined && (
-                  <span className="text-green-500">
-                    {' '}
-                    (+{(metadata.value - metadata.previousRecord).toFixed(1)})
-                  </span>
-                )}
-              </p>
+              <p className="text-sm text-zinc-500">{formatPRValue(metadata)}</p>
             </div>
           </div>
         )
@@ -196,7 +217,10 @@ export function ActivityFeedItem({ activity }: ActivityFeedItemProps) {
     <div className="bg-zinc-800/50 rounded-xl p-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
-        <Link to="/u/$username" params={{ username: activity.profile?.username ?? '' }}>
+        <Link
+          to="/u/$username"
+          params={{ username: activity.profile?.username ?? '' }}
+        >
           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
             {activity.profile?.avatarUrl ? (
               <img
@@ -210,7 +234,10 @@ export function ActivityFeedItem({ activity }: ActivityFeedItemProps) {
           </div>
         </Link>
         <div className="flex-1 min-w-0">
-          <Link to="/u/$username" params={{ username: activity.profile?.username ?? '' }}>
+          <Link
+            to="/u/$username"
+            params={{ username: activity.profile?.username ?? '' }}
+          >
             <p className="font-medium text-white truncate hover:text-blue-400">
               {activity.user.name}
             </p>

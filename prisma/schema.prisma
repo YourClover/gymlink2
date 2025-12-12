@@ -58,6 +58,7 @@ enum AchievementCategory {
   VOLUME
   CONSISTENCY
   MUSCLE_FOCUS
+  EXERCISE_SPECIFIC
 }
 
 enum AchievementRarity {
@@ -119,6 +120,7 @@ model User {
   email        String   @unique
   passwordHash String   @map("password_hash")
   name         String
+  isAdmin      Boolean  @default(false) @map("is_admin")
   preferences  Json     @default("{}")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -139,7 +141,6 @@ model User {
   createdChallenges       Challenge[]
   challengeParticipations ChallengeParticipant[]
   notifications           Notification[]
-
   @@map("users")
 }
 
@@ -216,6 +217,7 @@ model Exercise {
   workoutSets     WorkoutSet[]
   personalRecords PersonalRecord[]
   challenges      Challenge[]
+  achievements    Achievement[]
 
   @@index([userId])
   @@map("exercises")
@@ -317,13 +319,16 @@ model Achievement {
   threshold   Int                 @default(1)
   sortOrder   Int                 @default(0) @map("sort_order")
   isHidden    Boolean             @default(false) @map("is_hidden")
+  exerciseId  String?             @map("exercise_id")
   createdAt   DateTime            @default(now()) @map("created_at")
 
   // Relations
   userAchievements UserAchievement[]
+  exercise         Exercise?         @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
 
   @@index([category])
   @@index([code])
+  @@index([exerciseId])
   @@map("achievements")
 }
 

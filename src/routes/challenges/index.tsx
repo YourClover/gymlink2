@@ -1,23 +1,23 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import {
+  ChevronRight,
+  Clock,
+  Compass,
+  Loader2,
+  Plus,
+  Target,
+  Trophy,
+  Users,
+} from 'lucide-react'
+import type { ChallengeStatus, ChallengeType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import {
-  getUserChallenges,
   getPublicChallenges,
+  getUserChallenges,
   joinChallenge,
 } from '@/lib/challenges.server'
 import AppLayout from '@/components/AppLayout'
-import {
-  Target,
-  Plus,
-  Trophy,
-  Clock,
-  Users,
-  ChevronRight,
-  Loader2,
-  Compass,
-} from 'lucide-react'
-import type { ChallengeStatus, ChallengeType } from '@prisma/client'
 
 export const Route = createFileRoute('/challenges/')({
   component: ChallengesPage,
@@ -56,9 +56,9 @@ function ChallengesPage() {
   const [tab, setTab] = useState<
     'active' | 'upcoming' | 'completed' | 'discover'
   >('active')
-  const [challenges, setChallenges] = useState<ChallengeData[]>([])
+  const [challenges, setChallenges] = useState<Array<ChallengeData>>([])
   const [publicChallenges, setPublicChallenges] = useState<
-    PublicChallengeData[]
+    Array<PublicChallengeData>
   >([])
   const [isLoading, setIsLoading] = useState(true)
   const [joiningId, setJoiningId] = useState<string | null>(null)
@@ -68,7 +68,7 @@ function ChallengesPage() {
     setIsLoading(true)
     try {
       const result = await getUserChallenges({ data: { userId: user.id } })
-      setChallenges(result.challenges as ChallengeData[])
+      setChallenges(result.challenges as Array<ChallengeData>)
     } catch (error) {
       console.error('Failed to load challenges:', error)
     } finally {
@@ -81,7 +81,7 @@ function ChallengesPage() {
     setIsLoading(true)
     try {
       const result = await getPublicChallenges({ data: { userId: user.id } })
-      setPublicChallenges(result.challenges as PublicChallengeData[])
+      setPublicChallenges(result.challenges as Array<PublicChallengeData>)
     } catch (error) {
       console.error('Failed to load public challenges:', error)
     } finally {
@@ -362,9 +362,7 @@ function ChallengesPage() {
         ) : (
           <div className="text-center py-12">
             <Target className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-            <h3 className="text-white font-medium mb-1">
-              No {tab} challenges
-            </h3>
+            <h3 className="text-white font-medium mb-1">No {tab} challenges</h3>
             <p className="text-sm text-zinc-500">
               {tab === 'active'
                 ? 'Create or join a challenge to get started'

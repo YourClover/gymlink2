@@ -61,7 +61,7 @@ export const getExercise = createServerFn({ method: 'GET' })
     return { exercise }
   })
 
-// Create a custom exercise
+// Create a custom exercise (admin only)
 export const createExercise = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
@@ -82,6 +82,15 @@ export const createExercise = createServerFn({ method: 'POST' })
       isTimed = false,
       ...rest
     } = data
+
+    // Verify admin
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isAdmin: true },
+    })
+    if (!user?.isAdmin) {
+      throw new Error('Admin access required')
+    }
 
     const exercise = await prisma.exercise.create({
       data: {

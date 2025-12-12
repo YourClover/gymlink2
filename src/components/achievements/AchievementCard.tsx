@@ -1,5 +1,5 @@
-import type { AchievementRarity, AchievementCategory } from '@prisma/client'
 import AchievementBadge from './AchievementBadge'
+import type { AchievementCategory, AchievementRarity } from '@prisma/client'
 
 interface AchievementCardProps {
   name: string
@@ -70,16 +70,22 @@ export default function AchievementCard({
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className={`font-semibold ${earned ? 'text-white' : 'text-zinc-400'}`}>
+            <h3
+              className={`font-semibold ${earned ? 'text-white' : 'text-zinc-400'}`}
+            >
               {name}
             </h3>
-            <span className={`px-2 py-0.5 text-xs rounded-full ${rarityBadgeColors[rarity]}`}>
+            <span
+              className={`px-2 py-0.5 text-xs rounded-full ${rarityBadgeColors[rarity]}`}
+            >
               {rarityLabels[rarity]}
             </span>
           </div>
           <p className="text-sm text-zinc-400 mb-2">{description}</p>
           {earned && earnedAt ? (
-            <p className="text-xs text-zinc-500">Earned {formatDate(earnedAt)}</p>
+            <p className="text-xs text-zinc-500">
+              Earned {formatDate(earnedAt)}
+            </p>
           ) : (
             <p className="text-xs text-zinc-500">Locked</p>
           )}

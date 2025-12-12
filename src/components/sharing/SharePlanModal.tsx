@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Copy, Check, Share2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, Copy, Share2 } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import { generateShareCode } from '@/lib/sharing.server'
 import { useAuth } from '@/context/AuthContext'
@@ -149,9 +149,7 @@ export default function SharePlanModal({
               <p className="text-3xl font-mono font-bold text-white tracking-widest">
                 {shareCode.code}
               </p>
-              <p className="text-zinc-500 text-sm mt-2">
-                {expiryText}
-              </p>
+              <p className="text-zinc-500 text-sm mt-2">{expiryText}</p>
             </div>
 
             {/* Action buttons */}

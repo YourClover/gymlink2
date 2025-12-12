@@ -1,5 +1,5 @@
-import type { AchievementRarity } from '@prisma/client'
 import {
+  ArrowUp,
   Award,
   CalendarCheck,
   ChevronUp,
@@ -20,8 +20,8 @@ import {
   Trophy,
   Weight,
   Zap,
-  ArrowUp,
 } from 'lucide-react'
+import type { AchievementRarity } from '@prisma/client'
 
 interface AchievementBadgeProps {
   icon: string
@@ -55,7 +55,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   circle: Circle,
 }
 
-const rarityColors: Record<AchievementRarity, { bg: string; border: string; icon: string }> = {
+const rarityColors: Record<
+  AchievementRarity,
+  { bg: string; border: string; icon: string }
+> = {
   COMMON: {
     bg: 'bg-zinc-600/30',
     border: 'border-zinc-500/50',

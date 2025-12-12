@@ -1,10 +1,10 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
+import type { AchievementCategory, AchievementRarity } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import { AchievementGrid } from '@/components/achievements'
 import { getUserAchievements } from '@/lib/achievements.server'
-import type { AchievementCategory, AchievementRarity } from '@prisma/client'
 
 export const Route = createFileRoute('/achievements')({
   component: AchievementsPage,
@@ -32,8 +32,10 @@ interface UserAchievement {
 
 function AchievementsPage() {
   const { user } = useAuth()
-  const [achievements, setAchievements] = useState<Achievement[]>([])
-  const [earnedAchievements, setEarnedAchievements] = useState<UserAchievement[]>([])
+  const [achievements, setAchievements] = useState<Array<Achievement>>([])
+  const [earnedAchievements, setEarnedAchievements] = useState<
+    Array<UserAchievement>
+  >([])
   const [earnedSet, setEarnedSet] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
@@ -61,7 +63,10 @@ function AchievementsPage() {
       <div className="min-h-screen bg-zinc-900 flex flex-col">
         <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
           <div className="flex items-center gap-3 px-4 py-4">
-            <Link to="/profile" className="p-1 -ml-1 text-zinc-400 hover:text-white">
+            <Link
+              to="/profile"
+              className="p-1 -ml-1 text-zinc-400 hover:text-white"
+            >
               <ArrowLeft className="w-6 h-6" />
             </Link>
             <h1 className="text-xl font-bold text-white">Achievements</h1>
@@ -83,7 +88,10 @@ function AchievementsPage() {
     <div className="min-h-screen bg-zinc-900 flex flex-col">
       <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
         <div className="flex items-center gap-3 px-4 py-4">
-          <Link to="/profile" className="p-1 -ml-1 text-zinc-400 hover:text-white">
+          <Link
+            to="/profile"
+            className="p-1 -ml-1 text-zinc-400 hover:text-white"
+          >
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-xl font-bold text-white">Achievements</h1>

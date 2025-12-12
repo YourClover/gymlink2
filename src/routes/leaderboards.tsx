@@ -1,20 +1,20 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import {
+  Crown,
+  Dumbbell,
+  Flame,
+  Loader2,
+  Medal,
+  Trophy,
+  Zap,
+} from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
-  getGlobalLeaderboard,
   getFriendsLeaderboard,
+  getGlobalLeaderboard,
 } from '@/lib/leaderboards.server'
 import AppLayout from '@/components/AppLayout'
-import {
-  Trophy,
-  Flame,
-  Dumbbell,
-  Zap,
-  Crown,
-  Medal,
-  Loader2,
-} from 'lucide-react'
 
 export const Route = createFileRoute('/leaderboards')({
   component: LeaderboardsPage,
@@ -37,7 +37,7 @@ function LeaderboardsPage() {
   const [metric, setMetric] = useState<LeaderboardMetric>('volume')
   const [timeRange, setTimeRange] = useState<TimeRange>('week')
   const [scope, setScope] = useState<LeaderboardScope>('friends')
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [leaderboard, setLeaderboard] = useState<Array<LeaderboardEntry>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const loadLeaderboard = async () => {
@@ -52,7 +52,7 @@ function LeaderboardsPage() {
             })
           : await getGlobalLeaderboard({ data: { metric, timeRange } })
 
-      setLeaderboard(result.leaderboard as LeaderboardEntry[])
+      setLeaderboard(result.leaderboard as Array<LeaderboardEntry>)
     } catch (error) {
       console.error('Failed to load leaderboard:', error)
     } finally {
@@ -172,7 +172,7 @@ function LeaderboardsPage() {
 
         {/* Metric Selection */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-          {(['volume', 'workouts', 'streak', 'prs'] as LeaderboardMetric[]).map(
+          {(['volume', 'workouts', 'streak', 'prs'] as Array<LeaderboardMetric>).map(
             (m) => (
               <button
                 key={m}
@@ -193,7 +193,7 @@ function LeaderboardsPage() {
         {/* Time Range Selection */}
         {metric !== 'streak' && (
           <div className="flex gap-2 mb-6">
-            {(['week', 'month', 'all'] as TimeRange[]).map((t) => (
+            {(['week', 'month', 'all'] as Array<TimeRange>).map((t) => (
               <button
                 key={t}
                 onClick={() => setTimeRange(t)}
@@ -203,7 +203,11 @@ function LeaderboardsPage() {
                     : 'bg-zinc-800/50 text-zinc-500'
                 }`}
               >
-                {t === 'week' ? 'This Week' : t === 'month' ? 'This Month' : 'All Time'}
+                {t === 'week'
+                  ? 'This Week'
+                  : t === 'month'
+                    ? 'This Month'
+                    : 'All Time'}
               </button>
             ))}
           </div>

@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
+import { Check, Loader2, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { checkUsernameAvailable, createUserProfile } from '@/lib/profile.server'
-import { Check, X, Loader2 } from 'lucide-react'
 
 export const Route = createFileRoute('/profile/setup')({
   component: ProfileSetupPage,

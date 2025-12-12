@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
-import type { ChallengeType, ChallengeStatus } from '@prisma/client'
+import type { ChallengeStatus, ChallengeType } from '@prisma/client'
 
 const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
 
@@ -250,9 +250,7 @@ export const getPublicChallenges = createServerFn({ method: 'GET' })
 
 // Get user's challenges
 export const getUserChallenges = createServerFn({ method: 'GET' })
-  .inputValidator(
-    (data: { userId: string; status?: ChallengeStatus }) => data,
-  )
+  .inputValidator((data: { userId: string; status?: ChallengeStatus }) => data)
   .handler(async ({ data }) => {
     const participations = await prisma.challengeParticipant.findMany({
       where: { userId: data.userId },

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ArrowLeft,
@@ -23,6 +23,7 @@ import {
   deletePlanDay,
   getPlanDay,
   removePlanExercise,
+  reorderPlanExercises,
   updatePlanDay,
   updatePlanExercise,
 } from '@/lib/plans.server'
@@ -57,6 +58,7 @@ function DayDetailPage() {
   const { planId, dayId } = Route.useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const router = useRouter()
 
   const [planDay, setPlanDay] = useState<PlanDay | null>(null)
   const [loading, setLoading] = useState(true)
@@ -211,6 +213,39 @@ function DayDetailPage() {
     }
   }
 
+  const handleMoveExercise = async (
+    index: number,
+    direction: 'up' | 'down',
+  ) => {
+    if (!user || !planDay) return
+
+    const exercises = [...planDay.planExercises]
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+
+    // Swap exercises
+    const temp = exercises[index]
+    exercises[index] = exercises[newIndex]
+    exercises[newIndex] = temp
+
+    // Optimistically update UI
+    const originalExercises = planDay.planExercises
+    setPlanDay({ ...planDay, planExercises: exercises })
+
+    try {
+      await reorderPlanExercises({
+        data: {
+          planDayId: dayId,
+          exerciseIds: exercises.map((e) => e.id),
+          userId: user.id,
+        },
+      })
+    } catch (error) {
+      // Rollback on error
+      setPlanDay({ ...planDay, planExercises: originalExercises })
+      console.error('Failed to reorder exercises:', error)
+    }
+  }
+
   if (loading) {
     return (
       <AppLayout showNav={false}>
@@ -248,9 +283,7 @@ function DayDetailPage() {
       <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
         <div className="flex items-center justify-between px-4 py-3">
           <button
-            onClick={() =>
-              navigate({ to: '/plans/$planId', params: { planId } })
-            }
+            onClick={() => router.history.back()}
             className="p-2 -ml-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-colors"
             aria-label="Back"
           >
@@ -338,12 +371,17 @@ function DayDetailPage() {
                 {planDay.planExercises.length} exercise
                 {planDay.planExercises.length !== 1 ? 's' : ''}
               </p>
-              {planDay.planExercises.map((planExercise) => (
+              {planDay.planExercises.map((planExercise, index) => (
                 <PlanExerciseCard
                   key={planExercise.id}
                   planExercise={planExercise}
                   onPress={() => setEditingExercise(planExercise)}
                   onRemove={() => setExerciseToRemove(planExercise)}
+                  showReorder={planDay.planExercises.length > 1}
+                  isFirst={index === 0}
+                  isLast={index === planDay.planExercises.length - 1}
+                  onMoveUp={() => handleMoveExercise(index, 'up')}
+                  onMoveDown={() => handleMoveExercise(index, 'down')}
                 />
               ))}
             </div>
