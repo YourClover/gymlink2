@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Calendar, Clock, Dumbbell, Weight } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, Dumbbell } from 'lucide-react'
 import type { MuscleGroup } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
-import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import { getRecentWorkouts } from '@/lib/workouts.server'
 import { formatDuration } from '@/lib/formatting'
+import { SkeletonWorkoutItem } from '@/components/ui/Skeleton'
 
 export const Route = createFileRoute('/history')({
   component: HistoryPage,
@@ -74,11 +74,25 @@ function HistoryPage() {
 
   if (loading) {
     return (
-      <AppLayout title="Workout History" showNav={false}>
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-zinc-900">
+        <header className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 -ml-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-semibold text-white">Workout History</h1>
+          </div>
+        </header>
+        <div className="px-4 py-4 space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonWorkoutItem key={i} />
+          ))}
         </div>
-      </AppLayout>
+      </div>
     )
   }
 
@@ -90,6 +104,7 @@ function HistoryPage() {
           <button
             onClick={() => window.history.back()}
             className="p-2 -ml-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+            aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>

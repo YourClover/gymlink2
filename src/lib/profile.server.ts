@@ -97,8 +97,11 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 export const getProfileByUsername = createServerFn({ method: 'GET' })
   .inputValidator((data: { username: string; viewerId?: string }) => data)
   .handler(async ({ data }) => {
-    const profile = await prisma.userProfile.findUnique({
-      where: { username: data.username.toLowerCase() },
+    const profile = await prisma.userProfile.findFirst({
+      where: {
+        username: data.username.toLowerCase(),
+        user: { deletedAt: null }, // Exclude soft-deleted users
+      },
       include: {
         user: {
           select: { id: true, name: true, createdAt: true },
@@ -204,6 +207,9 @@ export const searchUsers = createServerFn({ method: 'GET' })
         userId: {
           not: data.userId, // Exclude self
         },
+        user: {
+          deletedAt: null, // Exclude soft-deleted users
+        },
       },
       take: limit,
       include: {
@@ -229,6 +235,102 @@ export const searchUsers = createServerFn({ method: 'GET' })
         followStatus: statusMap.get(p.userId) ?? null,
       })),
     }
+  })
+
+// Soft delete user account
+export const deleteUserAccount = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: { userId: string; confirmEmail: string; password: string }) => data,
+  )
+  .handler(async ({ data }) => {
+    // Verify user exists and is not already deleted
+    const user = await prisma.user.findFirst({
+      where: {
+        id: data.userId,
+        deletedAt: null,
+      },
+    })
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    // Verify email matches for confirmation
+    if (user.email !== data.confirmEmail) {
+      throw new Error('Email confirmation does not match')
+    }
+
+    // Import password verification
+    const { verifyPassword } = await import('./auth')
+    const isValid = await verifyPassword(data.password, user.passwordHash)
+    if (!isValid) {
+      throw new Error('Invalid password')
+    }
+
+    // Soft delete the user
+    await prisma.user.update({
+      where: { id: data.userId },
+      data: { deletedAt: new Date() },
+    })
+
+    // Optionally: clear sensitive profile data while keeping the record
+    await prisma.userProfile.updateMany({
+      where: { userId: data.userId },
+      data: {
+        bio: null,
+        avatarUrl: null,
+      },
+    })
+
+    return { success: true }
+  })
+
+// Restore a soft-deleted user account (admin only or within grace period)
+export const restoreUserAccount = createServerFn({ method: 'POST' })
+  .inputValidator((data: { userId: string; adminId?: string }) => data)
+  .handler(async ({ data }) => {
+    // Find the soft-deleted user
+    const user = await prisma.user.findFirst({
+      where: {
+        id: data.userId,
+        deletedAt: { not: null },
+      },
+    })
+
+    if (!user) {
+      throw new Error('Deleted user not found')
+    }
+
+    // Check if within grace period (30 days) or admin is restoring
+    const gracePeriodDays = 30
+    const deletedAt = user.deletedAt!
+    const daysSinceDelete = Math.floor(
+      (Date.now() - deletedAt.getTime()) / (1000 * 60 * 60 * 24),
+    )
+
+    if (daysSinceDelete > gracePeriodDays && !data.adminId) {
+      throw new Error(
+        `Account can only be restored within ${gracePeriodDays} days of deletion`,
+      )
+    }
+
+    // If admin is restoring, verify admin status
+    if (data.adminId) {
+      const admin = await prisma.user.findFirst({
+        where: { id: data.adminId, isAdmin: true, deletedAt: null },
+      })
+      if (!admin) {
+        throw new Error('Admin access required')
+      }
+    }
+
+    // Restore the user
+    await prisma.user.update({
+      where: { id: data.userId },
+      data: { deletedAt: null },
+    })
+
+    return { success: true }
   })
 
 // Get profile stats for a user (workout counts, PRs, etc.)

@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Calendar, Minus, Plus, X } from 'lucide-react'
 import type { Exercise, WeightUnit } from '@prisma/client'
+import { useBodyOverflow } from '@/hooks/useBodyOverflow'
+import {
+  WEIGHT_INCREMENT,
+  TIME_INCREMENT,
+  MIN_REPS,
+  MIN_WEIGHT,
+  MIN_TIME_SECONDS,
+  RPE_VALUES,
+} from '@/lib/constants'
 
 interface PreviousWorkoutData {
   date: Date | null
@@ -36,8 +45,6 @@ interface SetLoggerModalProps {
   isLoading?: boolean
 }
 
-const RPE_VALUES = [6, 7, 8, 9, 10]
-
 export default function SetLoggerModal({
   isOpen,
   onClose,
@@ -72,16 +79,7 @@ export default function SetLoggerModal({
   }, [isOpen, defaultValues])
 
   // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  useBodyOverflow(isOpen)
 
   if (!isOpen) return null
 
@@ -102,19 +100,19 @@ export default function SetLoggerModal({
   const adjustWeight = (delta: number) => {
     setWeight((prev) => {
       const num = typeof prev === 'string' ? parseFloat(prev) || 0 : prev
-      return Math.max(0, num + delta)
+      return Math.max(MIN_WEIGHT, num + delta)
     })
   }
 
   const adjustReps = (delta: number) => {
     setReps((prev) => {
       const num = typeof prev === 'string' ? parseInt(prev) || 0 : prev
-      return Math.max(1, num + delta)
+      return Math.max(MIN_REPS, num + delta)
     })
   }
 
   const adjustTime = (delta: number) => {
-    setTimeSeconds((prev) => Math.max(5, prev + delta))
+    setTimeSeconds((prev) => Math.max(MIN_TIME_SECONDS, prev + delta))
   }
 
   const formatTime = (seconds: number) => {
@@ -192,7 +190,7 @@ export default function SetLoggerModal({
             </label>
             <div className="flex items-center justify-center gap-3">
               <button
-                onClick={() => adjustWeight(-2.5)}
+                onClick={() => adjustWeight(-WEIGHT_INCREMENT)}
                 className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                 aria-label="Decrease weight"
               >
@@ -211,10 +209,10 @@ export default function SetLoggerModal({
                 className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
                 inputMode="decimal"
                 step={0.5}
-                min={0}
+                min={MIN_WEIGHT}
               />
               <button
-                onClick={() => adjustWeight(2.5)}
+                onClick={() => adjustWeight(WEIGHT_INCREMENT)}
                 className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                 aria-label="Increase weight"
               >
@@ -231,7 +229,7 @@ export default function SetLoggerModal({
               </label>
               <div className="flex items-center justify-center gap-3">
                 <button
-                  onClick={() => adjustTime(-15)}
+                  onClick={() => adjustTime(-TIME_INCREMENT)}
                   className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                   aria-label="Decrease time"
                 >
@@ -241,7 +239,7 @@ export default function SetLoggerModal({
                   {formatTime(timeSeconds)}
                 </div>
                 <button
-                  onClick={() => adjustTime(15)}
+                  onClick={() => adjustTime(TIME_INCREMENT)}
                   className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                   aria-label="Increase time"
                 >
@@ -269,12 +267,12 @@ export default function SetLoggerModal({
                     setReps(
                       e.target.value === ''
                         ? ''
-                        : parseInt(e.target.value) || 1,
+                        : parseInt(e.target.value) || MIN_REPS,
                     )
                   }
                   className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
                   inputMode="numeric"
-                  min={1}
+                  min={MIN_REPS}
                 />
                 <button
                   onClick={() => adjustReps(1)}

@@ -11,9 +11,11 @@ describe('auth server functions', () => {
     email: 'test@example.com',
     name: 'Test User',
     passwordHash: '$2a$12$hashedpassword',
+    isAdmin: false,
     preferences: {},
     createdAt: new Date(),
     updatedAt: new Date(),
+    deletedAt: null,
   }
 
   describe('registerUser logic', () => {

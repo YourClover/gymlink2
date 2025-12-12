@@ -21,8 +21,8 @@ export const getExercises = createServerFn({ method: 'GET' })
       equipment,
       exerciseType,
       search,
-      userId,
-      includeBuiltIn = true,
+      // userId and includeBuiltIn kept for API compatibility but not used
+      // since all exercises are now globally available
     } = data
 
     const where: {

@@ -160,6 +160,7 @@ function PublicProfilePage() {
           <button
             onClick={() => navigate({ to: '/dashboard' })}
             className="p-2 -ml-2 hover:bg-zinc-800 rounded-lg mb-4"
+            aria-label="Back to dashboard"
           >
             <ArrowLeft className="w-5 h-5 text-zinc-400" />
           </button>
@@ -187,6 +188,7 @@ function PublicProfilePage() {
             <button
               onClick={() => window.history.back()}
               className="p-2 -ml-2 hover:bg-zinc-800 rounded-lg"
+              aria-label="Go back"
             >
               <ArrowLeft className="w-5 h-5 text-zinc-400" />
             </button>
@@ -199,7 +201,7 @@ function PublicProfilePage() {
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
-                alt=""
+                alt={`${profile.user.name}'s profile picture`}
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (

@@ -386,7 +386,7 @@ function ChallengeDetailPage() {
                     {participant.profile?.avatarUrl ? (
                       <img
                         src={participant.profile.avatarUrl}
-                        alt=""
+                        alt={`${participant.user.name}'s profile picture`}
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (

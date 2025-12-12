@@ -9,6 +9,8 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import appCss from '../styles.css?url'
 import { AuthProvider } from '@/context/AuthContext'
+import { ToastProvider } from '@/context/ToastContext'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -59,9 +61,13 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <AuthProvider initialUser={null}>
-      <Outlet />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider initialUser={null}>
+        <ToastProvider>
+          <Outlet />
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

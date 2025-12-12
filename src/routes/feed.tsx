@@ -6,6 +6,8 @@ import { useAuth } from '@/context/AuthContext'
 import { getActivityFeed } from '@/lib/feed.server'
 import AppLayout from '@/components/AppLayout'
 import { ActivityFeedItem } from '@/components/feed/ActivityFeedItem'
+import { SkeletonCard } from '@/components/ui/Skeleton'
+import ErrorState from '@/components/ui/ErrorState'
 
 export const Route = createFileRoute('/feed')({
   component: FeedPage,
@@ -26,12 +28,14 @@ function FeedPage() {
   const { user } = useAuth()
   const [activities, setActivities] = useState<Array<ActivityData>>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
 
   const loadFeed = async (append = false) => {
     if (!user) return
     setIsLoading(true)
+    if (!append) setError(null)
 
     try {
       const result = await getActivityFeed({
@@ -51,8 +55,11 @@ function FeedPage() {
       }
       setCursor(result.nextCursor)
       setHasMore(result.activities.length === 20)
-    } catch (error) {
-      console.error('Failed to load feed:', error)
+    } catch (err) {
+      console.error('Failed to load feed:', err)
+      if (!append) {
+        setError('Failed to load feed. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -83,7 +90,22 @@ function FeedPage() {
       </div>
 
       <div className="p-4">
-        {activities.length === 0 && !isLoading ? (
+        {/* Error state with retry */}
+        {error && activities.length === 0 ? (
+          <ErrorState
+            title="Failed to load feed"
+            message={error}
+            onRetry={() => loadFeed()}
+            isRetrying={isLoading}
+          />
+        ) : /* Initial loading skeleton */
+        isLoading && activities.length === 0 ? (
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : activities.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
             <h3 className="text-white font-medium mb-1">Your feed is empty</h3>

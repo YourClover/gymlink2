@@ -165,7 +165,7 @@ function RegisterPage() {
   const [emailCheckError, setEmailCheckError] = useState(false)
   const [emailTouched, setEmailTouched] = useState(false)
   const [nameTouched, setNameTouched] = useState(false)
-  const [passwordTouched, setPasswordTouched] = useState(false)
+  const [_passwordTouched, setPasswordTouched] = useState(false)
   const [confirmTouched, setConfirmTouched] = useState(false)
 
   // Derived validation states

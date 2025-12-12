@@ -1,12 +1,23 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import type { ActivityType } from '@prisma/client'
+import { DEFAULT_FEED_LIMIT, MAX_PAGE_SIZE } from './constants'
+
+// Validate pagination parameters
+function validatePagination(limit?: number): number {
+  if (limit === undefined) return DEFAULT_FEED_LIMIT
+  if (limit < 1) throw new Error('Limit must be at least 1')
+  if (limit > MAX_PAGE_SIZE) throw new Error(`Limit cannot exceed ${MAX_PAGE_SIZE}`)
+  return limit
+}
 
 // Get activity feed from followed users
 export const getActivityFeed = createServerFn({ method: 'GET' })
-  .inputValidator(
-    (data: { userId: string; limit?: number; cursor?: string }) => data,
-  )
+  .inputValidator((data: { userId: string; limit?: number; cursor?: string }) => {
+    // Validate limit to prevent DoS
+    validatePagination(data.limit)
+    return data
+  })
   .handler(async ({ data }) => {
     // Get list of users this person follows (accepted only)
     const following = await prisma.follow.findMany({
@@ -22,6 +33,7 @@ export const getActivityFeed = createServerFn({ method: 'GET' })
     // Include own activity in feed
     const userIds = [data.userId, ...followingIds]
 
+    // Fetch activities with user profiles in a single query (fixes N+1)
     const activities = await prisma.activityFeedItem.findMany({
       where: {
         userId: { in: userIds },
@@ -31,22 +43,19 @@ export const getActivityFeed = createServerFn({ method: 'GET' })
       orderBy: { createdAt: 'desc' },
       include: {
         user: {
-          select: { id: true, name: true },
+          select: {
+            id: true,
+            name: true,
+            profile: true,
+          },
         },
       },
     })
 
-    // Get profiles for activity users
-    const profileUserIds = [...new Set(activities.map((a) => a.userId))]
-    const profiles = await prisma.userProfile.findMany({
-      where: { userId: { in: profileUserIds } },
-    })
-    const profileMap = new Map(profiles.map((p) => [p.userId, p]))
-
     return {
       activities: activities.map((a) => ({
         ...a,
-        profile: profileMap.get(a.userId),
+        profile: a.user.profile,
       })),
       nextCursor:
         activities.length > 0
@@ -63,7 +72,10 @@ export const getUserActivity = createServerFn({ method: 'GET' })
       viewerId?: string
       limit?: number
       cursor?: string
-    }) => data,
+    }) => {
+      validatePagination(data.limit)
+      return data
+    },
   )
   .handler(async ({ data }) => {
     // Check if viewer can see this user's activity

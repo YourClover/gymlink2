@@ -35,7 +35,7 @@
     "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.544.0",
-    "nitro": "latest",
+    "nitro": "^3.0.0",
     "pg": "^8.16.3",
     "prisma": "^7.1.0",
     "react": "^19.2.0",

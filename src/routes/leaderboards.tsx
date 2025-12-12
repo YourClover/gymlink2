@@ -240,7 +240,7 @@ function LeaderboardsPage() {
                     {entry.profile?.avatarUrl ? (
                       <img
                         src={entry.profile.avatarUrl}
-                        alt=""
+                        alt={`${entry.user?.name ?? 'User'}'s profile picture`}
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (

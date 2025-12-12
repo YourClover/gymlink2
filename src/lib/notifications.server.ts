@@ -59,6 +59,7 @@ export const getUnreadNotificationCount = createServerFn({ method: 'GET' })
   })
 
 // Create a notification (internal helper)
+// Includes deduplication to prevent duplicate notifications for the same action
 export const createNotification = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
@@ -70,6 +71,25 @@ export const createNotification = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
+    // Check for duplicate notification within the last hour
+    // This prevents spam from repeated actions (e.g., follow/unfollow cycles)
+    if (data.referenceId) {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+      const existing = await prisma.notification.findFirst({
+        where: {
+          userId: data.userId,
+          type: data.type,
+          referenceId: data.referenceId,
+          createdAt: { gte: oneHourAgo },
+        },
+      })
+
+      if (existing) {
+        // Return the existing notification instead of creating a duplicate
+        return { notification: existing, deduplicated: true }
+      }
+    }
+
     const notification = await prisma.notification.create({
       data: {
         userId: data.userId,
@@ -79,7 +99,7 @@ export const createNotification = createServerFn({ method: 'POST' })
         referenceId: data.referenceId,
       },
     })
-    return { notification }
+    return { notification, deduplicated: false }
   })
 
 // Delete a notification

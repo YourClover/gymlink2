@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Calendar, Clock, Dumbbell, TrendingUp } from 'lucide-react'
 import type { Equipment, MuscleGroup, RecordType } from '@prisma/client'
@@ -63,7 +63,6 @@ type RecentSession = {
 function ProgressPage() {
   const { exerciseId } = Route.useParams()
   const { user } = useAuth()
-  const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<ExerciseSummary | null>(null)

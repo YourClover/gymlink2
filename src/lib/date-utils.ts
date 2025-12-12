@@ -18,20 +18,25 @@ export function getWeekStart(date: Date): Date {
  * Calculate weekly workout streak for a user
  * A streak is counted in consecutive weeks where the user has at least one completed workout
  * The streak must include the current week or last week to be considered active
+ * Optimized: Uses a single query with 52-week time window
  */
 export async function calculateStreak(userId: string): Promise<number> {
-  // Get all completed workout dates, newest first
+  const today = new Date()
+  const currentWeekStart = getWeekStart(today)
+
+  // Fetch workouts from last 52 weeks in a single query (optimized)
+  const oneYearAgo = new Date(currentWeekStart)
+  oneYearAgo.setDate(oneYearAgo.getDate() - 52 * 7)
+
   const workouts = await prisma.workoutSession.findMany({
     where: {
       userId,
-      completedAt: { not: null },
+      completedAt: {
+        gte: oneYearAgo,
+        not: null,
+      },
     },
-    select: {
-      completedAt: true,
-    },
-    orderBy: {
-      completedAt: 'desc',
-    },
+    select: { completedAt: true },
   })
 
   if (workouts.length === 0) return 0
@@ -48,8 +53,6 @@ export async function calculateStreak(userId: string): Promise<number> {
   const uniqueWeeks = Array.from(workoutWeeks).sort().reverse()
 
   // Get current week and last week
-  const today = new Date()
-  const currentWeekStart = getWeekStart(today)
   const lastWeekStart = new Date(currentWeekStart)
   lastWeekStart.setDate(lastWeekStart.getDate() - 7)
 

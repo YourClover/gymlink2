@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
+import { useBodyOverflow } from '@/hooks/useBodyOverflow'
+import { REST_TIMER_AUTO_CLOSE_DELAY_MS } from '@/lib/constants'
 
 interface RestTimerProps {
   isOpen: boolean
@@ -40,7 +42,7 @@ export default function RestTimer({
             navigator.vibrate([200, 100, 200])
           }
           // Auto-close after a brief delay
-          timeoutId = setTimeout(onClose, 1500)
+          timeoutId = setTimeout(onClose, REST_TIMER_AUTO_CLOSE_DELAY_MS)
           return 0
         }
         return prev - 1
@@ -54,16 +56,7 @@ export default function RestTimer({
   }, [isOpen, durationSeconds, onClose])
 
   // Prevent body scroll
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  useBodyOverflow(isOpen)
 
   if (!isOpen) return null
 

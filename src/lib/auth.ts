@@ -1,11 +1,13 @@
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import jwt, { type Secret, type SignOptions } from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) {
+const JWT_SECRET_ENV = process.env.JWT_SECRET
+if (!JWT_SECRET_ENV) {
   throw new Error('JWT_SECRET environment variable is required')
 }
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+const JWT_SECRET: Secret = JWT_SECRET_ENV
+const JWT_EXPIRES_IN: SignOptions['expiresIn'] =
+  (process.env.JWT_EXPIRES_IN as SignOptions['expiresIn']) || '7d'
 
 export interface JWTPayload {
   userId: string

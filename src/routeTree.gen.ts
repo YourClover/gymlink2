@@ -16,6 +16,7 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaderboardsRouteImport } from './routes/leaderboards'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as HealthRouteImport } from './routes/health'
 import { Route as FollowersRouteImport } from './routes/followers'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -74,6 +75,11 @@ const LeaderboardsRoute = LeaderboardsRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthRoute = HealthRouteImport.update({
+  id: '/health',
+  path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FollowersRoute = FollowersRouteImport.update({
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
   '/followers': typeof FollowersRoute
+  '/health': typeof HealthRoute
   '/history': typeof HistoryRoute
   '/leaderboards': typeof LeaderboardsRoute
   '/login': typeof LoginRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
   '/followers': typeof FollowersRoute
+  '/health': typeof HealthRoute
   '/history': typeof HistoryRoute
   '/leaderboards': typeof LeaderboardsRoute
   '/login': typeof LoginRoute
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
   '/followers': typeof FollowersRoute
+  '/health': typeof HealthRoute
   '/history': typeof HistoryRoute
   '/leaderboards': typeof LeaderboardsRoute
   '/login': typeof LoginRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feed'
     | '/followers'
+    | '/health'
     | '/history'
     | '/leaderboards'
     | '/login'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feed'
     | '/followers'
+    | '/health'
     | '/history'
     | '/leaderboards'
     | '/login'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feed'
     | '/followers'
+    | '/health'
     | '/history'
     | '/leaderboards'
     | '/login'
@@ -406,6 +418,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   FeedRoute: typeof FeedRoute
   FollowersRoute: typeof FollowersRoute
+  HealthRoute: typeof HealthRoute
   HistoryRoute: typeof HistoryRoute
   LeaderboardsRoute: typeof LeaderboardsRoute
   LoginRoute: typeof LoginRoute
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/health': {
+      id: '/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof HealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/followers': {
@@ -662,6 +682,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   FeedRoute: FeedRoute,
   FollowersRoute: FollowersRoute,
+  HealthRoute: HealthRoute,
   HistoryRoute: HistoryRoute,
   LeaderboardsRoute: LeaderboardsRoute,
   LoginRoute: LoginRoute,

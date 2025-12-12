@@ -155,6 +155,7 @@ function NotificationsPage() {
             <button
               onClick={() => navigate({ to: '/dashboard' })}
               className="p-2 -ml-2 hover:bg-zinc-800 rounded-lg"
+              aria-label="Back to dashboard"
             >
               <ArrowLeft className="w-5 h-5 text-zinc-400" />
             </button>

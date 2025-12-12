@@ -116,14 +116,15 @@ enum NotificationType {
 // ============================================
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
   name         String
-  isAdmin      Boolean  @default(false) @map("is_admin")
-  preferences  Json     @default("{}")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  isAdmin      Boolean   @default(false) @map("is_admin")
+  preferences  Json      @default("{}")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at") // Soft delete field
 
   // Relations
   workoutPlans     WorkoutPlan[]
@@ -141,6 +142,8 @@ model User {
   createdChallenges       Challenge[]
   challengeParticipations ChallengeParticipant[]
   notifications           Notification[]
+
+  @@index([deletedAt]) // For efficient filtering of active users
   @@map("users")
 }
 
@@ -242,6 +245,7 @@ model WorkoutSession {
 
   @@index([userId])
   @@index([workoutPlanId])
+  @@index([userId, completedAt]) // Composite index for efficient workout history queries
   @@map("workout_sessions")
 }
 
@@ -285,6 +289,7 @@ model PersonalRecord {
   exercise   Exercise   @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   workoutSet WorkoutSet @relation(fields: [workoutSetId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, exerciseId, recordType]) // Prevent duplicate PRs for same exercise/type
   @@index([userId])
   @@index([exerciseId])
   @@map("personal_records")
@@ -346,6 +351,7 @@ model UserAchievement {
   @@unique([userId, achievementId])
   @@index([userId])
   @@index([achievementId])
+  @@index([userId, earnedAt]) // For efficient achievement history queries
   @@map("user_achievements")
 }
 

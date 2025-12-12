@@ -174,6 +174,7 @@ export const leaveChallenge = createServerFn({ method: 'POST' })
 export const getChallengeDetails = createServerFn({ method: 'GET' })
   .inputValidator((data: { challengeId: string; userId?: string }) => data)
   .handler(async ({ data }) => {
+    // Fetch challenge with participants and profiles in a single query (fixes N+1)
     const challenge = await prisma.challenge.findUnique({
       where: { id: data.challengeId },
       include: {
@@ -181,7 +182,13 @@ export const getChallengeDetails = createServerFn({ method: 'GET' })
         exercise: { select: { id: true, name: true } },
         participants: {
           include: {
-            user: { select: { id: true, name: true } },
+            user: {
+              select: {
+                id: true,
+                name: true,
+                profile: true,
+              },
+            },
           },
           orderBy: [{ completedAt: 'asc' }, { progress: 'desc' }],
         },
@@ -189,13 +196,6 @@ export const getChallengeDetails = createServerFn({ method: 'GET' })
     })
 
     if (!challenge) return { challenge: null, userParticipation: null }
-
-    // Get profiles for participants
-    const userIds = challenge.participants.map((p) => p.userId)
-    const profiles = await prisma.userProfile.findMany({
-      where: { userId: { in: userIds } },
-    })
-    const profileMap = new Map(profiles.map((p) => [p.userId, p]))
 
     // Find user's participation
     const userParticipation = data.userId
@@ -208,7 +208,7 @@ export const getChallengeDetails = createServerFn({ method: 'GET' })
         participants: challenge.participants.map((p, index) => ({
           ...p,
           rank: index + 1,
-          profile: profileMap.get(p.userId),
+          profile: p.user.profile,
         })),
       },
       userParticipation,
@@ -293,12 +293,12 @@ export const updateChallengeProgress = createServerFn({ method: 'POST' })
 
     for (const participation of participations) {
       const challenge = participation.challenge
-      let newProgress = participation.progress
+      let progressDelta = 0
 
-      // Calculate progress based on challenge type
+      // Calculate progress delta based on challenge type
       switch (challenge.challengeType) {
         case 'TOTAL_WORKOUTS':
-          newProgress += 1
+          progressDelta = 1
           break
 
         case 'TOTAL_VOLUME': {
@@ -311,20 +311,18 @@ export const updateChallengeProgress = createServerFn({ method: 'POST' })
               },
             },
           })
-          const sessionVolume =
+          progressDelta =
             session?.workoutSets.reduce(
               (sum, set) => sum + (set.weight ?? 0) * (set.reps ?? 0),
               0,
             ) ?? 0
-          newProgress += sessionVolume
           break
         }
 
         case 'TOTAL_SETS': {
-          const setCount = await prisma.workoutSet.count({
+          progressDelta = await prisma.workoutSet.count({
             where: { workoutSessionId: data.sessionId, isWarmup: false },
           })
-          newProgress += setCount
           break
         }
 
@@ -338,37 +336,54 @@ export const updateChallengeProgress = createServerFn({ method: 'POST' })
             },
             select: { weight: true, reps: true },
           })
-          const exerciseVolume = exerciseSets.reduce(
+          progressDelta = exerciseSets.reduce(
             (sum, set) => sum + (set.weight ?? 0) * (set.reps ?? 0),
             0,
           )
-          newProgress += exerciseVolume
           break
         }
       }
 
-      // Update progress
-      const completed = newProgress >= challenge.targetValue
+      if (progressDelta === 0) continue
 
-      await prisma.challengeParticipant.update({
-        where: { id: participation.id },
-        data: {
-          progress: newProgress,
-          ...(completed && { completedAt: new Date() }),
-        },
-      })
+      // Use transaction with atomic update to prevent race conditions
+      await prisma.$transaction(async (tx) => {
+        // Re-fetch to get latest progress (prevents race condition)
+        const current = await tx.challengeParticipant.findUnique({
+          where: { id: participation.id },
+          select: { progress: true, completedAt: true },
+        })
 
-      // Create activity if completed
-      if (completed && !participation.completedAt) {
-        await prisma.activityFeedItem.create({
+        // Skip if already completed (another request beat us)
+        if (current?.completedAt) return
+
+        const newProgress = (current?.progress ?? 0) + progressDelta
+        const completed = newProgress >= challenge.targetValue
+
+        // Update progress atomically
+        await tx.challengeParticipant.update({
+          where: {
+            id: participation.id,
+            completedAt: null, // Only update if still not completed
+          },
           data: {
-            userId: data.userId,
-            activityType: 'CHALLENGE_COMPLETED',
-            referenceId: challenge.id,
-            metadata: { challengeName: challenge.name },
+            progress: newProgress,
+            ...(completed && { completedAt: new Date() }),
           },
         })
-      }
+
+        // Only create activity if we just completed (not if already completed)
+        if (completed) {
+          await tx.activityFeedItem.create({
+            data: {
+              userId: data.userId,
+              activityType: 'CHALLENGE_COMPLETED',
+              referenceId: challenge.id,
+              metadata: { challengeName: challenge.name },
+            },
+          })
+        }
+      })
     }
 
     return { success: true }

@@ -1,5 +1,17 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
+import { MAX_PAGE_SIZE } from './constants'
+
+// Validate pagination parameters to prevent DoS
+function validatePagination(limit?: number, offset?: number): void {
+  if (limit !== undefined) {
+    if (limit < 1) throw new Error('Limit must be at least 1')
+    if (limit > MAX_PAGE_SIZE) throw new Error(`Limit cannot exceed ${MAX_PAGE_SIZE}`)
+  }
+  if (offset !== undefined && offset < 0) {
+    throw new Error('Offset cannot be negative')
+  }
+}
 
 // Send a follow request
 export const sendFollowRequest = createServerFn({ method: 'POST' })
@@ -146,9 +158,13 @@ export const getFollowers = createServerFn({ method: 'GET' })
       status?: 'PENDING' | 'ACCEPTED'
       limit?: number
       offset?: number
-    }) => data,
+    }) => {
+      validatePagination(data.limit, data.offset)
+      return data
+    },
   )
   .handler(async ({ data }) => {
+    // Fetch followers with profiles in a single query (fixes N+1)
     const followers = await prisma.follow.findMany({
       where: {
         followingId: data.userId,
@@ -159,32 +175,35 @@ export const getFollowers = createServerFn({ method: 'GET' })
       orderBy: { createdAt: 'desc' },
       include: {
         follower: {
-          select: { id: true, name: true },
+          select: {
+            id: true,
+            name: true,
+            profile: true,
+          },
         },
       },
     })
 
-    // Get profiles for followers
-    const profileIds = followers.map((f) => f.followerId)
-    const profiles = await prisma.userProfile.findMany({
-      where: { userId: { in: profileIds } },
-    })
-    const profileMap = new Map(profiles.map((p) => [p.userId, p]))
+    const followerIds = followers.map((f) => f.followerId)
 
     // Get mutual follows (users I also follow back)
-    const mutualFollows = await prisma.follow.findMany({
-      where: {
-        followerId: data.userId,
-        followingId: { in: profileIds },
-        status: 'ACCEPTED',
-      },
-    })
+    const mutualFollows =
+      followerIds.length > 0
+        ? await prisma.follow.findMany({
+            where: {
+              followerId: data.userId,
+              followingId: { in: followerIds },
+              status: 'ACCEPTED',
+            },
+            select: { followingId: true },
+          })
+        : []
     const mutualSet = new Set(mutualFollows.map((f) => f.followingId))
 
     return {
       followers: followers.map((f) => ({
         ...f,
-        profile: profileMap.get(f.followerId),
+        profile: f.follower.profile,
         isMutual: mutualSet.has(f.followerId),
       })),
     }
@@ -198,9 +217,13 @@ export const getFollowing = createServerFn({ method: 'GET' })
       status?: 'PENDING' | 'ACCEPTED'
       limit?: number
       offset?: number
-    }) => data,
+    }) => {
+      validatePagination(data.limit, data.offset)
+      return data
+    },
   )
   .handler(async ({ data }) => {
+    // Fetch following with profiles in a single query (fixes N+1)
     const following = await prisma.follow.findMany({
       where: {
         followerId: data.userId,
@@ -211,31 +234,35 @@ export const getFollowing = createServerFn({ method: 'GET' })
       orderBy: { createdAt: 'desc' },
       include: {
         following: {
-          select: { id: true, name: true },
+          select: {
+            id: true,
+            name: true,
+            profile: true,
+          },
         },
       },
     })
 
-    const profileIds = following.map((f) => f.followingId)
-    const profiles = await prisma.userProfile.findMany({
-      where: { userId: { in: profileIds } },
-    })
-    const profileMap = new Map(profiles.map((p) => [p.userId, p]))
+    const followingIds = following.map((f) => f.followingId)
 
     // Get mutual follows (users who also follow me back)
-    const mutualFollows = await prisma.follow.findMany({
-      where: {
-        followerId: { in: profileIds },
-        followingId: data.userId,
-        status: 'ACCEPTED',
-      },
-    })
+    const mutualFollows =
+      followingIds.length > 0
+        ? await prisma.follow.findMany({
+            where: {
+              followerId: { in: followingIds },
+              followingId: data.userId,
+              status: 'ACCEPTED',
+            },
+            select: { followerId: true },
+          })
+        : []
     const mutualSet = new Set(mutualFollows.map((f) => f.followerId))
 
     return {
       following: following.map((f) => ({
         ...f,
-        profile: profileMap.get(f.followingId),
+        profile: f.following.profile,
         isMutual: mutualSet.has(f.followingId),
       })),
     }
@@ -292,7 +319,11 @@ export const getMutualFollowers = createServerFn({ method: 'GET' })
     })
     const followerIds = followers.map((f) => f.followerId)
 
-    // Get users I also follow back (mutuals)
+    if (followerIds.length === 0) {
+      return { mutuals: [] }
+    }
+
+    // Get users I also follow back (mutuals) with profiles in single query (fixes N+1)
     const mutual = await prisma.follow.findMany({
       where: {
         followerId: data.userId,
@@ -300,22 +331,22 @@ export const getMutualFollowers = createServerFn({ method: 'GET' })
         status: 'ACCEPTED',
       },
       include: {
-        following: { select: { id: true, name: true } },
+        following: {
+          select: {
+            id: true,
+            name: true,
+            profile: true,
+          },
+        },
       },
     })
-
-    const profileIds = mutual.map((f) => f.followingId)
-    const profiles = await prisma.userProfile.findMany({
-      where: { userId: { in: profileIds } },
-    })
-    const profileMap = new Map(profiles.map((p) => [p.userId, p]))
 
     return {
       mutuals: mutual.map((f) => ({
         id: f.id,
         userId: f.followingId,
-        user: f.following,
-        profile: profileMap.get(f.followingId),
+        user: { id: f.following.id, name: f.following.name },
+        profile: f.following.profile,
       })),
     }
   })

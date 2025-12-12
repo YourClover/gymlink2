@@ -1,5 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
+import { Prisma } from '@prisma/client'
 import { prisma } from './db'
+import { calculateStreak } from './date-utils'
 
 type LeaderboardMetric = 'volume' | 'workouts' | 'streak' | 'prs'
 type TimeRange = 'week' | 'month' | 'all'
@@ -75,47 +77,47 @@ function getDateFilter(timeRange: TimeRange): Date | null {
   }
 }
 
-// Volume leaderboard
+// Volume leaderboard - optimized with database-level aggregation
 async function getVolumeLeaderboard(
   dateFilter: Date | null,
   limit: number,
   userIds?: Array<string>,
 ) {
-  // Get all workout sets with their volumes
-  const sets = await prisma.workoutSet.findMany({
-    where: {
-      isWarmup: false,
-      weight: { not: null },
-      reps: { not: null },
-      workoutSession: {
-        completedAt: {
-          not: null,
-          ...(dateFilter && { gte: dateFilter }),
-        },
-        ...(userIds && { userId: { in: userIds } }),
-      },
-    },
-    include: {
-      workoutSession: {
-        select: { userId: true },
-      },
-    },
-  })
+  // Build dynamic SQL conditions (using actual PostgreSQL column names)
+  const dateCondition = dateFilter
+    ? Prisma.sql`AND ws."completed_at" >= ${dateFilter}`
+    : Prisma.empty
+  const userCondition =
+    userIds && userIds.length > 0
+      ? Prisma.sql`AND ws."user_id" = ANY(${userIds})`
+      : Prisma.empty
 
-  // Aggregate volume by user
-  const userVolumes = new Map<string, number>()
-  for (const set of sets) {
-    const userId = set.workoutSession.userId
-    const volume = (set.weight ?? 0) * (set.reps ?? 0)
-    userVolumes.set(userId, (userVolumes.get(userId) ?? 0) + volume)
-  }
+  // Use raw SQL for efficient database-level aggregation
+  // This calculates weight * reps at the database level instead of fetching all rows
+  // Note: Using actual PostgreSQL table/column names (from @@map directives in schema)
+  const results = await prisma.$queryRaw<
+    Array<{ user_id: string; volume: bigint | null }>
+  >`
+    SELECT ws."user_id", SUM(wset.weight * wset.reps) as volume
+    FROM "workout_sets" wset
+    JOIN "workout_sessions" ws ON wset."workout_session_id" = ws.id
+    WHERE wset."is_warmup" = false
+      AND wset.weight IS NOT NULL
+      AND wset.reps IS NOT NULL
+      AND ws."completed_at" IS NOT NULL
+      ${dateCondition}
+      ${userCondition}
+    GROUP BY ws."user_id"
+    ORDER BY volume DESC
+    LIMIT ${limit}
+  `
 
-  // Sort and limit
-  const sorted = [...userVolumes.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
+  const entries = results.map((r) => ({
+    userId: r.user_id,
+    value: Number(r.volume ?? 0),
+  }))
 
-  return enrichLeaderboard(sorted.map(([userId, value]) => ({ userId, value })))
+  return enrichLeaderboard(entries)
 }
 
 // Workouts count leaderboard
@@ -221,38 +223,4 @@ async function enrichLeaderboard(entries: Array<{ userId: string; value: number 
   }
 }
 
-// Helper: Calculate workout streak for a user (consecutive weeks with workouts)
-async function calculateStreak(userId: string): Promise<number> {
-  const now = new Date()
-  const weekStart = new Date(now)
-  weekStart.setDate(now.getDate() - now.getDay())
-  weekStart.setHours(0, 0, 0, 0)
-
-  let streak = 0
-  const checkDate = new Date(weekStart)
-
-  // Check up to 52 weeks back
-  for (let i = 0; i < 52; i++) {
-    const weekEnd = new Date(checkDate)
-    weekEnd.setDate(checkDate.getDate() + 7)
-
-    const workoutCount = await prisma.workoutSession.count({
-      where: {
-        userId,
-        completedAt: {
-          gte: checkDate,
-          lt: weekEnd,
-        },
-      },
-    })
-
-    if (workoutCount > 0) {
-      streak++
-      checkDate.setDate(checkDate.getDate() - 7)
-    } else {
-      break
-    }
-  }
-
-  return streak
-}
+// calculateStreak is imported from date-utils.ts (shared utility)

@@ -167,7 +167,7 @@ function FollowersPage() {
             {profile?.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
-                alt=""
+                alt={`${userName}'s profile picture`}
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (
@@ -316,7 +316,7 @@ function FollowersPage() {
                       {req.profile?.avatarUrl ? (
                         <img
                           src={req.profile.avatarUrl}
-                          alt=""
+                          alt={`${req.follower?.name ?? 'User'}'s profile picture`}
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (

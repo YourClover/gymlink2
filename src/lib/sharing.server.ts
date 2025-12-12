@@ -177,49 +177,54 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
 
     const sourcePlan = shareCode.workoutPlan
 
-    // Create the new plan
-    const newPlan = await prisma.workoutPlan.create({
-      data: {
-        name: data.newPlanName || `${sourcePlan.name} (Imported)`,
-        description: sourcePlan.description,
-        userId: data.userId,
-        isActive: false,
-      },
-    })
-
-    // Copy days and exercises
-    for (const sourceDay of sourcePlan.planDays) {
-      const newDay = await prisma.planDay.create({
+    // Use transaction to ensure atomic plan import (all or nothing)
+    const newPlan = await prisma.$transaction(async (tx) => {
+      // Create the new plan
+      const plan = await tx.workoutPlan.create({
         data: {
-          workoutPlanId: newPlan.id,
-          name: sourceDay.name,
-          dayOrder: sourceDay.dayOrder,
-          restDay: sourceDay.restDay,
+          name: data.newPlanName || `${sourcePlan.name} (Imported)`,
+          description: sourcePlan.description,
+          userId: data.userId,
+          isActive: false,
         },
       })
 
-      // Copy all exercises (custom exercises are now globally available)
-      for (const sourcePlanExercise of sourceDay.planExercises) {
-        await prisma.planExercise.create({
+      // Copy days and exercises
+      for (const sourceDay of sourcePlan.planDays) {
+        const newDay = await tx.planDay.create({
           data: {
-            planDayId: newDay.id,
-            exerciseId: sourcePlanExercise.exercise.id,
-            exerciseOrder: sourcePlanExercise.exerciseOrder,
-            targetSets: sourcePlanExercise.targetSets,
-            targetReps: sourcePlanExercise.targetReps,
-            targetTimeSeconds: sourcePlanExercise.targetTimeSeconds,
-            targetWeight: sourcePlanExercise.targetWeight,
-            restSeconds: sourcePlanExercise.restSeconds,
-            notes: sourcePlanExercise.notes,
+            workoutPlanId: plan.id,
+            name: sourceDay.name,
+            dayOrder: sourceDay.dayOrder,
+            restDay: sourceDay.restDay,
           },
         })
-      }
-    }
 
-    // Increment usage count
-    await prisma.planShareCode.update({
-      where: { id: shareCode.id },
-      data: { usageCount: { increment: 1 } },
+        // Copy all exercises (custom exercises are now globally available)
+        for (const sourcePlanExercise of sourceDay.planExercises) {
+          await tx.planExercise.create({
+            data: {
+              planDayId: newDay.id,
+              exerciseId: sourcePlanExercise.exercise.id,
+              exerciseOrder: sourcePlanExercise.exerciseOrder,
+              targetSets: sourcePlanExercise.targetSets,
+              targetReps: sourcePlanExercise.targetReps,
+              targetTimeSeconds: sourcePlanExercise.targetTimeSeconds,
+              targetWeight: sourcePlanExercise.targetWeight,
+              restSeconds: sourcePlanExercise.restSeconds,
+              notes: sourcePlanExercise.notes,
+            },
+          })
+        }
+      }
+
+      // Increment usage count
+      await tx.planShareCode.update({
+        where: { id: shareCode.id },
+        data: { usageCount: { increment: 1 } },
+      })
+
+      return plan
     })
 
     return {
@@ -248,4 +253,69 @@ export const revokeShareCode = createServerFn({ method: 'POST' })
     })
 
     return { success: true }
+  })
+
+// ============================================
+// CLEANUP OPERATIONS
+// ============================================
+
+// Clean up expired share codes
+// This should be called periodically (e.g., via cron job or scheduled task)
+export const cleanupExpiredShareCodes = createServerFn({ method: 'POST' })
+  .inputValidator((data: { adminId?: string }) => data)
+  .handler(async ({ data }) => {
+    // Optional: verify admin access for manual cleanup
+    if (data.adminId) {
+      const admin = await prisma.user.findFirst({
+        where: { id: data.adminId, isAdmin: true, deletedAt: null },
+      })
+      if (!admin) {
+        throw new Error('Admin access required')
+      }
+    }
+
+    const now = new Date()
+
+    // Delete expired share codes
+    const result = await prisma.planShareCode.deleteMany({
+      where: {
+        expiresAt: { lt: now },
+      },
+    })
+
+    return {
+      deletedCount: result.count,
+      cleanedAt: now.toISOString(),
+    }
+  })
+
+// Get statistics about share codes (admin only)
+export const getShareCodeStats = createServerFn({ method: 'GET' })
+  .inputValidator((data: { adminId: string }) => data)
+  .handler(async ({ data }) => {
+    // Verify admin access
+    const admin = await prisma.user.findFirst({
+      where: { id: data.adminId, isAdmin: true, deletedAt: null },
+    })
+    if (!admin) {
+      throw new Error('Admin access required')
+    }
+
+    const now = new Date()
+
+    const [total, expired, active] = await Promise.all([
+      prisma.planShareCode.count(),
+      prisma.planShareCode.count({
+        where: { expiresAt: { lt: now } },
+      }),
+      prisma.planShareCode.count({
+        where: { expiresAt: { gte: now } },
+      }),
+    ])
+
+    return {
+      total,
+      expired,
+      active,
+    }
   })

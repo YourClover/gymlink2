@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useBodyOverflow } from '@/hooks/useBodyOverflow'
 
 interface ConfirmDialogProps {
   isOpen: boolean
@@ -22,16 +23,7 @@ export default function ConfirmDialog({
   variant = 'default',
 }: ConfirmDialogProps) {
   // Prevent body scroll when dialog is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  useBodyOverflow(isOpen)
 
   // Handle escape key
   useEffect(() => {

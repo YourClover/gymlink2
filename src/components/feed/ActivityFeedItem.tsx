@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Dumbbell, Medal, PartyPopper, Target, Trophy } from 'lucide-react'
 import type { ActivityType } from '@prisma/client'
@@ -32,75 +33,80 @@ interface ActivityFeedItemProps {
   }
 }
 
-export function ActivityFeedItem({ activity }: ActivityFeedItemProps) {
-  const initials = activity.user.name
+// Helper functions moved outside component to avoid recreation on each render
+const formatRelativeDate = (date: Date) => {
+  const d = new Date(date)
+  const now = new Date()
+  const diff = now.getTime() - d.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (minutes < 1) return 'Just now'
+  if (minutes < 60) return `${minutes}m`
+  if (hours < 24) return `${hours}h`
+  if (days < 7) return `${days}d`
+
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+const formatDuration = (seconds: number) => {
+  const hours = Math.floor(seconds / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  if (hours > 0) {
+    return `${hours}h ${mins}m`
+  }
+  return `${mins} min`
+}
+
+const formatVolume = (volume: number) => {
+  if (volume >= 1000) {
+    return `${(volume / 1000).toFixed(1)}K kg`
+  }
+  return `${Math.round(volume)} kg`
+}
+
+const formatPRTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+const formatPRValue = (metadata: ActivityMetadata) => {
+  switch (metadata.recordType) {
+    case 'MAX_VOLUME':
+      if (metadata.weight && metadata.reps) {
+        return `${metadata.weight}kg × ${metadata.reps} reps`
+      }
+      if (metadata.weight && metadata.timeSeconds) {
+        return `${metadata.weight}kg × ${formatPRTime(metadata.timeSeconds)}`
+      }
+      return `${metadata.value}`
+    case 'MAX_TIME':
+      return formatPRTime(metadata.value ?? 0)
+    case 'MAX_REPS':
+      return `${metadata.value} reps`
+    case 'MAX_WEIGHT':
+      return `${metadata.value}kg`
+    default:
+      return `${metadata.value}`
+  }
+}
+
+const getInitials = (name: string) => {
+  return name
     .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
+}
 
-  const formatRelativeDate = (date: Date) => {
-    const d = new Date(date)
-    const now = new Date()
-    const diff = now.getTime() - d.getTime()
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes}m`
-    if (hours < 24) return `${hours}h`
-    if (days < 7) return `${days}d`
-
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
-  }
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const mins = Math.floor((seconds % 3600) / 60)
-    if (hours > 0) {
-      return `${hours}h ${mins}m`
-    }
-    return `${mins} min`
-  }
-
-  const formatVolume = (volume: number) => {
-    if (volume >= 1000) {
-      return `${(volume / 1000).toFixed(1)}K kg`
-    }
-    return `${Math.round(volume)} kg`
-  }
-
-  const formatPRTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const formatPRValue = (metadata: ActivityMetadata) => {
-    switch (metadata.recordType) {
-      case 'MAX_VOLUME':
-        if (metadata.weight && metadata.reps) {
-          return `${metadata.weight}kg × ${metadata.reps} reps`
-        }
-        if (metadata.weight && metadata.timeSeconds) {
-          return `${metadata.weight}kg × ${formatPRTime(metadata.timeSeconds)}`
-        }
-        return `${metadata.value}`
-      case 'MAX_TIME':
-        return formatPRTime(metadata.value ?? 0)
-      case 'MAX_REPS':
-        return `${metadata.value} reps`
-      case 'MAX_WEIGHT':
-        return `${metadata.value}kg`
-      default:
-        return `${metadata.value}`
-    }
-  }
+function ActivityFeedItemComponent({ activity }: ActivityFeedItemProps) {
+  const initials = getInitials(activity.user.name)
 
   const renderContent = (): React.ReactNode => {
     const metadata = activity.metadata
@@ -225,7 +231,7 @@ export function ActivityFeedItem({ activity }: ActivityFeedItemProps) {
             {activity.profile?.avatarUrl ? (
               <img
                 src={activity.profile.avatarUrl}
-                alt=""
+                alt={`${activity.user.name}'s profile picture`}
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (
@@ -253,3 +259,6 @@ export function ActivityFeedItem({ activity }: ActivityFeedItemProps) {
     </div>
   )
 }
+
+// Memoize the component to prevent unnecessary re-renders in lists
+export const ActivityFeedItem = memo(ActivityFeedItemComponent)

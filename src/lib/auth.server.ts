@@ -6,7 +6,7 @@ import {
   verifyPassword,
   verifyToken,
 } from './auth'
-import type { JWTPayload } from './auth'
+import { EMAIL_REGEX, PASSWORD_MIN_LENGTH } from './constants'
 
 // Development-only logging helper
 const isDev = process.env.NODE_ENV !== 'production'
@@ -17,14 +17,47 @@ const logError = (message: string, data?: object) => {
   if (isDev) console.error(`[AUTH] ${message}`, data ?? '')
 }
 
+function validateEmail(email: string): void {
+  if (!EMAIL_REGEX.test(email)) {
+    throw new Error('Invalid email format')
+  }
+}
+
+function validatePassword(password: string): void {
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    throw new Error(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  }
+  if (!/[A-Z]/.test(password)) {
+    throw new Error('Password must contain at least one uppercase letter')
+  }
+  if (!/[a-z]/.test(password)) {
+    throw new Error('Password must contain at least one lowercase letter')
+  }
+  if (!/[0-9]/.test(password)) {
+    throw new Error('Password must contain at least one number')
+  }
+}
+
+function validateName(name: string): void {
+  if (name.trim().length < 2) {
+    throw new Error('Name must be at least 2 characters')
+  }
+  if (name.trim().length > 100) {
+    throw new Error('Name must be less than 100 characters')
+  }
+}
+
 // Server functions for authentication
 // These can be called from client code via RPC
 
 // Register a new user
 export const registerUser = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (data: { email: string; password: string; name: string }) => data,
-  )
+  .inputValidator((data: { email: string; password: string; name: string }) => {
+    validateEmail(data.email)
+    validatePassword(data.password)
+    validateName(data.name)
+    return data
+  })
   .handler(async ({ data }) => {
     const { email, password, name } = data
     log('Register attempt:', { email, name })
@@ -66,7 +99,13 @@ export const registerUser = createServerFn({ method: 'POST' })
 
 // Login user
 export const loginUser = createServerFn({ method: 'POST' })
-  .inputValidator((data: { email: string; password: string }) => data)
+  .inputValidator((data: { email: string; password: string }) => {
+    validateEmail(data.email)
+    if (!data.password) {
+      throw new Error('Password is required')
+    }
+    return data
+  })
   .handler(async ({ data }) => {
     const { email, password } = data
     log('Login attempt:', { email })
@@ -79,6 +118,12 @@ export const loginUser = createServerFn({ method: 'POST' })
     if (!user) {
       log('Login failed: User not found:', { email })
       throw new Error('Invalid email or password')
+    }
+
+    // Check if user has been soft deleted
+    if (user.deletedAt) {
+      log('Login failed: Account deleted:', { email })
+      throw new Error('This account has been deleted')
     }
 
     // Verify password
@@ -110,7 +155,10 @@ export const logoutUser = createServerFn({ method: 'POST' }).handler(() => {
 
 // Check if email is available
 export const checkEmailAvailable = createServerFn({ method: 'POST' })
-  .inputValidator((data: { email: string }) => data)
+  .inputValidator((data: { email: string }) => {
+    validateEmail(data.email)
+    return data
+  })
   .handler(async ({ data }) => {
     log('Email availability check:', { email: data.email })
     try {

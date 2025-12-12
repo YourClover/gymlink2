@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useBodyOverflow } from '@/hooks/useBodyOverflow'
 
 interface ModalProps {
   isOpen: boolean
@@ -16,16 +17,7 @@ export default function Modal({
   children,
 }: ModalProps) {
   // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  useBodyOverflow(isOpen)
 
   // Handle escape key
   useEffect(() => {

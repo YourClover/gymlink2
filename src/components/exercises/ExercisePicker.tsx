@@ -5,6 +5,8 @@ import ExerciseFilters from './ExerciseFilters'
 import type { Equipment, Exercise, MuscleGroup } from '@prisma/client'
 import { getExercises } from '@/lib/exercises.server'
 import { useAuth } from '@/context/AuthContext'
+import { useBodyOverflow } from '@/hooks/useBodyOverflow'
+import { DEBOUNCE_DELAY_MS } from '@/lib/constants'
 
 interface ExercisePickerProps {
   isOpen: boolean
@@ -50,21 +52,12 @@ export default function ExercisePicker({
       }
     }
 
-    const debounce = setTimeout(fetchExercises, 300)
+    const debounce = setTimeout(fetchExercises, DEBOUNCE_DELAY_MS)
     return () => clearTimeout(debounce)
   }, [isOpen, muscleGroup, equipment, search, user?.id, excludeIds])
 
   // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  useBodyOverflow(isOpen)
 
   // Reset state when closing
   useEffect(() => {

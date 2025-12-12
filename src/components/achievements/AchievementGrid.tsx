@@ -34,6 +34,7 @@ const categoryLabels: Record<AchievementCategory, string> = {
   VOLUME: 'Volume',
   CONSISTENCY: 'Consistency',
   MUSCLE_FOCUS: 'Muscle Focus',
+  EXERCISE_SPECIFIC: 'Exercise Specific',
 }
 
 const categoryOrder: Array<AchievementCategory> = [
@@ -43,6 +44,7 @@ const categoryOrder: Array<AchievementCategory> = [
   'VOLUME',
   'CONSISTENCY',
   'MUSCLE_FOCUS',
+  'EXERCISE_SPECIFIC',
 ]
 
 export default function AchievementGrid({
