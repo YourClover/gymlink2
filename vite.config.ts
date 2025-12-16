@@ -18,6 +18,9 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  ssr: {
+    external: ['@prisma/client', '@prisma/adapter-pg'],
+  },
 })
 
 export default config
