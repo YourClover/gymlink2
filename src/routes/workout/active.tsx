@@ -15,7 +15,7 @@ import PRToast from '@/components/ui/PRToast'
 import WorkoutHeader from '@/components/workout/WorkoutHeader'
 import ExerciseWorkoutCard from '@/components/workout/ExerciseWorkoutCard'
 import SetLoggerModal from '@/components/workout/SetLoggerModal'
-import RestTimer from '@/components/workout/RestTimer'
+import RestTimer, { getPersistedRestTimer } from '@/components/workout/RestTimer'
 import ExercisePicker from '@/components/exercises/ExercisePicker'
 import {
   deleteWorkoutSet,
@@ -162,6 +162,15 @@ function ActiveWorkoutPage() {
   useEffect(() => {
     fetchSession()
   }, [fetchSession])
+
+  // Restore persisted rest timer on mount
+  useEffect(() => {
+    const persisted = getPersistedRestTimer()
+    if (persisted) {
+      setNextSetInfo(persisted.nextSetInfo ?? null)
+      setShowRestTimer(true)
+    }
+  }, [])
 
   // Auto-expand first exercise with incomplete sets (only once on initial load)
   useEffect(() => {

@@ -1,12 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { useBodyOverflow } from '@/hooks/useBodyOverflow'
 import { REST_TIMER_AUTO_CLOSE_DELAY_MS } from '@/lib/constants'
+
+const STORAGE_KEY = 'gymlink_rest_timer'
 
 interface RestTimerProps {
   isOpen: boolean
   onClose: () => void
   durationSeconds: number
+  nextSetInfo?: {
+    exerciseName: string
+    setNumber: number
+  }
+}
+
+interface StoredTimer {
+  endTime: number
+  duration: number // Original duration for progress calculation
   nextSetInfo?: {
     exerciseName: string
     setNumber: number
@@ -19,41 +30,90 @@ export default function RestTimer({
   durationSeconds,
   nextSetInfo,
 }: RestTimerProps) {
-  const [remainingSeconds, setRemainingSeconds] = useState(durationSeconds)
+  const [endTime, setEndTime] = useState<number | null>(null)
+  const [originalDuration, setOriginalDuration] = useState(durationSeconds)
+  const [, forceUpdate] = useState(0)
 
-  // Reset when opening with new duration
+  // Calculate remaining seconds from end time
+  const remainingSeconds = endTime
+    ? Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
+    : 0
+
+  // Clear persisted timer
+  const clearPersistedTimer = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY)
+  }, [])
+
+  // Handle close - clear storage and call onClose
+  const handleClose = useCallback(() => {
+    clearPersistedTimer()
+    setEndTime(null)
+    onClose()
+  }, [clearPersistedTimer, onClose])
+
+  // Initialize timer when opening
   useEffect(() => {
-    if (isOpen) {
-      setRemainingSeconds(durationSeconds)
+    if (isOpen && durationSeconds > 0) {
+      // Check if there's a persisted timer first
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        try {
+          const data: StoredTimer = JSON.parse(stored)
+          const remaining = Math.ceil((data.endTime - Date.now()) / 1000)
+          if (remaining > 0) {
+            // Resume persisted timer
+            setEndTime(data.endTime)
+            setOriginalDuration(data.duration)
+            return
+          }
+        } catch {
+          // Invalid data, clear it
+        }
+        clearPersistedTimer()
+      }
+
+      // Start new timer
+      const newEndTime = Date.now() + durationSeconds * 1000
+      setEndTime(newEndTime)
+      setOriginalDuration(durationSeconds)
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ endTime: newEndTime, duration: durationSeconds, nextSetInfo }),
+      )
     }
-  }, [isOpen, durationSeconds])
+  }, [isOpen, durationSeconds, nextSetInfo, clearPersistedTimer])
 
-  // Countdown timer
+  // Update display and handle completion
   useEffect(() => {
-    if (!isOpen || remainingSeconds <= 0) return
+    if (!isOpen || !endTime) return
 
     let timeoutId: ReturnType<typeof setTimeout>
 
-    const interval = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          // Timer complete - trigger haptic if available
-          if ('vibrate' in navigator) {
-            navigator.vibrate([200, 100, 200])
-          }
-          // Auto-close after a brief delay
-          timeoutId = setTimeout(onClose, REST_TIMER_AUTO_CLOSE_DELAY_MS)
-          return 0
+    const tick = () => {
+      const remaining = Math.ceil((endTime - Date.now()) / 1000)
+
+      if (remaining <= 0) {
+        // Timer complete - trigger haptic
+        if ('vibrate' in navigator) {
+          navigator.vibrate([200, 100, 200])
         }
-        return prev - 1
-      })
-    }, 1000)
+        // Auto-close after delay
+        timeoutId = setTimeout(handleClose, REST_TIMER_AUTO_CLOSE_DELAY_MS)
+        forceUpdate((n) => n + 1)
+        return
+      }
+
+      forceUpdate((n) => n + 1)
+    }
+
+    // Update every 100ms for smooth display
+    const interval = setInterval(tick, 100)
 
     return () => {
       clearInterval(interval)
       clearTimeout(timeoutId)
     }
-  }, [isOpen, durationSeconds, onClose])
+  }, [isOpen, endTime, handleClose])
 
   // Prevent body scroll
   useBodyOverflow(isOpen)
@@ -66,8 +126,10 @@ export default function RestTimer({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const progress = 1 - remainingSeconds / durationSeconds
-  const circumference = 2 * Math.PI * 120 // radius = 120
+  const progress = originalDuration > 0
+    ? 1 - remainingSeconds / originalDuration
+    : 0
+  const circumference = 2 * Math.PI * 120
   const strokeDashoffset = circumference * (1 - progress)
 
   const isComplete = remainingSeconds === 0
@@ -76,7 +138,7 @@ export default function RestTimer({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/95 safe-area-pt safe-area-pb">
       {/* Close button */}
       <button
-        onClick={onClose}
+        onClick={handleClose}
         className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-colors safe-area-mt"
         aria-label="Skip rest"
       >
@@ -138,7 +200,7 @@ export default function RestTimer({
 
         {/* Skip button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="px-8 py-3 bg-zinc-800 text-white font-medium rounded-xl hover:bg-zinc-700 transition-colors"
         >
           {isComplete ? 'Continue' : 'Skip Rest'}
@@ -146,4 +208,23 @@ export default function RestTimer({
       </div>
     </div>
   )
+}
+
+// Export helper to check for persisted timer
+export function getPersistedRestTimer(): StoredTimer | null {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (!stored) return null
+
+  try {
+    const data: StoredTimer = JSON.parse(stored)
+    const remaining = Math.ceil((data.endTime - Date.now()) / 1000)
+    if (remaining > 0) {
+      return data
+    }
+  } catch {
+    // Invalid data
+  }
+
+  localStorage.removeItem(STORAGE_KEY)
+  return null
 }
