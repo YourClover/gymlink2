@@ -37,7 +37,7 @@ export default function ExerciseWorkoutCard({
 
   // Calculate progress
   const targetSets = planExercise?.targetSets ?? 0
-  const completedSets = sets.filter((s) => !s.isWarmup).length
+  const completedSets = sets.filter((s) => !s.isWarmup && !s.isDropset).length
   const hasTarget = targetSets > 0
 
   // Format target display

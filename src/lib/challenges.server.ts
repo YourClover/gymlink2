@@ -190,7 +190,7 @@ export const getChallengeDetails = createServerFn({ method: 'GET' })
               },
             },
           },
-          orderBy: [{ completedAt: 'asc' }, { progress: 'desc' }],
+          orderBy: { progress: 'desc' },
         },
       },
     })
@@ -235,6 +235,7 @@ export const getPublicChallenges = createServerFn({ method: 'GET' })
       },
       include: {
         creator: { select: { name: true } },
+        exercise: { select: { id: true, name: true } },
         _count: { select: { participants: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -258,6 +259,7 @@ export const getUserChallenges = createServerFn({ method: 'GET' })
         challenge: {
           include: {
             creator: { select: { name: true } },
+            exercise: { select: { id: true, name: true } },
             _count: { select: { participants: true } },
           },
         },
@@ -306,7 +308,7 @@ export const updateChallengeProgress = createServerFn({ method: 'POST' })
             where: { id: data.sessionId },
             include: {
               workoutSets: {
-                where: { isWarmup: false },
+                where: { isWarmup: false, isDropset: false },
                 select: { weight: true, reps: true },
               },
             },
@@ -321,7 +323,7 @@ export const updateChallengeProgress = createServerFn({ method: 'POST' })
 
         case 'TOTAL_SETS': {
           progressDelta = await prisma.workoutSet.count({
-            where: { workoutSessionId: data.sessionId, isWarmup: false },
+            where: { workoutSessionId: data.sessionId, isWarmup: false, isDropset: false },
           })
           break
         }
@@ -333,6 +335,7 @@ export const updateChallengeProgress = createServerFn({ method: 'POST' })
               workoutSessionId: data.sessionId,
               exerciseId: challenge.exerciseId,
               isWarmup: false,
+              isDropset: false,
             },
             select: { weight: true, reps: true },
           })

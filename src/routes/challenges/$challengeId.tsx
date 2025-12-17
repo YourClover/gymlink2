@@ -268,6 +268,7 @@ function ChallengeDetailPage() {
             </p>
             <p className="text-xs text-zinc-500">
               {getChallengeTypeLabel(challenge.challengeType)}
+              {challenge.exercise && ` - ${challenge.exercise.name}`}
             </p>
           </div>
 

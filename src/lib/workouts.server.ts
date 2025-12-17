@@ -292,7 +292,7 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
         timeSeconds?: number
       } = { isNewPR: false }
 
-      if (!setData.isWarmup) {
+      if (!setData.isWarmup && !setData.isDropset) {
         // Calculate PR score based on exercise type
         let prScore: number | null = null
         let recordType: RecordType = RecordType.MAX_VOLUME
@@ -565,7 +565,8 @@ export const getLastExerciseSets = createServerFn({ method: 'GET' })
         workoutSets: {
           where: {
             exerciseId: data.exerciseId,
-            isWarmup: false, // Exclude warmup sets
+            isWarmup: false,
+            isDropset: false,
           },
           orderBy: { setNumber: 'asc' },
           select: {

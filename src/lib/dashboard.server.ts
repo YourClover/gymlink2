@@ -40,7 +40,7 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
     let totalVolumeThisWeek = 0
     for (const workout of workoutsThisWeek) {
       for (const set of workout.workoutSets) {
-        if (!set.isWarmup && set.weight && set.reps) {
+        if (!set.isWarmup && !set.isDropset && set.weight && set.reps) {
           totalVolumeThisWeek += set.weight * set.reps
         }
       }

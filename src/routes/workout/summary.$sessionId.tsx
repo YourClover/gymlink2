@@ -160,7 +160,7 @@ function WorkoutSummaryPage() {
     if (!session)
       return { totalSets: 0, totalVolume: 0, duration: 0, exerciseCount: 0 }
 
-    const workingSets = session.workoutSets.filter((s) => !s.isWarmup)
+    const workingSets = session.workoutSets.filter((s) => !s.isWarmup && !s.isDropset)
     const totalVolume = workingSets.reduce(
       (sum, set) => sum + (set.weight || 0) * (set.reps || 0),
       0,

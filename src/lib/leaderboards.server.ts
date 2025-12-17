@@ -102,6 +102,7 @@ async function getVolumeLeaderboard(
     FROM "workout_sets" wset
     JOIN "workout_sessions" ws ON wset."workout_session_id" = ws.id
     WHERE wset."is_warmup" = false
+      AND wset."is_dropset" = false
       AND wset.weight IS NOT NULL
       AND wset.reps IS NOT NULL
       AND ws."completed_at" IS NOT NULL

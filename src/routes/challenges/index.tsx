@@ -255,7 +255,8 @@ function ChallengesPage() {
                   <div className="flex items-center gap-4 text-sm text-zinc-500 mb-3">
                     <div className="flex items-center gap-1">
                       <Target className="w-4 h-4" />
-                      {getChallengeTypeLabel(challenge.challengeType)}:{' '}
+                      {getChallengeTypeLabel(challenge.challengeType)}
+                      {challenge.exercise && ` - ${challenge.exercise.name}`}:{' '}
                       {challenge.targetValue}
                     </div>
                     <div className="flex items-center gap-1">
@@ -329,6 +330,7 @@ function ChallengesPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-zinc-400">
                         {getChallengeTypeLabel(challenge.challengeType)}
+                        {challenge.exercise && ` - ${challenge.exercise.name}`}
                       </span>
                       <span className="text-white">
                         {Math.round(challenge.userProgress)} /{' '}
