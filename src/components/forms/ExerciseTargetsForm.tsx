@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Exercise } from '@prisma/client'
+import { parseDecimalInput } from '@/lib/formatting'
 
 interface ExerciseTargets {
   targetSets: number
@@ -145,7 +146,7 @@ export default function ExerciseTargetsForm({
           value={targetWeight ?? ''}
           onChange={(e) =>
             setTargetWeight(
-              e.target.value ? parseFloat(e.target.value) : undefined,
+              e.target.value ? parseDecimalInput(e.target.value) : undefined,
             )
           }
           min={0}

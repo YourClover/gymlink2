@@ -98,3 +98,12 @@ export function formatTime(seconds: number): string {
 export function formatWeight(weight: number, unit = 'kg'): string {
   return `${weight} ${unit}`
 }
+
+/**
+ * Parse decimal input that may use comma or dot as separator
+ * Handles iOS keyboards in European locales that use comma
+ * Examples: "72,5" -> 72.5, "72.5" -> 72.5
+ */
+export function parseDecimalInput(value: string): number {
+  return parseFloat(value.replace(',', '.')) || 0
+}

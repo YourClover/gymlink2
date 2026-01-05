@@ -10,6 +10,7 @@ import {
   MIN_TIME_SECONDS,
   RPE_VALUES,
 } from '@/lib/constants'
+import { parseDecimalInput } from '@/lib/formatting'
 
 interface PreviousWorkoutData {
   date: Date | null
@@ -85,7 +86,7 @@ export default function SetLoggerModal({
 
   const handleLog = () => {
     const weightNum =
-      typeof weight === 'string' ? parseFloat(weight) || 0 : weight
+      typeof weight === 'string' ? parseDecimalInput(weight) : weight
     const repsNum = typeof reps === 'string' ? parseInt(reps) || 1 : reps
     onLog({
       reps: exercise.isTimed ? undefined : repsNum,
@@ -99,7 +100,7 @@ export default function SetLoggerModal({
 
   const adjustWeight = (delta: number) => {
     setWeight((prev) => {
-      const num = typeof prev === 'string' ? parseFloat(prev) || 0 : prev
+      const num = typeof prev === 'string' ? parseDecimalInput(prev) : prev
       return Math.max(MIN_WEIGHT, num + delta)
     })
   }
@@ -203,7 +204,7 @@ export default function SetLoggerModal({
                   setWeight(
                     e.target.value === ''
                       ? ''
-                      : parseFloat(e.target.value) || 0,
+                      : parseDecimalInput(e.target.value),
                   )
                 }
                 className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
