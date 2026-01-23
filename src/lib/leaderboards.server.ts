@@ -195,7 +195,9 @@ async function getPRsLeaderboard(
 }
 
 // Helper: Add user and profile info to leaderboard entries
-async function enrichLeaderboard(entries: Array<{ userId: string; value: number }>) {
+async function enrichLeaderboard(
+  entries: Array<{ userId: string; value: number }>,
+) {
   if (entries.length === 0) return { leaderboard: [] }
 
   const userIds = entries.map((e) => e.userId)

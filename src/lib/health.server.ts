@@ -33,7 +33,8 @@ export const getHealthStatus = createServerFn({ method: 'GET' }).handler(
     } catch (error) {
       dbStatus = {
         status: 'down',
-        error: error instanceof Error ? error.message : 'Unknown database error',
+        error:
+          error instanceof Error ? error.message : 'Unknown database error',
       }
     }
 
@@ -52,7 +53,7 @@ export const getHealthStatus = createServerFn({ method: 'GET' }).handler(
 
 // Lightweight liveness check (for Kubernetes/Docker health probes)
 export const getLivenessStatus = createServerFn({ method: 'GET' }).handler(
-  async () => {
+  () => {
     return { status: 'ok', timestamp: new Date().toISOString() }
   },
 )

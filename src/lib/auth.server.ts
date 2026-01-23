@@ -25,7 +25,9 @@ function validateEmail(email: string): void {
 
 function validatePassword(password: string): void {
   if (password.length < PASSWORD_MIN_LENGTH) {
-    throw new Error(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+    throw new Error(
+      `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+    )
   }
   if (!/[A-Z]/.test(password)) {
     throw new Error('Password must contain at least one uppercase letter')

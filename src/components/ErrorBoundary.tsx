@@ -1,5 +1,6 @@
-import { Component, type ReactNode, type ErrorInfo } from 'react'
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import { Component } from 'react'
+import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
+import type { ErrorInfo, ReactNode } from 'react'
 
 interface Props {
   children: ReactNode
@@ -54,8 +55,8 @@ export default class ErrorBoundary extends Component<Props, State> {
             </h1>
 
             <p className="text-zinc-400 mb-6">
-              An unexpected error occurred. Please try again or go back to the home
-              page.
+              An unexpected error occurred. Please try again or go back to the
+              home page.
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (

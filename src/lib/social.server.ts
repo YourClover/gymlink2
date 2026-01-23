@@ -6,7 +6,8 @@ import { MAX_PAGE_SIZE } from './constants'
 function validatePagination(limit?: number, offset?: number): void {
   if (limit !== undefined) {
     if (limit < 1) throw new Error('Limit must be at least 1')
-    if (limit > MAX_PAGE_SIZE) throw new Error(`Limit cannot exceed ${MAX_PAGE_SIZE}`)
+    if (limit > MAX_PAGE_SIZE)
+      throw new Error(`Limit cannot exceed ${MAX_PAGE_SIZE}`)
   }
   if (offset !== undefined && offset < 0) {
     throw new Error('Offset cannot be negative')

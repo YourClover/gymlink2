@@ -323,7 +323,11 @@ export const updateChallengeProgress = createServerFn({ method: 'POST' })
 
         case 'TOTAL_SETS': {
           progressDelta = await prisma.workoutSet.count({
-            where: { workoutSessionId: data.sessionId, isWarmup: false, isDropset: false },
+            where: {
+              workoutSessionId: data.sessionId,
+              isWarmup: false,
+              isDropset: false,
+            },
           })
           break
         }

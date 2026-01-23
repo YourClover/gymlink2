@@ -74,6 +74,7 @@ export default function SharePlanModal({
   const handleShare = async () => {
     if (!shareCode) return
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime browser feature detection
     if (navigator.share) {
       try {
         await navigator.share({

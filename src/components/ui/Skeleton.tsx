@@ -5,7 +5,9 @@ interface SkeletonProps {
 }
 
 // Base skeleton with shimmer animation
-export const Skeleton = memo(function Skeleton({ className = '' }: SkeletonProps) {
+export const Skeleton = memo(function Skeleton({
+  className = '',
+}: SkeletonProps) {
   return (
     <div
       className={`bg-zinc-800 animate-pulse rounded ${className}`}

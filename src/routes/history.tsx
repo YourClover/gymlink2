@@ -84,7 +84,9 @@ function HistoryPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-lg font-semibold text-white">Workout History</h1>
+            <h1 className="text-lg font-semibold text-white">
+              Workout History
+            </h1>
           </div>
         </header>
         <div className="px-4 py-4 space-y-3">

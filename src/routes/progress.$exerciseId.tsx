@@ -2,27 +2,24 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Calendar, Clock, Dumbbell, TrendingUp } from 'lucide-react'
 import type { Equipment, MuscleGroup, RecordType } from '@prisma/client'
-import type {TimeRange} from '@/components/progression/TimeRangeSelector';
-import type {ProgressionDataPoint} from '@/lib/progression.server';
-import type {ProgressionMetric} from '@/lib/progression-utils';
+import type { TimeRange } from '@/components/progression/TimeRangeSelector'
+import type { ProgressionDataPoint } from '@/lib/progression.server'
+import type { ProgressionMetric } from '@/lib/progression-utils'
 import { useAuth } from '@/context/AuthContext'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import ProgressionChart from '@/components/progression/ProgressionChart'
 import TimeRangeSelector, {
-  
-  getStartDateForRange
+  getStartDateForRange,
 } from '@/components/progression/TimeRangeSelector'
 import MetricSelector from '@/components/progression/MetricSelector'
 import {
-  
   getExerciseProgression,
   getExerciseRecentSessions,
-  getExerciseSummary
+  getExerciseSummary,
 } from '@/lib/progression.server'
 import {
-  
   calculateImprovement,
-  getAvailableMetrics
+  getAvailableMetrics,
 } from '@/lib/progression-utils'
 
 export const Route = createFileRoute('/progress/$exerciseId')({

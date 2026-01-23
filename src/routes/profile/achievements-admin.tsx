@@ -1,14 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import {
-  ArrowLeft,
-  Loader2,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react'
-import type { AchievementCategory, AchievementRarity } from '@prisma/client'
+import { ArrowLeft, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import type {
+  AchievementCategory,
+  AchievementRarity,
+  Exercise,
+} from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import {
   createAchievement,
@@ -19,7 +16,6 @@ import {
 import { getExercises } from '@/lib/exercises.server'
 import AppLayout from '@/components/AppLayout'
 import { AchievementBadge } from '@/components/achievements'
-import type { Exercise } from '@prisma/client'
 
 export const Route = createFileRoute('/profile/achievements-admin')({
   component: AchievementsAdminPage,
@@ -40,7 +36,7 @@ interface Achievement {
   exercise: { id: string; name: string } | null
 }
 
-const CATEGORIES: AchievementCategory[] = [
+const CATEGORIES: Array<AchievementCategory> = [
   'MILESTONE',
   'STREAK',
   'PERSONAL_RECORD',
@@ -50,7 +46,7 @@ const CATEGORIES: AchievementCategory[] = [
   'EXERCISE_SPECIFIC',
 ]
 
-const RARITIES: AchievementRarity[] = [
+const RARITIES: Array<AchievementRarity> = [
   'COMMON',
   'UNCOMMON',
   'RARE',
@@ -69,8 +65,8 @@ const RARITY_COLORS: Record<AchievementRarity, string> = {
 function AchievementsAdminPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [achievements, setAchievements] = useState<Achievement[]>([])
-  const [exercises, setExercises] = useState<Exercise[]>([])
+  const [achievements, setAchievements] = useState<Array<Achievement>>([])
+  const [exercises, setExercises] = useState<Array<Exercise>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingAchievement, setEditingAchievement] =
@@ -287,9 +283,7 @@ function AchievementsAdminPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-medium text-white">
-                      {achievement.name}
-                    </p>
+                    <p className="font-medium text-white">{achievement.name}</p>
                     <span
                       className={`text-xs px-1.5 py-0.5 rounded ${RARITY_COLORS[achievement.rarity]}`}
                     >
@@ -302,7 +296,8 @@ function AchievementsAdminPage() {
                     )}
                   </div>
                   <p className="text-sm text-zinc-400 mt-0.5">
-                    {achievement.category.replace(/_/g, ' ')} | Threshold: {achievement.threshold}
+                    {achievement.category.replace(/_/g, ' ')} | Threshold:{' '}
+                    {achievement.threshold}
                   </p>
                   {achievement.exercise && (
                     <p className="text-xs text-blue-400 mt-0.5">
@@ -468,7 +463,9 @@ function AchievementsAdminPage() {
                   <input
                     type="number"
                     value={threshold}
-                    onChange={(e) => setThreshold(parseInt(e.target.value) || 1)}
+                    onChange={(e) =>
+                      setThreshold(parseInt(e.target.value) || 1)
+                    }
                     min={1}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                   />
@@ -481,7 +478,9 @@ function AchievementsAdminPage() {
                   <input
                     type="number"
                     value={sortOrder}
-                    onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setSortOrder(parseInt(e.target.value) || 0)
+                    }
                     min={0}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                   />

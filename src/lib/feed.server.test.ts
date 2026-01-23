@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mockPrisma } from '@/test/setup'
 import { DEFAULT_FEED_LIMIT, MAX_PAGE_SIZE } from './constants'
+import { mockPrisma } from '@/test/setup'
 
 // We test the business logic directly by recreating the handler logic
 // TanStack server functions are RPC-based and don't return values when called directly in tests
@@ -94,7 +94,7 @@ describe('feed server functions', () => {
     })
 
     it('returns null cursor when no activities', () => {
-      const activities: any[] = []
+      const activities: Array<any> = []
 
       const nextCursor =
         activities.length > 0
@@ -113,6 +113,7 @@ describe('feed server functions', () => {
       }
 
       expect(mapped.profile).toEqual(mockUser.profile)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       expect(mapped.profile?.username).toBe('testuser')
     })
   })
@@ -229,6 +230,7 @@ describe('feed server functions', () => {
           userId: inputData.userId,
           activityType: inputData.activityType,
           referenceId: inputData.referenceId,
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
           metadata: inputData.metadata ?? {},
         },
       })
@@ -246,6 +248,7 @@ describe('feed server functions', () => {
       }
 
       const data = {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
         metadata: inputData.metadata ?? {},
       }
 

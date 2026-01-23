@@ -37,7 +37,9 @@ interface NotificationData {
 function NotificationsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [notifications, setNotifications] = useState<Array<NotificationData>>([])
+  const [notifications, setNotifications] = useState<Array<NotificationData>>(
+    [],
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   const loadNotifications = async () => {

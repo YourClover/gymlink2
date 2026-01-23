@@ -3,12 +3,12 @@ import { Calendar, Minus, Plus, X } from 'lucide-react'
 import type { Exercise, WeightUnit } from '@prisma/client'
 import { useBodyOverflow } from '@/hooks/useBodyOverflow'
 import {
-  WEIGHT_INCREMENT,
-  TIME_INCREMENT,
   MIN_REPS,
-  MIN_WEIGHT,
   MIN_TIME_SECONDS,
+  MIN_WEIGHT,
   RPE_VALUES,
+  TIME_INCREMENT,
+  WEIGHT_INCREMENT,
 } from '@/lib/constants'
 import { parseDecimalInput } from '@/lib/formatting'
 
