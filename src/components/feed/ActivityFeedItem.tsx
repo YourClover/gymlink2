@@ -84,7 +84,7 @@ const formatPRValue = (metadata: ActivityMetadata) => {
       if (metadata.weight && metadata.timeSeconds) {
         return `${metadata.weight}kg × ${formatPRTime(metadata.timeSeconds)}`
       }
-      return `${metadata.value}`
+      return (metadata.value ?? 0).toLocaleString()
     case 'MAX_TIME':
       return formatPRTime(metadata.value ?? 0)
     case 'MAX_REPS':
@@ -92,7 +92,7 @@ const formatPRValue = (metadata: ActivityMetadata) => {
     case 'MAX_WEIGHT':
       return `${metadata.value}kg`
     default:
-      return `${metadata.value}`
+      return (metadata.value ?? 0).toLocaleString()
   }
 }
 

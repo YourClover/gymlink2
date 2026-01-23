@@ -74,7 +74,7 @@ function PRsPage() {
         if (pr.weight && pr.timeSeconds) {
           return `${pr.weight}kg × ${formatTime(pr.timeSeconds)}`
         }
-        return `Score: ${pr.value}`
+        return `Score: ${pr.value.toLocaleString()}`
       case 'MAX_TIME':
         return formatTime(pr.value)
       case 'MAX_REPS':
@@ -82,7 +82,7 @@ function PRsPage() {
       case 'MAX_WEIGHT':
         return `${pr.value}kg`
       default:
-        return `${pr.value}`
+        return pr.value.toLocaleString()
     }
   }
 
