@@ -36,7 +36,7 @@ function formatRecordDisplay(
       if (weight && timeSeconds) {
         return `${weight}kg × ${formatTime(timeSeconds)}`
       }
-      return `${newRecord}`
+      return newRecord.toLocaleString()
     case 'MAX_TIME':
       return formatTime(newRecord)
     case 'MAX_REPS':
@@ -44,7 +44,7 @@ function formatRecordDisplay(
     case 'MAX_WEIGHT':
       return `${newRecord}kg`
     default:
-      return `${newRecord}`
+      return newRecord.toLocaleString()
   }
 }
 
@@ -60,7 +60,7 @@ function formatImprovement(
     case 'MAX_VOLUME':
     case 'MAX_WEIGHT':
     default:
-      return `+${improvement}`
+      return `+${improvement.toLocaleString()}`
   }
 }
 
