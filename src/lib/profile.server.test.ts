@@ -136,7 +136,7 @@ describe('profile server functions', () => {
       const profile = { ...mockProfile, isPrivate: false }
       const viewerId = 'other-user'
 
-      let canView = !profile.isPrivate
+      const canView = !profile.isPrivate
       expect(canView).toBe(true)
     })
 
@@ -157,6 +157,7 @@ describe('profile server functions', () => {
       const followStatus = 'ACCEPTED'
 
       let canView = !profile.isPrivate
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       if (followStatus === 'ACCEPTED') {
         canView = true
       }
@@ -169,6 +170,7 @@ describe('profile server functions', () => {
       const followStatus = null
 
       let canView = !profile.isPrivate
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       if (followStatus === 'ACCEPTED') {
         canView = true
       }
@@ -271,6 +273,7 @@ describe('profile server functions', () => {
       const adminId = undefined
 
       expect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
         if (daysSinceDelete > gracePeriodDays && !adminId) {
           throw new Error(
             `Account can only be restored within ${gracePeriodDays} days of deletion`,
@@ -288,6 +291,7 @@ describe('profile server functions', () => {
       const adminId = 'admin-123'
 
       expect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
         if (daysSinceDelete > gracePeriodDays && !adminId) {
           throw new Error(
             `Account can only be restored within ${gracePeriodDays} days of deletion`,
@@ -306,6 +310,7 @@ describe('profile server functions', () => {
 
       expect(daysSinceDelete).toBeLessThanOrEqual(gracePeriodDays)
       expect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
         if (daysSinceDelete > gracePeriodDays && !adminId) {
           throw new Error(
             `Account can only be restored within ${gracePeriodDays} days of deletion`,

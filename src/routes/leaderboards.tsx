@@ -172,22 +172,22 @@ function LeaderboardsPage() {
 
         {/* Metric Selection */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-          {(['volume', 'workouts', 'streak', 'prs'] as Array<LeaderboardMetric>).map(
-            (m) => (
-              <button
-                key={m}
-                onClick={() => setMetric(m)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm whitespace-nowrap ${
-                  metric === m
-                    ? 'bg-zinc-700 text-white'
-                    : 'bg-zinc-800/50 text-zinc-400'
-                }`}
-              >
-                {getMetricIcon(m)}
-                {getMetricLabel(m)}
-              </button>
-            ),
-          )}
+          {(
+            ['volume', 'workouts', 'streak', 'prs'] as Array<LeaderboardMetric>
+          ).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMetric(m)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm whitespace-nowrap ${
+                metric === m
+                  ? 'bg-zinc-700 text-white'
+                  : 'bg-zinc-800/50 text-zinc-400'
+              }`}
+            >
+              {getMetricIcon(m)}
+              {getMetricLabel(m)}
+            </button>
+          ))}
         </div>
 
         {/* Time Range Selection */}

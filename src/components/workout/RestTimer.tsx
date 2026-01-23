@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { useBodyOverflow } from '@/hooks/useBodyOverflow'
 import { REST_TIMER_AUTO_CLOSE_DELAY_MS } from '@/lib/constants'
@@ -78,7 +78,11 @@ export default function RestTimer({
       setOriginalDuration(durationSeconds)
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ endTime: newEndTime, duration: durationSeconds, nextSetInfo }),
+        JSON.stringify({
+          endTime: newEndTime,
+          duration: durationSeconds,
+          nextSetInfo,
+        }),
       )
     }
   }, [isOpen, durationSeconds, nextSetInfo, clearPersistedTimer])
@@ -126,9 +130,8 @@ export default function RestTimer({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const progress = originalDuration > 0
-    ? 1 - remainingSeconds / originalDuration
-    : 0
+  const progress =
+    originalDuration > 0 ? 1 - remainingSeconds / originalDuration : 0
   const circumference = 2 * Math.PI * 120
   const strokeDashoffset = circumference * (1 - progress)
 

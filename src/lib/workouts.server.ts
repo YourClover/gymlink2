@@ -161,7 +161,7 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
           referenceId: updatedSession.id,
           metadata: {
             durationSeconds,
-            planName: existing.planDay?.workoutPlan?.name ?? null,
+            planName: existing.planDay?.workoutPlan.name ?? null,
             dayName: existing.planDay?.name ?? null,
           },
         },

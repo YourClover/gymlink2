@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
-import jwt, { type Secret, type SignOptions } from 'jsonwebtoken'
+import jwt from 'jsonwebtoken'
+import type { Secret, SignOptions } from 'jsonwebtoken'
 
 const JWT_SECRET_ENV = process.env.JWT_SECRET
 if (!JWT_SECRET_ENV) {

@@ -256,7 +256,8 @@ function ChallengesPage() {
                     <div className="flex items-center gap-1">
                       <Target className="w-4 h-4" />
                       {getChallengeTypeLabel(challenge.challengeType)}
-                      {challenge.exercise && ` - ${challenge.exercise.name}`}:{' '}
+                      {challenge.exercise &&
+                        ` - ${challenge.exercise.name}`}:{' '}
                       {challenge.targetValue}
                     </div>
                     <div className="flex items-center gap-1">

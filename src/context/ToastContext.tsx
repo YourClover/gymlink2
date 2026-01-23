@@ -1,11 +1,6 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-} from 'react'
-import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react'
+import { createContext, useCallback, useContext, useState } from 'react'
+import { AlertCircle, CheckCircle, Info, X, XCircle } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -86,7 +81,7 @@ function ToastItem({
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([])
+  const [toasts, setToasts] = useState<Array<Toast>>([])
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
@@ -108,19 +103,23 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 
   const success = useCallback(
-    (message: string, duration?: number) => showToast('success', message, duration),
+    (message: string, duration?: number) =>
+      showToast('success', message, duration),
     [showToast],
   )
   const error = useCallback(
-    (message: string, duration?: number) => showToast('error', message, duration),
+    (message: string, duration?: number) =>
+      showToast('error', message, duration),
     [showToast],
   )
   const warning = useCallback(
-    (message: string, duration?: number) => showToast('warning', message, duration),
+    (message: string, duration?: number) =>
+      showToast('warning', message, duration),
     [showToast],
   )
   const info = useCallback(
-    (message: string, duration?: number) => showToast('info', message, duration),
+    (message: string, duration?: number) =>
+      showToast('info', message, duration),
     [showToast],
   )
 

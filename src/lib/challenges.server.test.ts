@@ -313,6 +313,7 @@ describe('challenges server functions', () => {
       const filtered = challenges.filter((c) => c.status === status)
 
       expect(filtered).toHaveLength(2)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       expect(filtered.every((c) => c.status === 'ACTIVE')).toBe(true)
     })
 
@@ -323,6 +324,7 @@ describe('challenges server functions', () => {
       ]
 
       const status = undefined
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       const filtered = challenges.filter((c) => !status || c.status === status)
 
       expect(filtered).toHaveLength(2)
@@ -356,6 +358,7 @@ describe('challenges server functions', () => {
 
     it('skips update when progress delta is zero', () => {
       const progressDelta = 0
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       const shouldUpdate = progressDelta !== 0
 
       expect(shouldUpdate).toBe(false)
@@ -365,6 +368,7 @@ describe('challenges server functions', () => {
       const challengeType = 'TOTAL_WORKOUTS'
       let progressDelta = 0
 
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       if (challengeType === 'TOTAL_WORKOUTS') {
         progressDelta = 1
       }
@@ -393,6 +397,7 @@ describe('challenges server functions', () => {
       ]
 
       const progressDelta = sets.reduce(
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
         (sum, set) => sum + (set.weight ?? 0) * (set.reps ?? 0),
         0,
       )

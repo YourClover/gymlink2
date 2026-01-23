@@ -1,23 +1,26 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
-import type { ActivityType } from '@prisma/client'
 import { DEFAULT_FEED_LIMIT, MAX_PAGE_SIZE } from './constants'
+import type { ActivityType } from '@prisma/client'
 
 // Validate pagination parameters
 function validatePagination(limit?: number): number {
   if (limit === undefined) return DEFAULT_FEED_LIMIT
   if (limit < 1) throw new Error('Limit must be at least 1')
-  if (limit > MAX_PAGE_SIZE) throw new Error(`Limit cannot exceed ${MAX_PAGE_SIZE}`)
+  if (limit > MAX_PAGE_SIZE)
+    throw new Error(`Limit cannot exceed ${MAX_PAGE_SIZE}`)
   return limit
 }
 
 // Get activity feed from followed users
 export const getActivityFeed = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; limit?: number; cursor?: string }) => {
-    // Validate limit to prevent DoS
-    validatePagination(data.limit)
-    return data
-  })
+  .inputValidator(
+    (data: { userId: string; limit?: number; cursor?: string }) => {
+      // Validate limit to prevent DoS
+      validatePagination(data.limit)
+      return data
+    },
+  )
   .handler(async ({ data }) => {
     // Get list of users this person follows (accepted only)
     const following = await prisma.follow.findMany({

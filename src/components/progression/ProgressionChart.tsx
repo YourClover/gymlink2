@@ -8,11 +8,8 @@ import {
   YAxis,
 } from 'recharts'
 import type { ProgressionDataPoint } from '@/lib/progression.server'
-import type {ProgressionMetric} from '@/lib/progression-utils';
-import {
-  
-  formatMetricValue
-} from '@/lib/progression-utils'
+import type { ProgressionMetric } from '@/lib/progression-utils'
+import { formatMetricValue } from '@/lib/progression-utils'
 
 type Props = {
   data: Array<ProgressionDataPoint>

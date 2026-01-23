@@ -15,7 +15,9 @@ import PRToast from '@/components/ui/PRToast'
 import WorkoutHeader from '@/components/workout/WorkoutHeader'
 import ExerciseWorkoutCard from '@/components/workout/ExerciseWorkoutCard'
 import SetLoggerModal from '@/components/workout/SetLoggerModal'
-import RestTimer, { getPersistedRestTimer } from '@/components/workout/RestTimer'
+import RestTimer, {
+  getPersistedRestTimer,
+} from '@/components/workout/RestTimer'
 import ExercisePicker from '@/components/exercises/ExercisePicker'
 import {
   deleteWorkoutSet,

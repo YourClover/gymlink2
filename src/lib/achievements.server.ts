@@ -426,6 +426,7 @@ function checkMuscleFocusAchievement(
   }
 
   const config = mapping[code]
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive check for unknown achievement codes
   if (!config) return false
 
   return (muscleGroupSets[config.muscle] || 0) >= config.threshold
@@ -478,7 +479,13 @@ export const createAchievement = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { userId, sortOrder = 0, isHidden = false, exerciseId, ...achievementData } = data
+    const {
+      userId,
+      sortOrder = 0,
+      isHidden = false,
+      exerciseId,
+      ...achievementData
+    } = data
 
     // Verify admin
     const user = await prisma.user.findUnique({

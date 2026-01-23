@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mockPrisma } from '@/test/setup'
 import { MAX_PAGE_SIZE } from './constants'
+import { mockPrisma } from '@/test/setup'
 
 // We test the business logic directly by recreating the handler logic
 // TanStack server functions are RPC-based and don't return values when called directly in tests
@@ -182,12 +182,14 @@ describe('social server functions', () => {
 
     it('updates status to ACCEPTED when accepting', () => {
       const accept = true
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       const newStatus = accept ? 'ACCEPTED' : 'DECLINED'
       expect(newStatus).toBe('ACCEPTED')
     })
 
     it('updates status to DECLINED when declining', () => {
       const accept = false
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional test assertion
       const newStatus = accept ? 'ACCEPTED' : 'DECLINED'
       expect(newStatus).toBe('DECLINED')
     })

@@ -111,6 +111,7 @@ export default function AchievementBadge({
   size = 'md',
   showLock = true,
 }: AchievementBadgeProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime fallback for unknown icons
   const IconComponent = iconMap[icon] || Trophy
   const colors = rarityColors[rarity]
   const sizes = sizeClasses[size]
