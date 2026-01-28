@@ -16,6 +16,7 @@ import WorkoutHeader from '@/components/workout/WorkoutHeader'
 import ExerciseWorkoutCard from '@/components/workout/ExerciseWorkoutCard'
 import SetLoggerModal from '@/components/workout/SetLoggerModal'
 import RestTimer, {
+  clearPersistedRestTimer,
   getPersistedRestTimer,
 } from '@/components/workout/RestTimer'
 import ExercisePicker from '@/components/exercises/ExercisePicker'
@@ -87,6 +88,7 @@ function ActiveWorkoutPage() {
   // Rest timer state
   const [showRestTimer, setShowRestTimer] = useState(false)
   const [restDuration, setRestDuration] = useState(60)
+  const [restTimerKey, setRestTimerKey] = useState(0)
   const [nextSetInfo, setNextSetInfo] = useState<{
     exerciseName: string
     setNumber: number
@@ -258,13 +260,15 @@ function ActiveWorkoutPage() {
       setLoggingExercise(null)
       await fetchSession()
 
-      // Start rest timer
+      // Start rest timer (clear persisted and increment key to force restart)
+      clearPersistedRestTimer()
       const restSeconds = loggingExercise.planExercise?.restSeconds ?? 60
       setRestDuration(restSeconds)
       setNextSetInfo({
         exerciseName: loggingExercise.exercise.name,
         setNumber: setNumber + 1,
       })
+      setRestTimerKey((k) => k + 1)
       setShowRestTimer(true)
     } finally {
       setIsSubmitting(false)
@@ -485,6 +489,7 @@ function ActiveWorkoutPage() {
 
       {/* Rest Timer */}
       <RestTimer
+        key={restTimerKey}
         isOpen={showRestTimer}
         onClose={() => setShowRestTimer(false)}
         durationSeconds={restDuration}
