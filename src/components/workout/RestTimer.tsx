@@ -310,3 +310,8 @@ export function getPersistedRestTimer(): StoredTimer | null {
   localStorage.removeItem(STORAGE_KEY)
   return null
 }
+
+// Export helper to clear persisted timer (used when starting a new timer)
+export function clearPersistedRestTimer(): void {
+  localStorage.removeItem(STORAGE_KEY)
+}
