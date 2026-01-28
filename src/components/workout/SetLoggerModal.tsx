@@ -198,19 +198,12 @@ export default function SetLoggerModal({
                 <Minus className="w-5 h-5" />
               </button>
               <input
-                type="number"
+                type="text"
                 value={weight}
-                onChange={(e) =>
-                  setWeight(
-                    e.target.value === ''
-                      ? ''
-                      : parseDecimalInput(e.target.value),
-                  )
-                }
+                onChange={(e) => setWeight(e.target.value)}
                 className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
                 inputMode="decimal"
-                step={0.5}
-                min={MIN_WEIGHT}
+                pattern="[0-9]*[.,]?[0-9]*"
               />
               <button
                 onClick={() => adjustWeight(WEIGHT_INCREMENT)}

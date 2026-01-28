@@ -35,8 +35,8 @@ export default function ExerciseTargetsForm({
   const [targetTimeSeconds, setTargetTimeSeconds] = useState(
     initialData?.targetTimeSeconds ?? 60,
   )
-  const [targetWeight, setTargetWeight] = useState(
-    initialData?.targetWeight ?? undefined,
+  const [targetWeight, setTargetWeight] = useState<string>(
+    initialData?.targetWeight?.toString() ?? '',
   )
   const [restSeconds, setRestSeconds] = useState(initialData?.restSeconds ?? 60)
   const [notes, setNotes] = useState(initialData?.notes ?? '')
@@ -56,7 +56,9 @@ export default function ExerciseTargetsForm({
         targetSets,
         targetReps: exercise.isTimed ? undefined : targetReps,
         targetTimeSeconds: exercise.isTimed ? targetTimeSeconds : undefined,
-        targetWeight: targetWeight || undefined,
+        targetWeight: targetWeight
+          ? parseDecimalInput(targetWeight)
+          : undefined,
         restSeconds,
         notes: notes.trim() || undefined,
       })
@@ -142,16 +144,11 @@ export default function ExerciseTargetsForm({
           Target Weight (kg)
         </label>
         <input
-          type="number"
-          value={targetWeight ?? ''}
-          onChange={(e) =>
-            setTargetWeight(
-              e.target.value ? parseDecimalInput(e.target.value) : undefined,
-            )
-          }
-          min={0}
-          step={0.5}
+          type="text"
+          value={targetWeight}
+          onChange={(e) => setTargetWeight(e.target.value)}
           inputMode="decimal"
+          pattern="[0-9]*[.,]?[0-9]*"
           placeholder="Optional"
           className="w-full px-4 py-3 bg-zinc-800 text-white placeholder-zinc-500 rounded-xl border border-zinc-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
