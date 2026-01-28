@@ -152,32 +152,73 @@ export default function SetLoggerModal({
         {/* Previous Workout Info */}
         {previousWorkout && previousWorkout.sets.length > 0 && (
           <div className="px-4 py-3 bg-zinc-800/50 border-b border-zinc-800">
-            <div className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-              <Calendar className="w-4 h-4" />
-              <span>
-                Last workout:{' '}
-                {previousWorkout.date
-                  ? new Date(previousWorkout.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                  : 'Unknown'}
-              </span>
+            <div className="flex items-center justify-between text-sm text-zinc-400 mb-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  Last workout:{' '}
+                  {previousWorkout.date
+                    ? new Date(previousWorkout.date).toLocaleDateString(
+                        'en-US',
+                        {
+                          month: 'short',
+                          day: 'numeric',
+                        },
+                      )
+                    : 'Unknown'}
+                </span>
+              </div>
+              <span className="text-xs text-zinc-500">Tap to load</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {previousWorkout.sets.map((set) => (
-                <span
-                  key={set.setNumber}
-                  className="text-xs px-2 py-1 bg-zinc-700/50 rounded-md text-zinc-300"
-                >
-                  {set.weight ? `${set.weight}kg` : ''}
-                  {set.weight && set.reps ? ' × ' : ''}
-                  {set.reps ? `${set.reps}` : ''}
-                  {set.timeSeconds && !set.reps
-                    ? `${Math.floor(set.timeSeconds / 60)}:${(set.timeSeconds % 60).toString().padStart(2, '0')}`
-                    : ''}
-                </span>
-              ))}
+              {previousWorkout.sets.map((set) => {
+                // Determine set status for coloring
+                const isCompleted = set.setNumber < setNumber
+                const isCurrent = set.setNumber === setNumber
+                const isUpcoming = set.setNumber > setNumber
+
+                // Build class names based on status
+                let badgeClasses =
+                  'text-xs px-2 py-1.5 rounded-md transition-colors cursor-pointer '
+                if (isCompleted) {
+                  badgeClasses +=
+                    'bg-green-600/20 text-green-400 border border-green-600/30 hover:bg-green-600/30'
+                } else if (isCurrent) {
+                  badgeClasses +=
+                    'bg-blue-600/30 text-blue-300 border border-blue-500 hover:bg-blue-600/40 ring-1 ring-blue-500/50'
+                } else if (isUpcoming) {
+                  badgeClasses +=
+                    'bg-zinc-700/50 text-zinc-400 hover:bg-zinc-700'
+                }
+
+                const handleLoadSet = () => {
+                  if (set.weight !== null) {
+                    setWeight(set.weight)
+                  }
+                  if (set.reps !== null) {
+                    setReps(set.reps)
+                  }
+                  if (set.timeSeconds !== null) {
+                    setTimeSeconds(set.timeSeconds)
+                  }
+                }
+
+                return (
+                  <button
+                    key={set.setNumber}
+                    onClick={handleLoadSet}
+                    className={badgeClasses}
+                    title={`Set ${set.setNumber} - Tap to load`}
+                  >
+                    {set.weight ? `${set.weight}kg` : ''}
+                    {set.weight && set.reps ? ' × ' : ''}
+                    {set.reps ? `${set.reps}` : ''}
+                    {set.timeSeconds && !set.reps
+                      ? `${Math.floor(set.timeSeconds / 60)}:${(set.timeSeconds % 60).toString().padStart(2, '0')}`
+                      : ''}
+                  </button>
+                )
+              })}
             </div>
           </div>
         )}
