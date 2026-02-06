@@ -1,6 +1,33 @@
 import { Clock, Timer, TrendingUp } from 'lucide-react'
-import { Line, LineChart, ResponsiveContainer } from 'recharts'
+import { Line, LineChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { formatDuration } from '@/lib/formatting'
+
+function DurationTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: Array<{ payload: { duration: number; date: string } }>
+}) {
+  if (!active || !payload || payload.length === 0) return null
+
+  const data = payload[0].payload
+
+  return (
+    <div
+      className="px-3 py-2 rounded-lg border shadow-lg"
+      style={{
+        backgroundColor: '#18181b',
+        borderColor: '#3f3f46',
+      }}
+    >
+      <p className="text-xs text-zinc-400">{data.date}</p>
+      <p className="text-sm font-medium text-white">
+        {formatDuration(data.duration)}
+      </p>
+    </div>
+  )
+}
 
 type DurationData = {
   avgDurationSeconds: number
@@ -50,12 +77,19 @@ export default function DurationStats({ data }: Props) {
           <p className="text-xs text-zinc-400 mb-2">Duration Trend</p>
           <ResponsiveContainer width="100%" height={60}>
             <LineChart data={data.trend}>
+              <Tooltip content={<DurationTooltip />} cursor={false} />
               <Line
                 type="monotone"
                 dataKey="duration"
                 stroke="#c084fc"
                 strokeWidth={2}
                 dot={false}
+                activeDot={{
+                  fill: '#c084fc',
+                  stroke: '#1e3a5f',
+                  strokeWidth: 2,
+                  r: 4,
+                }}
               />
             </LineChart>
           </ResponsiveContainer>

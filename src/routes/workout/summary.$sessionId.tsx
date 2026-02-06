@@ -7,9 +7,7 @@ import {
   ChevronUp,
   Clock,
   Dumbbell,
-  Minus,
   Pencil,
-  Plus,
   Trophy,
   Weight,
 } from 'lucide-react'
@@ -370,81 +368,43 @@ function WorkoutSummaryPage() {
 
               {isEditingDuration ? (
                 <div className="mt-2">
-                  <div className="flex items-center gap-4">
-                    {/* Hours stepper */}
+                  <div className="flex items-center gap-3">
+                    {/* Hours input */}
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditedHours((h) => Math.max(0, h - 1))
-                        }
-                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-300 hover:bg-zinc-600 transition-colors"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <div className="text-center min-w-[3rem]">
-                        <p className="text-xl font-bold text-white">
-                          {editedHours}
-                        </p>
-                        <p className="text-xs text-zinc-500">hr</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditedHours((h) => Math.min(24, h + 1))
-                        }
-                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-300 hover:bg-zinc-600 transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={99}
+                        value={editedHours}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10)
+                          setEditedHours(isNaN(v) ? 0 : Math.max(0, v))
+                        }}
+                        className="w-14 h-10 text-center text-xl font-bold text-white bg-zinc-700 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      />
+                      <span className="text-xs text-zinc-500">hr</span>
                     </div>
 
                     <span className="text-xl font-bold text-zinc-500">:</span>
 
-                    {/* Minutes stepper */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditedMinutes((m) => Math.max(0, m - 5))
-                        }
-                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-xs text-zinc-300 hover:bg-zinc-600 transition-colors"
-                      >
-                        -5
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditedMinutes((m) => Math.max(0, m - 1))
-                        }
-                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-300 hover:bg-zinc-600 transition-colors"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <div className="text-center min-w-[3rem]">
-                        <p className="text-xl font-bold text-white">
-                          {editedMinutes}
-                        </p>
-                        <p className="text-xs text-zinc-500">min</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditedMinutes((m) => Math.min(59, m + 1))
-                        }
-                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-300 hover:bg-zinc-600 transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditedMinutes((m) => Math.min(59, m + 5))
-                        }
-                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-xs text-zinc-300 hover:bg-zinc-600 transition-colors"
-                      >
-                        +5
-                      </button>
+                    {/* Minutes input */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={59}
+                        value={editedMinutes}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10)
+                          setEditedMinutes(
+                            isNaN(v) ? 0 : Math.max(0, Math.min(59, v)),
+                          )
+                        }}
+                        className="w-14 h-10 text-center text-xl font-bold text-white bg-zinc-700 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      />
+                      <span className="text-xs text-zinc-500">min</span>
                     </div>
 
                     {/* Done button */}

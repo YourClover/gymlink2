@@ -133,7 +133,7 @@ export default function ProgressionChart({ data, metric }: Props) {
           }}
           activeDot={{
             fill: chartColors.line,
-            stroke: '#fff',
+            stroke: chartColors.dotStroke,
             strokeWidth: 2,
             r: 6,
           }}

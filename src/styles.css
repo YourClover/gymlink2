@@ -39,6 +39,13 @@ code {
   }
 }
 
+/* Prevent tap highlight flash on charts (mobile) */
+.recharts-responsive-container,
+.recharts-responsive-container svg {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
 /* Prevent text selection on mobile UI elements */
 .no-select {
   -webkit-user-select: none;

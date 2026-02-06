@@ -118,11 +118,8 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
         throw new Error('moodRating must be between 1 and 10')
       }
       // Validate durationSeconds if provided
-      if (
-        data.durationSeconds !== undefined &&
-        (data.durationSeconds < 0 || data.durationSeconds > 86400)
-      ) {
-        throw new Error('durationSeconds must be between 0 and 86400')
+      if (data.durationSeconds !== undefined && data.durationSeconds < 0) {
+        throw new Error('durationSeconds must be non-negative')
       }
       return data
     },
