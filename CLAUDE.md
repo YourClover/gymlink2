@@ -11,49 +11,71 @@ npm run build            # Build for production
 npm run test             # Run tests once (Vitest)
 npm run test:watch       # Run tests in watch mode
 npm run check            # Fix formatting and linting (Prettier + ESLint)
+npm run lint             # Run ESLint only
+npm run format           # Run Prettier only
 npm run db:migrate       # Create and run Prisma migrations
 npm run db:generate      # Generate Prisma Client after schema changes
+npm run db:push          # Push schema to database (no migrations, useful for prototyping)
 npm run db:seed          # Seed database with initial data
 npm run db:studio        # Open Prisma Studio UI
 ```
 
+Run a single test file: `npx vitest run src/lib/formatting.test.ts`
+
+Tests live alongside source code as `*.test.ts` in `src/lib/`. Coverage is scoped to `src/lib/**`.
+
 ## Architecture
 
 **Stack:** React 19 + TypeScript + TanStack Start (full-stack framework) + Prisma + PostgreSQL + Tailwind CSS v4
+
+**Icons:** Lucide React (`lucide-react`)
+**Charts:** Recharts (`recharts`)
 
 ### File-Based Routing (TanStack Router)
 
 - Routes defined in `src/routes/` directory
 - Use `createFileRoute(path)({component})` pattern
 - `routeTree.gen.ts` is auto-generated - do not edit manually
-- Root layout in `__root.tsx` wraps all pages with AuthProvider
+- Root layout in `__root.tsx` wraps all pages with AuthProvider and ToastProvider
+- Dynamic segments use `$param` syntax (e.g., `plans/$planId/day/$dayId.tsx`)
 
 ### Server Functions
 
-- Defined in `*.server.ts` files (e.g., `src/lib/auth.server.ts`)
-- Use `createServerFn({method}).inputValidator().handler()` pattern
+- Defined in `*.server.ts` files in `src/lib/` (e.g., `auth.server.ts`, `workouts.server.ts`)
+- Use `createServerFn({method}).inputValidator().handler()` pattern from `@tanstack/react-start`
 - Run on server via Nitro, called transparently from client
+- Most authenticated endpoints accept a `token` field and call `getCurrentUser(token)` to verify auth
+- Prisma is SSR-external in vite config — if adding new server-only packages, add them to `ssr.external` in `vite.config.ts`
 
 ### Authentication
 
-- JWT tokens stored in localStorage
-- `AuthContext` provides `useAuth()` hook for auth state
+- JWT tokens stored in localStorage as `gymlink_auth_token`
+- `AuthContext` (`src/context/AuthContext.tsx`) provides `useAuth()` hook for auth state
 - Password hashing with bcryptjs (12 rounds)
-- Server-side token verification in `auth.server.ts`
+- Server-side token verification via `getCurrentUser()` in `auth.server.ts`
 
 ### Database (Prisma)
 
 - Schema in `prisma/schema.prisma`
 - Prisma Client singleton in `src/lib/db.ts` (prevents multiple instances)
 - Uses PrismaPg adapter for connection pooling
+- After schema changes: run `npm run db:generate` then `npm run db:migrate`
+
+### Context Providers
+
+- `useAuth()` — authentication state, login/register/logout
+- `useToast()` — toast notification display
+
+Both throw if used outside their providers (which are set up in `__root.tsx`).
 
 ## Key Directories
 
-- `src/routes/` - Page components (file-based routing)
-- `src/components/` - Reusable UI components
-- `src/context/` - React Context providers (AuthContext)
-- `src/lib/` - Utilities, database, and server functions
-- `prisma/` - Database schema and migrations
+- `src/routes/` — Page components (file-based routing)
+- `src/components/` — Reusable UI components, organized by feature subdirectory
+- `src/context/` — React Context providers (AuthContext, ToastContext)
+- `src/lib/` — Utilities, database client, and `*.server.ts` server functions
+- `src/hooks/` — Custom React hooks
+- `prisma/` — Database schema, migrations, and seed script
 
 ## Code Style
 
