@@ -371,6 +371,49 @@ export const getDurationStats = createServerFn({ method: 'GET' })
   })
 
 // ============================================
+// MOOD STATS
+// ============================================
+
+export const getMoodStats = createServerFn({ method: 'GET' })
+  .inputValidator((data: { userId: string; startDate?: string }) => data)
+  .handler(async ({ data }) => {
+    const dateFilter = data.startDate
+      ? { not: null as null, gte: new Date(data.startDate) }
+      : { not: null as null }
+
+    const agg = await prisma.workoutSession.aggregate({
+      where: {
+        userId: data.userId,
+        completedAt: dateFilter,
+        moodRating: { not: null },
+      },
+      _avg: { moodRating: true },
+      _count: true,
+    })
+
+    // Get last 12 sessions with mood for sparkline trend
+    const recentSessions = await prisma.workoutSession.findMany({
+      where: {
+        userId: data.userId,
+        completedAt: dateFilter,
+        moodRating: { not: null },
+      },
+      select: { moodRating: true, completedAt: true },
+      orderBy: { completedAt: 'asc' },
+      take: 12,
+    })
+
+    return {
+      avgMood: Math.round((agg._avg.moodRating ?? 0) * 10) / 10,
+      moodCount: agg._count,
+      trend: recentSessions.map((s) => ({
+        mood: s.moodRating!,
+        date: s.completedAt!.toISOString().split('T')[0],
+      })),
+    }
+  })
+
+// ============================================
 // USER EXERCISE PRs (all exercises with best PR)
 // ============================================
 

@@ -6,6 +6,7 @@ import {
   Dumbbell,
   Flame,
   LineChart,
+  Star,
   TrendingUp,
   Trophy,
   Weight,
@@ -21,9 +22,11 @@ import TimeRangeSelector, {
 import VolumeChart from '@/components/stats/VolumeChart'
 import MuscleDonutChart from '@/components/stats/MuscleDonutChart'
 import DurationStats from '@/components/stats/DurationStats'
+import MoodStats from '@/components/stats/MoodStats'
 import {
   getDurationStats,
   getExerciseStats,
+  getMoodStats,
   getOverviewStats,
   getRecentPRs,
   getVolumeHistory,
@@ -82,6 +85,12 @@ type DurationData = {
   trend: Array<{ duration: number; date: string }>
 }
 
+type MoodData = {
+  avgMood: number
+  moodCount: number
+  trend: Array<{ mood: number; date: string }>
+}
+
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -129,6 +138,7 @@ function StatsPage() {
   const [muscleGroups, setMuscleGroups] = useState<Array<MuscleGroupData>>([])
   const [recentPRs, setRecentPRs] = useState<Array<PRData>>([])
   const [durationData, setDurationData] = useState<DurationData | null>(null)
+  const [moodData, setMoodData] = useState<MoodData | null>(null)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -138,14 +148,21 @@ function StatsPage() {
       const startDate = getStartDateForRange(timeRange)
 
       try {
-        const [overviewRes, volumeRes, exerciseRes, prsRes, durationRes] =
-          await Promise.all([
-            getOverviewStats({ data: { userId: user.id, startDate } }),
-            getVolumeHistory({ data: { userId: user.id, startDate } }),
-            getExerciseStats({ data: { userId: user.id, startDate } }),
-            getRecentPRs({ data: { userId: user.id, limit: 5, startDate } }),
-            getDurationStats({ data: { userId: user.id, startDate } }),
-          ])
+        const [
+          overviewRes,
+          volumeRes,
+          exerciseRes,
+          prsRes,
+          durationRes,
+          moodRes,
+        ] = await Promise.all([
+          getOverviewStats({ data: { userId: user.id, startDate } }),
+          getVolumeHistory({ data: { userId: user.id, startDate } }),
+          getExerciseStats({ data: { userId: user.id, startDate } }),
+          getRecentPRs({ data: { userId: user.id, limit: 5, startDate } }),
+          getDurationStats({ data: { userId: user.id, startDate } }),
+          getMoodStats({ data: { userId: user.id, startDate } }),
+        ])
 
         setOverview(overviewRes.stats)
         setVolumeHistory(volumeRes.weeks)
@@ -153,6 +170,7 @@ function StatsPage() {
         setMuscleGroups(exerciseRes.muscleGroups)
         setRecentPRs(prsRes.prs)
         setDurationData(durationRes)
+        setMoodData(moodRes)
       } catch (error) {
         console.error('Failed to fetch stats:', error)
       } finally {
@@ -251,6 +269,17 @@ function StatsPage() {
               Workout Duration
             </h2>
             <DurationStats data={durationData} />
+          </section>
+        )}
+
+        {/* Mood */}
+        {moodData && moodData.moodCount > 0 && (
+          <section>
+            <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
+              <Star className="w-4 h-4" />
+              Mood
+            </h2>
+            <MoodStats data={moodData} />
           </section>
         )}
 
