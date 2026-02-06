@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   BarChart3,
-  Calendar,
   Clock,
   Dumbbell,
   Flame,
@@ -15,7 +14,15 @@ import type { MuscleGroup, RecordType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
+import TimeRangeSelector, {
+  getStartDateForRange,
+  type TimeRange,
+} from '@/components/progression/TimeRangeSelector'
+import VolumeChart from '@/components/stats/VolumeChart'
+import MuscleDonutChart from '@/components/stats/MuscleDonutChart'
+import DurationStats from '@/components/stats/DurationStats'
 import {
+  getDurationStats,
   getExerciseStats,
   getOverviewStats,
   getRecentPRs,
@@ -67,6 +74,14 @@ type PRData = {
   achievedAt: Date
 }
 
+type DurationData = {
+  avgDurationSeconds: number
+  maxDurationSeconds: number
+  totalDurationSeconds: number
+  sessionCount: number
+  trend: Array<{ duration: number; date: string }>
+}
+
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -94,36 +109,50 @@ function formatPRDisplay(pr: PRData): string {
   }
 }
 
+const rangeLabels: Record<TimeRange, string> = {
+  '1w': 'Past Week',
+  '1m': 'Past Month',
+  '3m': 'Past 3 Months',
+  '6m': 'Past 6 Months',
+  all: 'All Time',
+}
+
 function StatsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
+  const [timeRange, setTimeRange] = useState<TimeRange>('all')
   const [overview, setOverview] = useState<OverviewStats | null>(null)
   const [volumeHistory, setVolumeHistory] = useState<Array<WeekData>>([])
   const [topExercises, setTopExercises] = useState<Array<TopExercise>>([])
   const [muscleGroups, setMuscleGroups] = useState<Array<MuscleGroupData>>([])
   const [recentPRs, setRecentPRs] = useState<Array<PRData>>([])
+  const [durationData, setDurationData] = useState<DurationData | null>(null)
 
   useEffect(() => {
     const fetchStats = async () => {
       if (!user) return
 
+      setLoading(true)
+      const startDate = getStartDateForRange(timeRange)
+
       try {
-        const [overviewRes, volumeRes, exerciseRes, prsRes] = await Promise.all(
-          [
-            getOverviewStats({ data: { userId: user.id } }),
-            getVolumeHistory({ data: { userId: user.id, weeks: 8 } }),
-            getExerciseStats({ data: { userId: user.id } }),
-            getRecentPRs({ data: { userId: user.id, limit: 5 } }),
-          ],
-        )
+        const [overviewRes, volumeRes, exerciseRes, prsRes, durationRes] =
+          await Promise.all([
+            getOverviewStats({ data: { userId: user.id, startDate } }),
+            getVolumeHistory({ data: { userId: user.id, startDate } }),
+            getExerciseStats({ data: { userId: user.id, startDate } }),
+            getRecentPRs({ data: { userId: user.id, limit: 5, startDate } }),
+            getDurationStats({ data: { userId: user.id, startDate } }),
+          ])
 
         setOverview(overviewRes.stats)
         setVolumeHistory(volumeRes.weeks)
         setTopExercises(exerciseRes.topExercises)
         setMuscleGroups(exerciseRes.muscleGroups)
         setRecentPRs(prsRes.prs)
+        setDurationData(durationRes)
       } catch (error) {
         console.error('Failed to fetch stats:', error)
       } finally {
@@ -132,7 +161,7 @@ function StatsPage() {
     }
 
     fetchStats()
-  }, [user])
+  }, [user, timeRange])
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -141,16 +170,16 @@ function StatsPage() {
     })
   }
 
-  const formatWeekLabel = (weekStart: string) => {
-    const date = new Date(weekStart)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
-
   if (loading) {
     return (
       <AppLayout title="Stats">
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="px-4 py-6 space-y-6">
+          <div className="flex justify-center">
+            <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+          </div>
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
         </div>
       </AppLayout>
     )
@@ -159,10 +188,15 @@ function StatsPage() {
   return (
     <AppLayout title="Stats">
       <div className="px-4 py-6 space-y-6">
+        {/* Time Range Selector */}
+        <div className="flex justify-center">
+          <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+        </div>
+
         {/* Overview Stats */}
         <section>
           <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1">
-            All Time
+            {rangeLabels[timeRange]}
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <StatCard
@@ -209,39 +243,25 @@ function StatsPage() {
           )}
         </section>
 
-        {/* Workout Frequency */}
+        {/* Workout Duration */}
+        {durationData && durationData.sessionCount > 0 && (
+          <section>
+            <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Workout Duration
+            </h2>
+            <DurationStats data={durationData} />
+          </section>
+        )}
+
+        {/* Volume Trend */}
         <section>
           <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Workout Frequency
+            <BarChart3 className="w-4 h-4" />
+            Volume Trend
           </h2>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-            <div className="flex gap-2">
-              {volumeHistory.map((week, i) => {
-                const isCurrentWeek = i === volumeHistory.length - 1
-                return (
-                  <div
-                    key={week.weekStart}
-                    className="flex-1 flex flex-col items-center gap-2"
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
-                        week.workouts > 0
-                          ? isCurrentWeek
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-zinc-600 text-white'
-                          : 'bg-zinc-800 text-zinc-600'
-                      }`}
-                    >
-                      {week.workouts}
-                    </div>
-                    <span className="text-xs text-zinc-500">
-                      {formatWeekLabel(week.weekStart).split(' ')[0]}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+            <VolumeChart data={volumeHistory} />
           </div>
         </section>
 
@@ -297,23 +317,8 @@ function StatsPage() {
             <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1">
               Muscle Distribution
             </h2>
-            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 space-y-3">
-              {muscleGroups.slice(0, 6).map((mg) => (
-                <div key={mg.muscle} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-300 capitalize">
-                      {mg.muscle.toLowerCase().replace('_', ' ')}
-                    </span>
-                    <span className="text-zinc-500">{mg.percentage}%</span>
-                  </div>
-                  <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 rounded-full transition-all"
-                      style={{ width: `${mg.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+              <MuscleDonutChart data={muscleGroups} />
             </div>
           </section>
         )}

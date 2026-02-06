@@ -1,4 +1,4 @@
-export type TimeRange = '1m' | '3m' | '6m' | 'all'
+export type TimeRange = '1w' | '1m' | '3m' | '6m' | 'all'
 
 type Props = {
   value: TimeRange
@@ -6,6 +6,7 @@ type Props = {
 }
 
 const ranges: Array<{ value: TimeRange; label: string }> = [
+  { value: '1w', label: '1W' },
   { value: '1m', label: '1M' },
   { value: '3m', label: '3M' },
   { value: '6m', label: '6M' },
@@ -40,6 +41,9 @@ export function getStartDateForRange(range: TimeRange): string | undefined {
 
   const date = new Date()
   switch (range) {
+    case '1w':
+      date.setDate(date.getDate() - 7)
+      break
     case '1m':
       date.setMonth(date.getMonth() - 1)
       break

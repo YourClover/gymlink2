@@ -8,13 +8,17 @@ import { calculateStreak, getWeekStart } from './date-utils'
 // ============================================
 
 export const getOverviewStats = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { userId: string; startDate?: string }) => data)
   .handler(async ({ data }) => {
+    const dateFilter = data.startDate
+      ? { not: null as null, gte: new Date(data.startDate) }
+      : { not: null as null }
+
     // Total completed workouts
     const totalWorkouts = await prisma.workoutSession.count({
       where: {
         userId: data.userId,
-        completedAt: { not: null },
+        completedAt: dateFilter,
       },
     })
 
@@ -22,7 +26,7 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
     const workoutTimes = await prisma.workoutSession.aggregate({
       where: {
         userId: data.userId,
-        completedAt: { not: null },
+        completedAt: dateFilter,
       },
       _sum: {
         durationSeconds: true,
@@ -30,12 +34,12 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
     })
     const totalTimeSeconds = workoutTimes._sum.durationSeconds ?? 0
 
-    // Total volume (all time)
+    // Total volume
     const allSets = await prisma.workoutSet.findMany({
       where: {
         workoutSession: {
           userId: data.userId,
-          completedAt: { not: null },
+          completedAt: dateFilter,
         },
         isWarmup: false,
       },
@@ -56,10 +60,13 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
     const totalPRs = await prisma.personalRecord.count({
       where: {
         userId: data.userId,
+        ...(data.startDate
+          ? { achievedAt: { gte: new Date(data.startDate) } }
+          : {}),
       },
     })
 
-    // Current streak
+    // Current streak (always unfiltered)
     const currentStreak = await calculateStreak(data.userId)
 
     return {
@@ -78,15 +85,26 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getVolumeHistory = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; weeks?: number }) => data)
+  .inputValidator(
+    (data: { userId: string; weeks?: number; startDate?: string }) => data,
+  )
   .handler(async ({ data }) => {
-    const weeksToFetch = data.weeks ?? 12
     const today = new Date()
     const currentWeekStart = getWeekStart(today)
 
-    // Calculate start date (N weeks ago)
-    const startDate = new Date(currentWeekStart)
-    startDate.setDate(startDate.getDate() - (weeksToFetch - 1) * 7)
+    let weeksToFetch: number
+    let startDate: Date
+
+    if (data.startDate) {
+      const rangeStart = new Date(data.startDate)
+      const diffMs = currentWeekStart.getTime() - rangeStart.getTime()
+      weeksToFetch = Math.max(1, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1)
+      startDate = getWeekStart(rangeStart)
+    } else {
+      weeksToFetch = data.weeks ?? 12
+      startDate = new Date(currentWeekStart)
+      startDate.setDate(startDate.getDate() - (weeksToFetch - 1) * 7)
+    }
 
     // Get all completed workout sets in this period
     const workouts = await prisma.workoutSession.findMany({
@@ -159,15 +177,19 @@ export const getVolumeHistory = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getExerciseStats = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { userId: string; startDate?: string }) => data)
   .handler(async ({ data }) => {
+    const dateFilter = data.startDate
+      ? { not: null as null, gte: new Date(data.startDate) }
+      : { not: null as null }
+
     // Most trained exercises (by working set count)
     const exerciseCounts = await prisma.workoutSet.groupBy({
       by: ['exerciseId'],
       where: {
         workoutSession: {
           userId: data.userId,
-          completedAt: { not: null },
+          completedAt: dateFilter,
         },
         isWarmup: false,
       },
@@ -205,7 +227,7 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
       where: {
         workoutSession: {
           userId: data.userId,
-          completedAt: { not: null },
+          completedAt: dateFilter,
         },
         isWarmup: false,
       },
@@ -254,17 +276,22 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getRecentPRs = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; limit?: number }) => {
-    // Validate limit if provided
-    if (data.limit !== undefined && (data.limit < 1 || data.limit > 100)) {
-      throw new Error('limit must be between 1 and 100')
-    }
-    return data
-  })
+  .inputValidator(
+    (data: { userId: string; limit?: number; startDate?: string }) => {
+      // Validate limit if provided
+      if (data.limit !== undefined && (data.limit < 1 || data.limit > 100)) {
+        throw new Error('limit must be between 1 and 100')
+      }
+      return data
+    },
+  )
   .handler(async ({ data }) => {
     const prs = await prisma.personalRecord.findMany({
       where: {
         userId: data.userId,
+        ...(data.startDate
+          ? { achievedAt: { gte: new Date(data.startDate) } }
+          : {}),
       },
       include: {
         exercise: {
@@ -292,6 +319,53 @@ export const getRecentPRs = createServerFn({ method: 'GET' })
         reps: pr.workoutSet.reps ?? null,
         timeSeconds: pr.workoutSet.timeSeconds ?? null,
         achievedAt: pr.achievedAt,
+      })),
+    }
+  })
+
+// ============================================
+// WORKOUT DURATION STATS
+// ============================================
+
+export const getDurationStats = createServerFn({ method: 'GET' })
+  .inputValidator((data: { userId: string; startDate?: string }) => data)
+  .handler(async ({ data }) => {
+    const dateFilter = data.startDate
+      ? { not: null as null, gte: new Date(data.startDate) }
+      : { not: null as null }
+
+    const agg = await prisma.workoutSession.aggregate({
+      where: {
+        userId: data.userId,
+        completedAt: dateFilter,
+        durationSeconds: { not: null },
+      },
+      _avg: { durationSeconds: true },
+      _max: { durationSeconds: true },
+      _sum: { durationSeconds: true },
+      _count: true,
+    })
+
+    // Get last 12 sessions for sparkline trend
+    const recentSessions = await prisma.workoutSession.findMany({
+      where: {
+        userId: data.userId,
+        completedAt: dateFilter,
+        durationSeconds: { not: null },
+      },
+      select: { durationSeconds: true, completedAt: true },
+      orderBy: { completedAt: 'asc' },
+      take: 12,
+    })
+
+    return {
+      avgDurationSeconds: Math.round(agg._avg.durationSeconds ?? 0),
+      maxDurationSeconds: agg._max.durationSeconds ?? 0,
+      totalDurationSeconds: agg._sum.durationSeconds ?? 0,
+      sessionCount: agg._count,
+      trend: recentSessions.map((s) => ({
+        duration: s.durationSeconds ?? 0,
+        date: s.completedAt!.toISOString().split('T')[0],
       })),
     }
   })
