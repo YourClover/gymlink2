@@ -21,7 +21,6 @@ export const MAX_LEADERBOARD_SIZE = 100
 // ============================================
 // WORKOUT
 // ============================================
-export const WEIGHT_INCREMENT = 2.5 // kg
 export const TIME_INCREMENT = 15 // seconds
 export const MIN_REPS = 1
 export const MIN_WEIGHT = 0

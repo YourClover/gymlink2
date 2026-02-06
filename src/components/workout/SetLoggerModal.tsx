@@ -8,7 +8,6 @@ import {
   MIN_WEIGHT,
   RPE_VALUES,
   TIME_INCREMENT,
-  WEIGHT_INCREMENT,
 } from '@/lib/constants'
 import { parseDecimalInput } from '@/lib/formatting'
 
@@ -230,28 +229,42 @@ export default function SetLoggerModal({
             <label className="block text-sm font-medium text-zinc-400 mb-3">
               Weight (kg)
             </label>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2">
               <button
-                onClick={() => adjustWeight(-WEIGHT_INCREMENT)}
-                className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
-                aria-label="Decrease weight"
+                onClick={() => adjustWeight(-10)}
+                className="w-11 h-11 flex items-center justify-center bg-zinc-800 rounded-xl text-white text-sm font-medium hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                aria-label="Decrease weight by 10"
               >
-                <Minus className="w-5 h-5" />
+                -10
+              </button>
+              <button
+                onClick={() => adjustWeight(-1)}
+                className="w-11 h-11 flex items-center justify-center bg-zinc-800 rounded-xl text-white text-sm font-medium hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                aria-label="Decrease weight by 1"
+              >
+                -1
               </button>
               <input
                 type="text"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
-                className="w-36 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
+                className="w-24 text-center text-xl font-semibold bg-zinc-800 text-white rounded-xl py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none"
                 inputMode="decimal"
                 pattern="[0-9]*[.,]?[0-9]*"
               />
               <button
-                onClick={() => adjustWeight(WEIGHT_INCREMENT)}
-                className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded-xl text-white hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
-                aria-label="Increase weight"
+                onClick={() => adjustWeight(1)}
+                className="w-11 h-11 flex items-center justify-center bg-zinc-800 rounded-xl text-white text-sm font-medium hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                aria-label="Increase weight by 1"
               >
-                <Plus className="w-5 h-5" />
+                +1
+              </button>
+              <button
+                onClick={() => adjustWeight(10)}
+                className="w-11 h-11 flex items-center justify-center bg-zinc-800 rounded-xl text-white text-sm font-medium hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
+                aria-label="Increase weight by 10"
+              >
+                +10
               </button>
             </div>
           </div>
