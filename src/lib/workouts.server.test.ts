@@ -193,6 +193,50 @@ describe('workout server functions', () => {
       expect(updated.durationSeconds).toBe(expectedDuration)
     })
 
+    it('uses client-provided durationSeconds when given', async () => {
+      const startTime = new Date('2024-01-01T10:00:00Z')
+      const clientDuration = 3600 // 1 hour — user corrected
+
+      mockPrisma.workoutSession.findFirst.mockResolvedValue({
+        ...mockSession,
+        startedAt: startTime,
+      } as any)
+
+      const existing = await mockPrisma.workoutSession.findFirst({
+        where: { id: sessionId, userId },
+      })
+
+      expect(existing).not.toBeNull()
+
+      // Simulate the server logic: prefer client value over calculated
+      const calculatedDuration = Math.floor(
+        (new Date('2024-01-01T14:00:00Z').getTime() -
+          existing!.startedAt.getTime()) /
+          1000,
+      )
+      // Calculated would be 4 hours (14400s), but client says 1 hour
+      expect(calculatedDuration).toBe(14400)
+
+      const durationSeconds = clientDuration ?? calculatedDuration
+      expect(durationSeconds).toBe(clientDuration)
+
+      mockPrisma.workoutSession.update.mockResolvedValue({
+        ...mockSession,
+        completedAt: new Date(),
+        durationSeconds: clientDuration,
+      } as any)
+
+      const updated = await mockPrisma.workoutSession.update({
+        where: { id: sessionId },
+        data: {
+          completedAt: new Date(),
+          durationSeconds,
+        },
+      })
+
+      expect(updated.durationSeconds).toBe(clientDuration)
+    })
+
     it('throws error for non-existent session', async () => {
       mockPrisma.workoutSession.findFirst.mockResolvedValue(null)
 

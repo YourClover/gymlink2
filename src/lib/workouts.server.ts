@@ -108,6 +108,7 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
       userId: string
       notes?: string
       moodRating?: number
+      durationSeconds?: number
     }) => {
       // Validate moodRating if provided
       if (
@@ -115,6 +116,13 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
         (data.moodRating < 1 || data.moodRating > 10)
       ) {
         throw new Error('moodRating must be between 1 and 10')
+      }
+      // Validate durationSeconds if provided
+      if (
+        data.durationSeconds !== undefined &&
+        (data.durationSeconds < 0 || data.durationSeconds > 86400)
+      ) {
+        throw new Error('durationSeconds must be between 0 and 86400')
       }
       return data
     },
@@ -136,10 +144,10 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
       throw new Error('Session not found')
     }
 
-    // Calculate duration
-    const durationSeconds = Math.floor(
-      (Date.now() - existing.startedAt.getTime()) / 1000,
-    )
+    // Use client-provided duration or calculate from start time
+    const durationSeconds =
+      data.durationSeconds ??
+      Math.floor((Date.now() - existing.startedAt.getTime()) / 1000)
 
     // Use transaction to ensure session update and activity feed are atomic
     const session = await prisma.$transaction(async (tx) => {

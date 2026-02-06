@@ -7,6 +7,9 @@ import {
   ChevronUp,
   Clock,
   Dumbbell,
+  Minus,
+  Pencil,
+  Plus,
   Trophy,
   Weight,
 } from 'lucide-react'
@@ -76,6 +79,12 @@ function WorkoutSummaryPage() {
     null,
   )
 
+  // Duration editing (for incomplete sessions)
+  const [isEditingDuration, setIsEditingDuration] = useState(false)
+  const [editedHours, setEditedHours] = useState(0)
+  const [editedMinutes, setEditedMinutes] = useState(0)
+  const [hasEditedDuration, setHasEditedDuration] = useState(false)
+
   // Achievement toasts
   const [pendingAchievements, setPendingAchievements] = useState<
     Array<NewAchievement>
@@ -113,12 +122,12 @@ function WorkoutSummaryPage() {
 
         // Calculate duration for incomplete sessions after hydration
         if (!result.session.durationSeconds) {
-          setCalculatedDuration(
-            Math.floor(
-              (Date.now() - new Date(result.session.startedAt).getTime()) /
-                1000,
-            ),
+          const dur = Math.floor(
+            (Date.now() - new Date(result.session.startedAt).getTime()) / 1000,
           )
+          setCalculatedDuration(dur)
+          setEditedHours(Math.floor(dur / 3600))
+          setEditedMinutes(Math.floor((dur % 3600) / 60))
         }
       } catch (error) {
         console.error('Failed to fetch session:', error)
@@ -155,6 +164,9 @@ function WorkoutSummaryPage() {
     return Array.from(exerciseMap.values())
   }
 
+  // Edited duration in seconds
+  const editedDurationSeconds = editedHours * 3600 + editedMinutes * 60
+
   // Calculate stats
   const getStats = () => {
     if (!session)
@@ -170,8 +182,10 @@ function WorkoutSummaryPage() {
 
     const exerciseIds = new Set(session.workoutSets.map((s) => s.exerciseId))
 
-    // Use stored duration if completed, otherwise use calculated duration
-    const duration = session.durationSeconds ?? calculatedDuration ?? 0
+    // Use edited duration if user adjusted it, stored duration if completed, otherwise calculated
+    const duration = hasEditedDuration
+      ? editedDurationSeconds
+      : (session.durationSeconds ?? calculatedDuration ?? 0)
 
     return {
       totalSets: workingSets.length,
@@ -213,6 +227,9 @@ function WorkoutSummaryPage() {
           userId: user.id,
           notes: notes || undefined,
           moodRating: moodRating,
+          durationSeconds: hasEditedDuration
+            ? editedDurationSeconds
+            : undefined,
         },
       })
 
@@ -225,7 +242,9 @@ function WorkoutSummaryPage() {
             ? {
                 ...prev,
                 completedAt: new Date(),
-                durationSeconds: calculatedDuration,
+                durationSeconds: hasEditedDuration
+                  ? editedDurationSeconds
+                  : calculatedDuration,
                 notes: notes || null,
                 moodRating: moodRating || null,
               }
@@ -328,14 +347,121 @@ function WorkoutSummaryPage() {
         <div className="p-4">
           <div className="grid grid-cols-2 gap-3">
             {/* Duration */}
-            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-              <div className="flex items-center gap-2 mb-1">
+            <div
+              className={`p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 ${isEditingDuration ? 'col-span-2' : ''}`}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isCompleted && !isEditingDuration) {
+                    setIsEditingDuration(true)
+                    setHasEditedDuration(true)
+                  }
+                }}
+                disabled={isCompleted}
+                className="flex items-center gap-2 mb-1 w-full text-left disabled:cursor-default"
+              >
                 <Clock className="w-4 h-4 text-blue-400" />
                 <span className="text-sm text-zinc-400">Duration</span>
-              </div>
-              <p className="text-2xl font-bold text-white">
-                {formatDuration(stats.duration)}
-              </p>
+                {!isCompleted && !isEditingDuration && (
+                  <Pencil className="w-3 h-3 text-zinc-500 ml-auto" />
+                )}
+              </button>
+
+              {isEditingDuration ? (
+                <div className="mt-2">
+                  <div className="flex items-center gap-4">
+                    {/* Hours stepper */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditedHours((h) => Math.max(0, h - 1))
+                        }
+                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-300 hover:bg-zinc-600 transition-colors"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <div className="text-center min-w-[3rem]">
+                        <p className="text-xl font-bold text-white">
+                          {editedHours}
+                        </p>
+                        <p className="text-xs text-zinc-500">hr</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditedHours((h) => Math.min(24, h + 1))
+                        }
+                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-300 hover:bg-zinc-600 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <span className="text-xl font-bold text-zinc-500">:</span>
+
+                    {/* Minutes stepper */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditedMinutes((m) => Math.max(0, m - 5))
+                        }
+                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-xs text-zinc-300 hover:bg-zinc-600 transition-colors"
+                      >
+                        -5
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditedMinutes((m) => Math.max(0, m - 1))
+                        }
+                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-300 hover:bg-zinc-600 transition-colors"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <div className="text-center min-w-[3rem]">
+                        <p className="text-xl font-bold text-white">
+                          {editedMinutes}
+                        </p>
+                        <p className="text-xs text-zinc-500">min</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditedMinutes((m) => Math.min(59, m + 1))
+                        }
+                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-300 hover:bg-zinc-600 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditedMinutes((m) => Math.min(59, m + 5))
+                        }
+                        className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-xs text-zinc-300 hover:bg-zinc-600 transition-colors"
+                      >
+                        +5
+                      </button>
+                    </div>
+
+                    {/* Done button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingDuration(false)}
+                      className="ml-auto text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-white">
+                  {formatDuration(stats.duration)}
+                </p>
+              )}
             </div>
 
             {/* Total Sets */}
