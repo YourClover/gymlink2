@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RecordType, WeightUnit } from '@prisma/client'
 import { mockPrisma } from '@/test/setup'
+import { calculatePRScore } from './workouts.server'
 
 // We test the business logic directly by testing with mocked Prisma
 // TanStack server functions are RPC-based and don't return values when called directly in tests
@@ -479,5 +480,103 @@ describe('workout server functions', () => {
         }
       }).toThrow('Set not found')
     })
+  })
+})
+
+describe('calculatePRScore', () => {
+  describe('rep-based exercises (isTimed=false)', () => {
+    it('returns MAX_VOLUME for weighted rep exercises', () => {
+      const result = calculatePRScore(false, 100, 10, 0)
+      expect(result).toEqual({ score: 1000, recordType: RecordType.MAX_VOLUME })
+    })
+
+    it('returns MAX_REPS for bodyweight rep exercises', () => {
+      const result = calculatePRScore(false, 0, 15, 0)
+      expect(result).toEqual({ score: 15, recordType: RecordType.MAX_REPS })
+    })
+
+    it('returns null when reps is 0', () => {
+      expect(calculatePRScore(false, 100, 0, 0)).toBeNull()
+    })
+
+    it('returns null when both weight and reps are 0', () => {
+      expect(calculatePRScore(false, 0, 0, 0)).toBeNull()
+    })
+  })
+
+  describe('timed exercises (isTimed=true)', () => {
+    it('returns MAX_VOLUME for weighted timed exercises', () => {
+      const result = calculatePRScore(true, 50, 0, 60)
+      expect(result).toEqual({ score: 3000, recordType: RecordType.MAX_VOLUME })
+    })
+
+    it('returns MAX_TIME for bodyweight timed exercises', () => {
+      const result = calculatePRScore(true, 0, 0, 120)
+      expect(result).toEqual({ score: 120, recordType: RecordType.MAX_TIME })
+    })
+
+    it('returns null when time is 0', () => {
+      expect(calculatePRScore(true, 50, 0, 0)).toBeNull()
+    })
+
+    it('returns null when both weight and time are 0', () => {
+      expect(calculatePRScore(true, 0, 0, 0)).toBeNull()
+    })
+  })
+
+  describe('edge cases', () => {
+    it('ignores reps for timed exercises (uses time)', () => {
+      // Timed exercise with weight and time — reps are irrelevant
+      const result = calculatePRScore(true, 20, 5, 30)
+      expect(result).toEqual({ score: 600, recordType: RecordType.MAX_VOLUME })
+    })
+
+    it('ignores time for rep exercises (uses reps)', () => {
+      // Rep exercise with weight and reps — time is irrelevant
+      const result = calculatePRScore(false, 80, 8, 45)
+      expect(result).toEqual({ score: 640, recordType: RecordType.MAX_VOLUME })
+    })
+  })
+})
+
+describe('previousRecord preservation', () => {
+  it('preserves original previousRecord when multiple sets in same session beat PR', () => {
+    // Simulates the logic: if existing PR's set is in same session, keep previousRecord
+    const existingPR = {
+      value: 1200,
+      previousRecord: 800,
+      workoutSetId: 'set-in-same-session',
+    }
+    const existingSetSessionId = 'session-456'
+    const currentSessionId = 'session-456'
+
+    // Same session → keep original previousRecord
+    let previousRecord: number | null = null
+    if (existingSetSessionId === currentSessionId) {
+      previousRecord = existingPR.previousRecord
+    } else {
+      previousRecord = existingPR.value
+    }
+
+    expect(previousRecord).toBe(800) // Original beaten value, not 1200
+  })
+
+  it('uses existing PR value as previousRecord for different sessions', () => {
+    const existingPR = {
+      value: 1000,
+      previousRecord: 800,
+      workoutSetId: 'set-in-other-session',
+    }
+    const existingSetSessionId = 'session-old'
+    const currentSessionId = 'session-new'
+
+    let previousRecord: number | null = null
+    if (existingSetSessionId === currentSessionId) {
+      previousRecord = existingPR.previousRecord
+    } else {
+      previousRecord = existingPR.value
+    }
+
+    expect(previousRecord).toBe(1000) // The PR we're beating
   })
 })

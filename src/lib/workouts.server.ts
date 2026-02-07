@@ -1,8 +1,131 @@
 import { createServerFn } from '@tanstack/react-start'
+import type { PrismaClient } from '@prisma/client'
 import { RecordType, WeightUnit } from '@prisma/client'
 import { prisma } from './db'
 import { checkAchievements } from './achievements.server'
 import { updateChallengeProgress } from './challenges.server'
+
+type PrismaTransactionClient = Parameters<
+  Parameters<PrismaClient['$transaction']>[0]
+>[0]
+
+// ============================================
+// PR HELPERS (internal, not server functions)
+// ============================================
+
+/** Calculate PR score and record type for a set's values. Returns null if not PR-eligible. */
+export function calculatePRScore(
+  isTimed: boolean,
+  weight: number,
+  reps: number,
+  timeSeconds: number,
+): { score: number; recordType: RecordType } | null {
+  if (isTimed) {
+    if (weight > 0 && timeSeconds > 0) {
+      return { score: weight * timeSeconds, recordType: RecordType.MAX_VOLUME }
+    } else if (timeSeconds > 0) {
+      return { score: timeSeconds, recordType: RecordType.MAX_TIME }
+    }
+  } else {
+    if (weight > 0 && reps > 0) {
+      return { score: weight * reps, recordType: RecordType.MAX_VOLUME }
+    } else if (reps > 0) {
+      return { score: reps, recordType: RecordType.MAX_REPS }
+    }
+  }
+  return null
+}
+
+/** Rebuild PR records for a user+exercise from all qualifying sets. */
+async function recalculatePR(
+  tx: PrismaTransactionClient,
+  userId: string,
+  exerciseId: string,
+): Promise<void> {
+  const exercise = await tx.exercise.findUnique({
+    where: { id: exerciseId },
+    select: { isTimed: true },
+  })
+  if (!exercise) return
+
+  const sets = await tx.workoutSet.findMany({
+    where: {
+      exerciseId,
+      isWarmup: false,
+      isDropset: false,
+      workoutSession: { userId },
+    },
+  })
+
+  // Find best score per recordType
+  const bestByType = new Map<
+    RecordType,
+    { score: number; setId: string }
+  >()
+
+  for (const set of sets) {
+    const result = calculatePRScore(
+      exercise.isTimed,
+      set.weight ?? 0,
+      set.reps ?? 0,
+      set.timeSeconds ?? 0,
+    )
+    if (!result) continue
+
+    const existing = bestByType.get(result.recordType)
+    if (!existing || result.score > existing.score) {
+      bestByType.set(result.recordType, {
+        score: result.score,
+        setId: set.id,
+      })
+    }
+  }
+
+  // Get all existing PRs for this user+exercise
+  const existingPRs = await tx.personalRecord.findMany({
+    where: { userId, exerciseId },
+  })
+
+  const existingByType = new Map(
+    existingPRs.map((pr) => [pr.recordType, pr]),
+  )
+
+  // Upsert best PRs, delete orphaned record types
+  for (const recordType of Object.values(RecordType)) {
+    const best = bestByType.get(recordType)
+    const existingPR = existingByType.get(recordType)
+
+    if (best) {
+      if (existingPR && existingPR.value === best.score && existingPR.workoutSetId === best.setId) {
+        // PR unchanged, skip
+        continue
+      }
+      await tx.personalRecord.upsert({
+        where: {
+          userId_exerciseId_recordType: { userId, exerciseId, recordType },
+        },
+        create: {
+          userId,
+          exerciseId,
+          recordType,
+          value: best.score,
+          workoutSetId: best.setId,
+          previousRecord: existingPR?.previousRecord ?? null,
+        },
+        update: {
+          value: best.score,
+          workoutSetId: best.setId,
+          // Preserve achievedAt and previousRecord — this is a recalculation, not a new PR
+        },
+      })
+    } else if (existingPR) {
+      // No qualifying sets for this record type anymore
+      await tx.personalRecord.delete({
+        where: { id: existingPR.id },
+      })
+    }
+  }
+}
 
 // ============================================
 // SESSION MANAGEMENT
@@ -201,9 +324,23 @@ export const discardWorkoutSession = createServerFn({ method: 'POST' })
       throw new Error('Session not found')
     }
 
-    // Delete session (cascade deletes sets)
-    await prisma.workoutSession.delete({
-      where: { id: data.sessionId },
+    await prisma.$transaction(async (tx) => {
+      // Collect affected exercises before deleting
+      const affectedExercises = await tx.workoutSet.findMany({
+        where: { workoutSessionId: data.sessionId },
+        select: { exerciseId: true },
+        distinct: ['exerciseId'],
+      })
+
+      // Delete session (cascade deletes sets and their PRs)
+      await tx.workoutSession.delete({
+        where: { id: data.sessionId },
+      })
+
+      // Recalculate PRs for all affected exercises
+      for (const { exerciseId } of affectedExercises) {
+        await recalculatePR(tx, data.userId, exerciseId)
+      }
     })
 
     return { success: true }
@@ -298,39 +435,21 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
       } = { isNewPR: false }
 
       if (!setData.isWarmup && !setData.isDropset) {
-        // Calculate PR score based on exercise type
-        let prScore: number | null = null
-        let recordType: RecordType = RecordType.MAX_VOLUME
-
-        const isTimed = workoutSet.exercise.isTimed
         const weight = setData.weight ?? 0
         const reps = setData.reps ?? 0
         const time = setData.timeSeconds ?? 0
 
-        if (isTimed) {
-          if (weight > 0 && time > 0) {
-            // Weighted timed exercise: weight × time
-            prScore = weight * time
-            recordType = RecordType.MAX_VOLUME
-          } else if (time > 0) {
-            // Bodyweight timed exercise: max time
-            prScore = time
-            recordType = RecordType.MAX_TIME
-          }
-        } else {
-          if (weight > 0 && reps > 0) {
-            // Weighted rep exercise: weight × reps
-            prScore = weight * reps
-            recordType = RecordType.MAX_VOLUME
-          } else if (reps > 0) {
-            // Bodyweight rep exercise: max reps
-            prScore = reps
-            recordType = RecordType.MAX_REPS
-          }
-        }
+        const scoreResult = calculatePRScore(
+          workoutSet.exercise.isTimed,
+          weight,
+          reps,
+          time,
+        )
 
         // Check if this is a new PR
-        if (prScore !== null) {
+        if (scoreResult) {
+          const { score: prScore, recordType } = scoreResult
+
           const existingPR = await tx.personalRecord.findUnique({
             where: {
               userId_exerciseId_recordType: {
@@ -341,10 +460,28 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
             },
           })
 
-          const previousRecord = existingPR?.value ?? null
           const isNewPR = !existingPR || prScore > existingPR.value
 
           if (isNewPR) {
+            // Determine previousRecord: if the existing PR's set is from this
+            // same session, keep its previousRecord (the original beaten value),
+            // otherwise use the existing PR's value.
+            let previousRecord: number | null = null
+            if (existingPR) {
+              const existingSet = await tx.workoutSet.findUnique({
+                where: { id: existingPR.workoutSetId },
+                select: { workoutSessionId: true },
+              })
+              if (
+                existingSet?.workoutSessionId === setData.workoutSessionId
+              ) {
+                // Same session — preserve the original beaten value
+                previousRecord = existingPR.previousRecord
+              } else {
+                previousRecord = existingPR.value
+              }
+            }
+
             // Use upsert to handle the unique constraint
             const newPR = await tx.personalRecord.upsert({
               where: {
@@ -360,12 +497,12 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
                 recordType,
                 value: prScore,
                 workoutSetId: workoutSet.id,
-                previousRecord: previousRecord,
+                previousRecord,
               },
               update: {
                 value: prScore,
                 workoutSetId: workoutSet.id,
-                previousRecord: previousRecord,
+                previousRecord,
                 achievedAt: new Date(),
               },
             })
@@ -437,12 +574,19 @@ export const updateWorkoutSet = createServerFn({ method: 'POST' })
       throw new Error('Set not found')
     }
 
-    const workoutSet = await prisma.workoutSet.update({
-      where: { id },
-      data: updateData,
-      include: {
-        exercise: true,
-      },
+    const workoutSet = await prisma.$transaction(async (tx) => {
+      const updated = await tx.workoutSet.update({
+        where: { id },
+        data: updateData,
+        include: {
+          exercise: true,
+        },
+      })
+
+      // Recalculate PRs since the set's values may have changed
+      await recalculatePR(tx, userId, existing.exerciseId)
+
+      return updated
     })
 
     return { workoutSet }
@@ -464,8 +608,13 @@ export const deleteWorkoutSet = createServerFn({ method: 'POST' })
       throw new Error('Set not found')
     }
 
-    await prisma.workoutSet.delete({
-      where: { id: data.id },
+    await prisma.$transaction(async (tx) => {
+      await tx.workoutSet.delete({
+        where: { id: data.id },
+      })
+
+      // Recalculate PRs since the deleted set may have held a PR
+      await recalculatePR(tx, data.userId, existing.exerciseId)
     })
 
     return { success: true }

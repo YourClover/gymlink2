@@ -1,4 +1,4 @@
-import { Flame, Trash2, TrendingDown, Trophy } from 'lucide-react'
+import { Flame, Trash2, TrendingDown } from 'lucide-react'
 
 interface WorkoutSetRowProps {
   setNumber: number
@@ -8,7 +8,6 @@ interface WorkoutSetRowProps {
   rpe?: number | null
   isWarmup?: boolean
   isDropset?: boolean
-  isPR?: boolean
   onDelete?: () => void
 }
 
@@ -20,7 +19,6 @@ export default function WorkoutSetRow({
   rpe,
   isWarmup = false,
   isDropset = false,
-  isPR = false,
   onDelete,
 }: WorkoutSetRowProps) {
   const formatTime = (seconds: number) => {
@@ -67,12 +65,6 @@ export default function WorkoutSetRow({
           <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-600/20 rounded-full text-purple-400">
             <TrendingDown className="w-3 h-3" />
             Drop
-          </span>
-        )}
-        {isPR && (
-          <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-yellow-500/20 rounded-full text-yellow-400 font-medium">
-            <Trophy className="w-3 h-3" />
-            PR
           </span>
         )}
       </div>
