@@ -21,10 +21,12 @@ import {
   completeWorkoutSession,
   getWorkoutSession,
 } from '@/lib/workouts.server'
+import { markAchievementsNotified } from '@/lib/achievements.server'
 import { useAuth } from '@/context/AuthContext'
 
 interface NewAchievement {
   id: string
+  userAchievementId: string
   code: string
   name: string
   description: string
@@ -234,6 +236,14 @@ function WorkoutSummaryPage() {
       // Show achievement toasts if any were earned
       if (result.newAchievements.length > 0) {
         setPendingAchievements(result.newAchievements)
+        // Mark as notified so they won't re-trigger
+        markAchievementsNotified({
+          data: {
+            achievementIds: result.newAchievements.map(
+              (a) => a.userAchievementId,
+            ),
+          },
+        }).catch(console.error)
         // Update session to show as completed
         setSession((prev) =>
           prev

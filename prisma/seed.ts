@@ -319,12 +319,20 @@ const achievements = [
 async function main() {
   console.log('Seeding database...')
 
-  // Clear existing achievements and seed new ones
-  await prisma.achievement.deleteMany({})
-
+  // Upsert achievements to preserve existing IDs (and UserAchievement FK references)
   for (const achievement of achievements) {
-    await prisma.achievement.create({
-      data: achievement,
+    await prisma.achievement.upsert({
+      where: { code: achievement.code },
+      update: {
+        name: achievement.name,
+        description: achievement.description,
+        category: achievement.category,
+        rarity: achievement.rarity,
+        icon: achievement.icon,
+        threshold: achievement.threshold,
+        sortOrder: achievement.sortOrder,
+      },
+      create: achievement,
     })
   }
 

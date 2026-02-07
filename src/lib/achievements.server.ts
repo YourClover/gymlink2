@@ -34,6 +34,7 @@ export interface UserAchievementData {
 
 export interface NewlyEarnedAchievement {
   id: string
+  userAchievementId: string
   code: string
   name: string
   description: string
@@ -210,6 +211,7 @@ export const checkAchievements = createServerFn({ method: 'POST' })
 
         newlyEarned.push({
           id: achievement.id,
+          userAchievementId: userAchievement.id,
           code: achievement.code,
           name: achievement.name,
           description: achievement.description,
