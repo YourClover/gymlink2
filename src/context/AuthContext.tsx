@@ -81,6 +81,8 @@ export function AuthProvider({
       setUser(result.user as User | null)
       if (!result.user) {
         removeStoredToken()
+      } else if (result.token) {
+        setStoredToken(result.token)
       }
     } catch {
       setUser(null)

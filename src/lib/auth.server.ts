@@ -5,6 +5,7 @@ import {
   hashPassword,
   verifyPassword,
   verifyToken,
+  type JWTPayload,
 } from './auth'
 import { EMAIL_REGEX, PASSWORD_MIN_LENGTH } from './constants'
 
@@ -211,6 +212,12 @@ export const getCurrentUser = createServerFn({ method: 'POST' })
       return { user: null }
     }
 
+    // Issue a fresh token to extend the session lifetime
+    const freshToken = generateToken({
+      userId: user.id,
+      email: user.email,
+    } as JWTPayload)
+
     log('Get current user success:', { userId: user.id, email: user.email })
-    return { user }
+    return { user, token: freshToken }
   })
