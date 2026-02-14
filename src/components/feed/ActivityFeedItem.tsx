@@ -31,6 +31,7 @@ interface ActivityFeedItemProps {
     user: { id: string; name: string }
     profile?: { username: string; avatarUrl: string | null }
   }
+  style?: React.CSSProperties
 }
 
 // Helper functions moved outside component to avoid recreation on each render
@@ -105,7 +106,15 @@ const getInitials = (name: string) => {
     .slice(0, 2)
 }
 
-function ActivityFeedItemComponent({ activity }: ActivityFeedItemProps) {
+const accentBorder: Record<string, string> = {
+  WORKOUT_COMPLETED: 'border-l-green-500',
+  PR_ACHIEVED: 'border-l-yellow-500',
+  ACHIEVEMENT_EARNED: 'border-l-purple-500',
+  CHALLENGE_JOINED: 'border-l-blue-500',
+  CHALLENGE_COMPLETED: 'border-l-amber-500',
+}
+
+function ActivityFeedItemComponent({ activity, style }: ActivityFeedItemProps) {
   const initials = getInitials(activity.user.name)
 
   const renderContent = (): React.ReactNode => {
@@ -220,7 +229,10 @@ function ActivityFeedItemComponent({ activity }: ActivityFeedItemProps) {
   }
 
   return (
-    <div className="bg-zinc-800/50 rounded-xl p-4">
+    <div
+      className={`bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50 border-l-2 ${accentBorder[activity.activityType] ?? ''} hover:bg-zinc-700/30 transition-colors`}
+      style={style}
+    >
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
         <Link

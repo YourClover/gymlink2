@@ -59,7 +59,7 @@ export function FollowButton({
     return (
       <button
         onClick={handleClick}
-        className={`flex items-center justify-center gap-2 bg-zinc-700 hover:bg-red-600/20 hover:text-red-400 text-white rounded-lg transition-colors ${sizeClasses} w-full`}
+        className={`flex items-center justify-center gap-2 bg-zinc-700 hover:bg-red-600/20 hover:text-red-400 text-white rounded-lg transition-all duration-200 active:scale-95 ${sizeClasses} w-full`}
       >
         <UserCheck className="w-4 h-4" />
         Following
@@ -71,7 +71,7 @@ export function FollowButton({
     return (
       <button
         onClick={handleClick}
-        className={`flex items-center justify-center gap-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg ${sizeClasses} w-full`}
+        className={`flex items-center justify-center gap-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-all duration-200 active:scale-95 ${sizeClasses} w-full`}
       >
         <Clock className="w-4 h-4" />
         Requested
@@ -82,7 +82,7 @@ export function FollowButton({
   return (
     <button
       onClick={handleClick}
-      className={`flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors ${sizeClasses} w-full`}
+      className={`flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 active:scale-95 ${sizeClasses} w-full`}
     >
       <UserPlus className="w-4 h-4" />
       Follow

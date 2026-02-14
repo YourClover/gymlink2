@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Loader2, MoreVertical, Users } from 'lucide-react'
+import { ArrowLeft, MoreVertical, UserPlus, Users } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
   getFollowers,
@@ -12,6 +12,8 @@ import {
   unfollow,
 } from '@/lib/social.server'
 import AppLayout from '@/components/AppLayout'
+import { SkeletonUserCard } from '@/components/ui/SocialSkeletons'
+import EmptyState from '@/components/ui/EmptyState'
 
 export const Route = createFileRoute('/followers')({
   component: FollowersPage,
@@ -154,13 +156,18 @@ function FollowersPage() {
       onRemove?: () => void
       onUnfollow?: () => void
     },
+    index: number,
   ) => {
     const menuId = `menu-${userId}`
 
     return (
       <div
         key={userId}
-        className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg"
+        className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 hover:bg-zinc-700/50 transition-colors animate-fade-in"
+        style={{
+          animationDelay: `${index * 50}ms`,
+          animationFillMode: 'backwards',
+        }}
       >
         <Link to="/u/$username" params={{ username: profile?.username ?? '' }}>
           <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
@@ -297,16 +304,22 @@ function FollowersPage() {
 
         {/* Content */}
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonUserCard key={i} />
+            ))}
           </div>
         ) : tab === 'requests' ? (
           requests.length > 0 ? (
             <div className="space-y-2">
-              {requests.map((req) => (
+              {requests.map((req, index) => (
                 <div
                   key={req.id}
-                  className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg"
+                  className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 hover:bg-zinc-700/50 transition-colors animate-fade-in"
+                  style={{
+                    animationDelay: `${index * 50}ms`,
+                    animationFillMode: 'backwards',
+                  }}
                 >
                   <Link
                     to="/u/$username"
@@ -350,14 +363,16 @@ function FollowersPage() {
               ))}
             </div>
           ) : (
-            <div className="text-zinc-500 text-center py-8">
-              No pending requests
-            </div>
+            <EmptyState
+              icon={<UserPlus className="w-8 h-8" />}
+              title="No pending requests"
+              description="Follow requests from others will appear here."
+            />
           )
         ) : tab === 'followers' ? (
           followers.length > 0 ? (
             <div className="space-y-2">
-              {followers.map((f) =>
+              {followers.map((f, index) =>
                 renderUserCard(
                   f.follower?.id ?? '',
                   f.follower?.name ?? 'Unknown',
@@ -366,18 +381,21 @@ function FollowersPage() {
                   {
                     onRemove: () => handleRemoveFollower(f.follower?.id ?? ''),
                   },
+                  index,
                 ),
               )}
             </div>
           ) : (
-            <div className="text-zinc-500 text-center py-8">
-              No followers yet
-            </div>
+            <EmptyState
+              icon={<Users className="w-8 h-8" />}
+              title="No followers yet"
+              description="Share your profile to connect with others."
+            />
           )
         ) : tab === 'following' ? (
           following.length > 0 ? (
             <div className="space-y-2">
-              {following.map((f) =>
+              {following.map((f, index) =>
                 renderUserCard(
                   f.following?.id ?? '',
                   f.following?.name ?? 'Unknown',
@@ -386,29 +404,42 @@ function FollowersPage() {
                   {
                     onUnfollow: () => handleUnfollow(f.following?.id ?? ''),
                   },
+                  index,
                 ),
               )}
             </div>
           ) : (
-            <div className="text-zinc-500 text-center py-8">
-              You're not following anyone yet
-            </div>
+            <EmptyState
+              icon={<UserPlus className="w-8 h-8" />}
+              title="Not following anyone"
+              description="Find people to follow and see their activity."
+              action={{
+                label: 'Find People',
+                onClick: () => navigate({ to: '/users/search' }),
+              }}
+            />
           )
         ) : mutuals.length > 0 ? (
           <div className="space-y-2">
-            {mutuals.map((m) =>
-              renderUserCard(m.userId, m.user.name, m.profile, true, {
-                onUnfollow: () => handleUnfollow(m.userId),
-              }),
+            {mutuals.map((m, index) =>
+              renderUserCard(
+                m.userId,
+                m.user.name,
+                m.profile,
+                true,
+                {
+                  onUnfollow: () => handleUnfollow(m.userId),
+                },
+                index,
+              ),
             )}
           </div>
         ) : (
-          <div className="text-zinc-500 text-center py-8">
-            <p>No mutual connections yet</p>
-            <p className="text-sm mt-1">
-              Mutuals are people who follow each other
-            </p>
-          </div>
+          <EmptyState
+            icon={<Users className="w-8 h-8" />}
+            title="No mutuals yet"
+            description="Mutuals are people who follow each other."
+          />
         )}
       </div>
     </AppLayout>

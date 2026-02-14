@@ -1,11 +1,10 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
   Award,
   Bell,
   Check,
-  Loader2,
   Target,
   Trophy,
   UserCheck,
@@ -19,6 +18,8 @@ import {
   markNotificationRead,
 } from '@/lib/notifications.server'
 import AppLayout from '@/components/AppLayout'
+import { SkeletonNotificationItem } from '@/components/ui/SocialSkeletons'
+import EmptyState from '@/components/ui/EmptyState'
 
 export const Route = createFileRoute('/notifications')({
   component: NotificationsPage,
@@ -85,22 +86,50 @@ function NotificationsPage() {
     }
   }
 
-  const getIcon = (type: NotificationType) => {
+  const getIconWithBackground = (type: NotificationType) => {
     switch (type) {
       case 'FOLLOW_REQUEST':
-        return <UserPlus className="w-5 h-5 text-blue-400" />
+        return (
+          <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+            <UserPlus className="w-5 h-5 text-blue-400" />
+          </div>
+        )
       case 'FOLLOW_ACCEPTED':
-        return <UserCheck className="w-5 h-5 text-green-400" />
+        return (
+          <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+            <UserCheck className="w-5 h-5 text-green-400" />
+          </div>
+        )
       case 'CHALLENGE_INVITE':
-        return <Target className="w-5 h-5 text-purple-400" />
+        return (
+          <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+            <Target className="w-5 h-5 text-purple-400" />
+          </div>
+        )
       case 'CHALLENGE_STARTED':
-        return <Target className="w-5 h-5 text-orange-400" />
+        return (
+          <div className="w-9 h-9 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+            <Target className="w-5 h-5 text-orange-400" />
+          </div>
+        )
       case 'CHALLENGE_ENDED':
-        return <Trophy className="w-5 h-5 text-yellow-400" />
+        return (
+          <div className="w-9 h-9 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+            <Trophy className="w-5 h-5 text-yellow-400" />
+          </div>
+        )
       case 'ACHIEVEMENT_EARNED':
-        return <Award className="w-5 h-5 text-amber-400" />
+        return (
+          <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+            <Award className="w-5 h-5 text-amber-400" />
+          </div>
+        )
       default:
-        return <Bell className="w-5 h-5 text-zinc-400" />
+        return (
+          <div className="w-9 h-9 rounded-full bg-zinc-700/50 flex items-center justify-center flex-shrink-0">
+            <Bell className="w-5 h-5 text-zinc-400" />
+          </div>
+        )
     }
   }
 
@@ -146,7 +175,44 @@ function NotificationsPage() {
     })
   }
 
+  const getDateGroup = (date: Date): string => {
+    const d = new Date(date)
+    const now = new Date()
+    const diff = now.getTime() - d.getTime()
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(hours / 24)
+
+    if (days === 0) return 'Today'
+    if (days <= 7) return 'This Week'
+    return 'Earlier'
+  }
+
+  const groupedNotifications = useMemo(() => {
+    const groups: Array<{ label: string; items: Array<NotificationData> }> = []
+    const groupMap = new Map<string, Array<NotificationData>>()
+
+    for (const n of notifications) {
+      const group = getDateGroup(n.createdAt)
+      if (!groupMap.has(group)) {
+        groupMap.set(group, [])
+      }
+      groupMap.get(group)!.push(n)
+    }
+
+    // Maintain order: Today, This Week, Earlier
+    for (const label of ['Today', 'This Week', 'Earlier']) {
+      const items = groupMap.get(label)
+      if (items && items.length > 0) {
+        groups.push({ label, items })
+      }
+    }
+
+    return groups
+  }, [notifications])
+
   const unreadCount = notifications.filter((n) => !n.isRead).length
+
+  let globalIndex = 0
 
   return (
     <AppLayout showNav={false}>
@@ -175,75 +241,92 @@ function NotificationsPage() {
 
         {/* Content */}
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonNotificationItem key={i} />
+            ))}
           </div>
         ) : notifications.length > 0 ? (
-          <div className="space-y-2">
-            {notifications.map((notification) => {
-              const link = getNotificationLink(notification)
-              const content = (
-                <div
-                  className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
-                    notification.isRead
-                      ? 'bg-zinc-800/30'
-                      : 'bg-zinc-800/50 border-l-2 border-blue-500'
-                  } ${link ? 'hover:bg-zinc-700/50 cursor-pointer' : ''}`}
-                  onClick={() => {
-                    if (!notification.isRead) {
-                      handleMarkRead(notification.id)
+          <div className="space-y-6">
+            {groupedNotifications.map((group) => (
+              <div key={group.label}>
+                <h2 className="text-sm font-medium text-zinc-400 mb-2 px-1">
+                  {group.label}
+                </h2>
+                <div className="space-y-2">
+                  {group.items.map((notification) => {
+                    const link = getNotificationLink(notification)
+                    const idx = globalIndex++
+                    const content = (
+                      <div
+                        className={`flex items-start gap-3 p-3 rounded-xl border border-zinc-700/50 transition-colors animate-fade-in ${
+                          notification.isRead
+                            ? 'bg-zinc-800/30'
+                            : 'bg-zinc-800/50 border-l-2 border-l-blue-500'
+                        } ${link ? 'hover:bg-zinc-700/50 cursor-pointer' : ''}`}
+                        style={{
+                          animationDelay: `${idx * 50}ms`,
+                          animationFillMode: 'backwards',
+                        }}
+                        onClick={() => {
+                          if (!notification.isRead) {
+                            handleMarkRead(notification.id)
+                          }
+                        }}
+                      >
+                        {getIconWithBackground(notification.type)}
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`font-medium ${
+                              notification.isRead
+                                ? 'text-zinc-400'
+                                : 'text-white'
+                            }`}
+                          >
+                            {notification.title}
+                          </p>
+                          <p className="text-sm text-zinc-500 truncate">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-zinc-600 mt-1">
+                            {formatDate(notification.createdAt)}
+                          </p>
+                        </div>
+                        {!notification.isRead && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleMarkRead(notification.id)
+                            }}
+                            className="p-1 hover:bg-zinc-600 rounded"
+                            title="Mark as read"
+                          >
+                            <Check className="w-4 h-4 text-zinc-500" />
+                          </button>
+                        )}
+                      </div>
+                    )
+
+                    if (link) {
+                      return (
+                        <Link key={notification.id} to={link as '/'}>
+                          {content}
+                        </Link>
+                      )
                     }
-                  }}
-                >
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getIcon(notification.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`font-medium ${
-                        notification.isRead ? 'text-zinc-400' : 'text-white'
-                      }`}
-                    >
-                      {notification.title}
-                    </p>
-                    <p className="text-sm text-zinc-500 truncate">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-zinc-600 mt-1">
-                      {formatDate(notification.createdAt)}
-                    </p>
-                  </div>
-                  {!notification.isRead && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleMarkRead(notification.id)
-                      }}
-                      className="p-1 hover:bg-zinc-600 rounded"
-                      title="Mark as read"
-                    >
-                      <Check className="w-4 h-4 text-zinc-500" />
-                    </button>
-                  )}
+
+                    return <div key={notification.id}>{content}</div>
+                  })}
                 </div>
-              )
-
-              if (link) {
-                return (
-                  <Link key={notification.id} to={link as '/'}>
-                    {content}
-                  </Link>
-                )
-              }
-
-              return <div key={notification.id}>{content}</div>
-            })}
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <Bell className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-            <p className="text-zinc-500">No notifications yet</p>
-          </div>
+          <EmptyState
+            icon={<Bell className="w-8 h-8" />}
+            title="No notifications yet"
+            description="You'll see updates about follows, achievements, and challenges here."
+          />
         )}
       </div>
     </AppLayout>

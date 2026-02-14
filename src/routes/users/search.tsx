@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext'
 import { getProfileByCode, searchUsers } from '@/lib/profile.server'
 import AppLayout from '@/components/AppLayout'
 import { FollowButton } from '@/components/social/FollowButton'
+import { SkeletonUserCard } from '@/components/ui/SocialSkeletons'
+import EmptyState from '@/components/ui/EmptyState'
 
 export const Route = createFileRoute('/users/search')({
   component: UserSearchPage,
@@ -162,13 +164,23 @@ function UserSearchPage() {
         </div>
 
         {/* Search Results */}
-        {results.length > 0 ? (
+        {isSearching && results.length === 0 ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonUserCard key={i} />
+            ))}
+          </div>
+        ) : results.length > 0 ? (
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-zinc-400 mb-2">Results</h3>
-            {results.map((result) => (
+            {results.map((result, index) => (
               <div
                 key={result.id}
-                className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg"
+                className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 hover:bg-zinc-700/50 transition-colors animate-fade-in"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
               >
                 <Link
                   to="/u/$username"
@@ -204,10 +216,11 @@ function UserSearchPage() {
             ))}
           </div>
         ) : query.length >= 2 && !isSearching ? (
-          <div className="text-center py-8">
-            <User className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-            <p className="text-zinc-500">No users found for "{query}"</p>
-          </div>
+          <EmptyState
+            icon={<User className="w-8 h-8" />}
+            title="No users found"
+            description={`No results for "${query}". Try a different search.`}
+          />
         ) : query.length > 0 && query.length < 2 ? (
           <div className="text-center py-8">
             <p className="text-zinc-500">

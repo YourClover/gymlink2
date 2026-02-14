@@ -1,20 +1,14 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import {
-  Crown,
-  Dumbbell,
-  Flame,
-  Loader2,
-  Medal,
-  Trophy,
-  Zap,
-} from 'lucide-react'
+import { Crown, Dumbbell, Flame, Medal, Trophy, Zap } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
   getFriendsLeaderboard,
   getGlobalLeaderboard,
 } from '@/lib/leaderboards.server'
 import AppLayout from '@/components/AppLayout'
+import { SkeletonLeaderboardRow } from '@/components/ui/Skeleton'
+import EmptyState from '@/components/ui/EmptyState'
 
 export const Route = createFileRoute('/leaderboards')({
   component: LeaderboardsPage,
@@ -34,6 +28,7 @@ interface LeaderboardEntry {
 
 function LeaderboardsPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [metric, setMetric] = useState<LeaderboardMetric>('volume')
   const [timeRange, setTimeRange] = useState<TimeRange>('week')
   const [scope, setScope] = useState<LeaderboardScope>('friends')
@@ -143,6 +138,15 @@ function LeaderboardsPage() {
       .slice(0, 2)
   }
 
+  const podiumStyles: Record<number, string> = {
+    1: 'border-yellow-500/30 bg-yellow-500/5',
+    2: 'border-zinc-400/30 bg-zinc-400/5',
+    3: 'border-amber-600/30 bg-amber-600/5',
+  }
+
+  const topEntries = leaderboard.filter((e) => e.rank <= 3)
+  const restEntries = leaderboard.filter((e) => e.rank > 3)
+
   return (
     <AppLayout title="Leaderboards">
       <div className="p-4">
@@ -215,79 +219,155 @@ function LeaderboardsPage() {
 
         {/* Leaderboard */}
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+          <div className="space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonLeaderboardRow key={i} />
+            ))}
           </div>
         ) : leaderboard.length > 0 ? (
-          <div className="space-y-2">
-            {leaderboard.map((entry) => {
-              const isCurrentUser = entry.userId === user?.id
+          <div className="space-y-4">
+            {/* Podium - Top 3 */}
+            {topEntries.length > 0 && (
+              <div className="space-y-2">
+                {topEntries.map((entry, index) => {
+                  const isCurrentUser = entry.userId === user?.id
 
-              return (
-                <Link
-                  key={entry.userId}
-                  to="/u/$username"
-                  params={{ username: entry.profile?.username ?? '' }}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                    isCurrentUser
-                      ? 'bg-blue-600/20 border border-blue-500/30'
-                      : 'bg-zinc-800/50 hover:bg-zinc-700/50'
-                  }`}
-                >
-                  {getRankBadge(entry.rank)}
-
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                    {entry.profile?.avatarUrl ? (
-                      <img
-                        src={entry.profile.avatarUrl}
-                        alt={`${entry.user?.name ?? 'User'}'s profile picture`}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      getInitials(entry.user?.name ?? 'U')
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`font-medium truncate ${
-                        isCurrentUser ? 'text-blue-400' : 'text-white'
+                  return (
+                    <Link
+                      key={entry.userId}
+                      to="/u/$username"
+                      params={{ username: entry.profile?.username ?? '' }}
+                      className={`flex items-center gap-3 p-4 rounded-xl border transition-all animate-fade-in ${
+                        isCurrentUser
+                          ? 'bg-blue-600/20 border-blue-500/30'
+                          : (podiumStyles[entry.rank] ?? '')
                       }`}
+                      style={{
+                        animationDelay: `${index * 50}ms`,
+                        animationFillMode: 'backwards',
+                      }}
                     >
-                      {entry.user?.name}
-                      {isCurrentUser && ' (You)'}
-                    </p>
-                    <p className="text-sm text-zinc-500">
-                      @{entry.profile?.username}
-                    </p>
-                  </div>
+                      {getRankBadge(entry.rank)}
 
-                  <div className="text-right">
-                    <p className="font-bold text-white">
-                      {formatValue(entry.value, metric)}
-                    </p>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <Trophy className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-            <p className="text-zinc-500">
-              {scope === 'friends'
-                ? 'No data from your friends yet'
-                : 'No leaderboard data yet'}
-            </p>
-            {scope === 'friends' && (
-              <Link
-                to="/users/search"
-                className="inline-block mt-4 text-blue-500 hover:text-blue-400 text-sm"
-              >
-                Find people to follow
-              </Link>
+                      <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
+                        {entry.profile?.avatarUrl ? (
+                          <img
+                            src={entry.profile.avatarUrl}
+                            alt={`${entry.user?.name ?? 'User'}'s profile picture`}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          getInitials(entry.user?.name ?? 'U')
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`font-semibold truncate ${
+                            isCurrentUser ? 'text-blue-400' : 'text-white'
+                          }`}
+                        >
+                          {entry.user?.name}
+                          {isCurrentUser && ' (You)'}
+                        </p>
+                        <p className="text-sm text-zinc-500">
+                          @{entry.profile?.username}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="font-bold text-white text-lg">
+                          {formatValue(entry.value, metric)}
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Rest of entries */}
+            {restEntries.length > 0 && (
+              <div className="space-y-2">
+                {restEntries.map((entry, index) => {
+                  const isCurrentUser = entry.userId === user?.id
+
+                  return (
+                    <Link
+                      key={entry.userId}
+                      to="/u/$username"
+                      params={{ username: entry.profile?.username ?? '' }}
+                      className={`flex items-center gap-3 p-3 rounded-xl border border-zinc-700/50 transition-all hover:bg-zinc-700/50 animate-fade-in ${
+                        isCurrentUser
+                          ? 'bg-blue-600/20 border-blue-500/30'
+                          : 'bg-zinc-800/50'
+                      }`}
+                      style={{
+                        animationDelay: `${(topEntries.length + index) * 50}ms`,
+                        animationFillMode: 'backwards',
+                      }}
+                    >
+                      {getRankBadge(entry.rank)}
+
+                      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                        {entry.profile?.avatarUrl ? (
+                          <img
+                            src={entry.profile.avatarUrl}
+                            alt={`${entry.user?.name ?? 'User'}'s profile picture`}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          getInitials(entry.user?.name ?? 'U')
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`font-medium truncate ${
+                            isCurrentUser ? 'text-blue-400' : 'text-white'
+                          }`}
+                        >
+                          {entry.user?.name}
+                          {isCurrentUser && ' (You)'}
+                        </p>
+                        <p className="text-sm text-zinc-500">
+                          @{entry.profile?.username}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="font-bold text-white">
+                          {formatValue(entry.value, metric)}
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
             )}
           </div>
+        ) : (
+          <EmptyState
+            icon={<Trophy className="w-8 h-8" />}
+            title={
+              scope === 'friends'
+                ? 'No data from your friends yet'
+                : 'No leaderboard data yet'
+            }
+            description={
+              scope === 'friends'
+                ? 'Follow friends and work out together to see who comes out on top!'
+                : 'Complete workouts to appear on the leaderboard.'
+            }
+            action={
+              scope === 'friends'
+                ? {
+                    label: 'Find People',
+                    onClick: () => navigate({ to: '/users/search' }),
+                  }
+                : undefined
+            }
+          />
         )}
       </div>
     </AppLayout>

@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Loader2, Trophy, UserPlus, Users } from 'lucide-react'
 import type { ActivityType } from '@prisma/client'
@@ -6,7 +6,8 @@ import { useAuth } from '@/context/AuthContext'
 import { getActivityFeed } from '@/lib/feed.server'
 import AppLayout from '@/components/AppLayout'
 import { ActivityFeedItem } from '@/components/feed/ActivityFeedItem'
-import { SkeletonCard } from '@/components/ui/Skeleton'
+import { SkeletonFeedItem } from '@/components/ui/SocialSkeletons'
+import EmptyState from '@/components/ui/EmptyState'
 import ErrorState from '@/components/ui/ErrorState'
 
 export const Route = createFileRoute('/feed')({
@@ -26,6 +27,7 @@ interface ActivityData {
 
 function FeedPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [activities, setActivities] = useState<Array<ActivityData>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -75,16 +77,20 @@ function FeedPage() {
       <div className="px-4 pt-4 flex gap-2">
         <Link
           to="/users/search"
-          className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-3 hover:bg-zinc-700/50 text-white text-sm font-medium transition-colors"
         >
-          <UserPlus className="w-4 h-4" />
+          <div className="p-1 bg-blue-500/20 rounded-lg">
+            <UserPlus className="w-4 h-4 text-blue-400" />
+          </div>
           Find People
         </Link>
         <Link
           to="/challenges"
-          className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-3 hover:bg-zinc-700/50 text-white text-sm font-medium transition-colors"
         >
-          <Trophy className="w-4 h-4" />
+          <div className="p-1 bg-yellow-500/20 rounded-lg">
+            <Trophy className="w-4 h-4 text-yellow-400" />
+          </div>
           Challenges
         </Link>
       </div>
@@ -102,28 +108,32 @@ function FeedPage() {
         isLoading && activities.length === 0 ? (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonCard key={i} />
+              <SkeletonFeedItem key={i} />
             ))}
           </div>
         ) : activities.length === 0 ? (
-          <div className="text-center py-12">
-            <Users className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-            <h3 className="text-white font-medium mb-1">Your feed is empty</h3>
-            <p className="text-sm text-zinc-500 mb-4">
-              Follow other users to see their workouts, PRs, and achievements
-              here.
-            </p>
-            <Link
-              to="/users/search"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-            >
-              Find People
-            </Link>
-          </div>
+          <EmptyState
+            icon={<Users className="w-8 h-8" />}
+            title="Your feed is empty"
+            description="Follow other users to see their workouts, PRs, and achievements here."
+            action={{
+              label: 'Find People',
+              onClick: () => navigate({ to: '/users/search' }),
+            }}
+          />
         ) : (
           <div className="space-y-4">
-            {activities.map((activity) => (
-              <ActivityFeedItem key={activity.id} activity={activity} />
+            {activities.map((activity, index) => (
+              <div
+                key={activity.id}
+                className="animate-fade-in"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <ActivityFeedItem activity={activity} />
+              </div>
             ))}
 
             {isLoading && (
@@ -135,7 +145,7 @@ function FeedPage() {
             {hasMore && !isLoading && (
               <button
                 onClick={() => loadFeed(true)}
-                className="w-full py-3 text-blue-500 text-sm hover:text-blue-400"
+                className="w-full py-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-700/50 transition-colors text-blue-400 text-sm font-medium"
               >
                 Load more
               </button>

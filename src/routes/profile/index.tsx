@@ -22,6 +22,7 @@ import AppLayout from '@/components/AppLayout'
 import { AchievementBadge } from '@/components/achievements'
 import { getUserAchievements } from '@/lib/achievements.server'
 import { getUserProfile } from '@/lib/profile.server'
+import StatsSection from '@/components/stats/StatsSection'
 
 export const Route = createFileRoute('/profile/')({
   component: ProfilePage,
@@ -106,9 +107,12 @@ function ProfilePage() {
     <AppLayout title="Profile">
       <div className="px-4 py-6 space-y-6">
         {/* Profile Header */}
-        <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+        <div
+          className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 animate-fade-in"
+          style={{ animationFillMode: 'backwards' }}
+        >
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
               <User className="w-8 h-8 text-white" />
             </div>
             <div className="flex-1 min-w-0">
@@ -118,9 +122,9 @@ function ProfilePage() {
               {profile ? (
                 <>
                   <p className="text-zinc-400 text-sm">@{profile.username}</p>
-                  <p className="text-zinc-500 text-xs font-mono">
-                    Code: {profile.profileCode}
-                  </p>
+                  <span className="inline-block bg-zinc-700/50 px-2 py-0.5 rounded-md text-xs font-mono text-zinc-400 mt-1">
+                    {profile.profileCode}
+                  </span>
                 </>
               ) : (
                 <div className="flex items-center gap-1 text-zinc-400 text-sm">
@@ -170,9 +174,15 @@ function ProfilePage() {
 
         {/* Social Stats */}
         {profile && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-zinc-400 px-1">Social</h3>
-            <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+          <StatsSection
+            icon={<Users />}
+            title="Social"
+            style={{
+              animationDelay: '50ms',
+              animationFillMode: 'backwards',
+            }}
+          >
+            <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50 animate-fade-in">
               <Link
                 to="/followers"
                 className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
@@ -194,15 +204,19 @@ function ProfilePage() {
                 <ChevronRight className="w-5 h-5 text-zinc-500" />
               </Link>
             </div>
-          </div>
+          </StatsSection>
         )}
 
         {/* Achievements Section */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-zinc-400 px-1">
-            Achievements
-          </h3>
-          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-4">
+        <StatsSection
+          icon={<Award />}
+          title="Achievements"
+          style={{
+            animationDelay: '100ms',
+            animationFillMode: 'backwards',
+          }}
+        >
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-4 animate-fade-in">
             <Link
               to="/achievements"
               className="flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
@@ -244,12 +258,18 @@ function ProfilePage() {
               </p>
             )}
           </div>
-        </div>
+        </StatsSection>
 
         {/* Activity Section */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-zinc-400 px-1">Activity</h3>
-          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+        <StatsSection
+          icon={<History />}
+          title="Activity"
+          style={{
+            animationDelay: '150ms',
+            animationFillMode: 'backwards',
+          }}
+        >
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50 animate-fade-in">
             <Link
               to="/history"
               className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
@@ -271,12 +291,18 @@ function ProfilePage() {
               <ChevronRight className="w-5 h-5 text-zinc-500" />
             </Link>
           </div>
-        </div>
+        </StatsSection>
 
         {/* Settings Section */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-zinc-400 px-1">Settings</h3>
-          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+        <StatsSection
+          icon={<Settings />}
+          title="Settings"
+          style={{
+            animationDelay: '200ms',
+            animationFillMode: 'backwards',
+          }}
+        >
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50 animate-fade-in">
             <Link
               to="/exercises"
               className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
@@ -307,12 +333,18 @@ function ProfilePage() {
               </Link>
             )}
           </div>
-        </div>
+        </StatsSection>
 
         {/* Account Section */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-zinc-400 px-1">Account</h3>
-          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+        <StatsSection
+          icon={<User />}
+          title="Account"
+          style={{
+            animationDelay: '250ms',
+            animationFillMode: 'backwards',
+          }}
+        >
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 animate-fade-in">
             <button
               onClick={logout}
               disabled={isLoading}
@@ -324,7 +356,7 @@ function ProfilePage() {
               </div>
             </button>
           </div>
-        </div>
+        </StatsSection>
 
         {/* App Info */}
         <div className="text-center text-sm text-zinc-500 pt-4">

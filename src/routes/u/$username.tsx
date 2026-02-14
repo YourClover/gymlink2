@@ -5,7 +5,6 @@ import {
   Calendar,
   Dumbbell,
   Flame,
-  Loader2,
   Lock,
   Medal,
   Trophy,
@@ -17,6 +16,10 @@ import { getUserAchievements } from '@/lib/achievements.server'
 import AppLayout from '@/components/AppLayout'
 import { AchievementBadge } from '@/components/achievements'
 import { FollowButton } from '@/components/social/FollowButton'
+import {
+  SkeletonProfileHeader,
+  SkeletonStatsCard,
+} from '@/components/ui/Skeleton'
 
 export const Route = createFileRoute('/u/$username')({
   component: PublicProfilePage,
@@ -146,8 +149,15 @@ function PublicProfilePage() {
   if (isLoading) {
     return (
       <AppLayout showNav={false}>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+        <div className="p-4">
+          <div className="mb-6">
+            <SkeletonProfileHeader />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonStatsCard key={i} />
+            ))}
+          </div>
         </div>
       </AppLayout>
     )
@@ -196,8 +206,11 @@ function PublicProfilePage() {
         )}
 
         {/* Profile Header */}
-        <div className="flex items-start gap-4 mb-6">
-          <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold text-white flex-shrink-0">
+        <div
+          className="flex items-start gap-4 mb-6 animate-fade-in"
+          style={{ animationFillMode: 'backwards' }}
+        >
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-2xl font-bold text-white flex-shrink-0">
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
@@ -224,7 +237,10 @@ function PublicProfilePage() {
         {profile.bio && <p className="text-zinc-300 mb-4">{profile.bio}</p>}
 
         {/* Followers/Following */}
-        <div className="flex gap-6 mb-4">
+        <div
+          className="flex gap-6 mb-4 animate-fade-in"
+          style={{ animationDelay: '50ms', animationFillMode: 'backwards' }}
+        >
           <div className="text-center">
             <p className="text-xl font-bold text-white">
               {profile.followersCount}
@@ -265,7 +281,10 @@ function PublicProfilePage() {
 
         {/* Stats */}
         {canView && stats && profile.showStats && (
-          <div className="mb-6">
+          <div
+            className="mb-6 animate-fade-in"
+            style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}
+          >
             <h3 className="text-sm font-medium text-zinc-400 mb-2">Stats</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
@@ -310,7 +329,10 @@ function PublicProfilePage() {
 
         {/* Achievements */}
         {canView && achievements.length > 0 && profile.showAchievements && (
-          <div>
+          <div
+            className="animate-fade-in"
+            style={{ animationDelay: '150ms', animationFillMode: 'backwards' }}
+          >
             <h3 className="text-sm font-medium text-zinc-400 mb-2">
               Recent Achievements
             </h3>
@@ -319,7 +341,7 @@ function PublicProfilePage() {
                 {achievements.map((achievement) => (
                   <div
                     key={achievement.id}
-                    className="flex flex-col items-center gap-1"
+                    className="flex flex-col items-center gap-1 hover:scale-110 transition-transform"
                   >
                     <AchievementBadge
                       icon={achievement.icon}
