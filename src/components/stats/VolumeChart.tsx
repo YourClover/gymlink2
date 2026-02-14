@@ -1,7 +1,10 @@
 import {
+  Area,
   Bar,
-  BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -20,6 +23,9 @@ type Props = {
 
 const chartColors = {
   bar: '#3b82f6', // blue-500
+  area: '#3b82f6',
+  line: '#a78bfa', // violet-400
+  avg: '#71717a', // zinc-500
   grid: '#3f3f46', // zinc-700
   text: '#a1a1aa', // zinc-400
   tooltip: '#18181b', // zinc-900
@@ -33,6 +39,7 @@ function formatDateShort(weekStart: string): string {
 
 type TooltipPayloadEntry = {
   value: number
+  dataKey: string
   payload: WeekData
 }
 
@@ -54,7 +61,9 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
         borderColor: chartColors.tooltipBorder,
       }}
     >
-      <p className="text-xs text-zinc-400">{formatDateShort(data.weekStart)}</p>
+      <p className="text-xs text-zinc-400">
+        {formatDateShort(data.weekStart)}
+      </p>
       <p className="text-sm font-medium text-white">
         {data.volume >= 1000
           ? `${(data.volume / 1000).toFixed(1)}k kg`
@@ -72,18 +81,35 @@ export default function VolumeChart({ data }: Props) {
 
   if (!hasVolume) {
     return (
-      <div className="h-[200px] flex items-center justify-center text-zinc-500">
+      <div className="h-[240px] flex items-center justify-center text-zinc-500">
         No volume data yet
       </div>
     )
   }
 
+  const avgVolume =
+    data.reduce((sum, w) => sum + w.volume, 0) /
+    (data.filter((w) => w.volume > 0).length || 1)
+
+  const hasWorkoutVariance =
+    new Set(data.map((w) => w.workouts)).size > 1
+
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart
+    <ResponsiveContainer width="100%" height={240}>
+      <ComposedChart
         data={data}
-        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        margin={{ top: 10, right: hasWorkoutVariance ? 40 : 10, left: 0, bottom: 0 }}
       >
+        <defs>
+          <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={chartColors.area} stopOpacity={0.3} />
+            <stop
+              offset="100%"
+              stopColor={chartColors.area}
+              stopOpacity={0.05}
+            />
+          </linearGradient>
+        </defs>
         <CartesianGrid
           strokeDasharray="3 3"
           stroke={chartColors.grid}
@@ -100,6 +126,7 @@ export default function VolumeChart({ data }: Props) {
           minTickGap={40}
         />
         <YAxis
+          yAxisId="volume"
           stroke={chartColors.text}
           fontSize={12}
           tickLine={false}
@@ -110,14 +137,57 @@ export default function VolumeChart({ data }: Props) {
             return value.toString()
           }}
         />
+        {hasWorkoutVariance && (
+          <YAxis
+            yAxisId="workouts"
+            orientation="right"
+            stroke={chartColors.line}
+            fontSize={11}
+            tickLine={false}
+            axisLine={false}
+            width={30}
+            allowDecimals={false}
+          />
+        )}
         <Tooltip content={<CustomTooltip />} cursor={false} />
+        <ReferenceLine
+          yAxisId="volume"
+          y={avgVolume}
+          stroke={chartColors.avg}
+          strokeDasharray="4 4"
+          strokeWidth={1}
+          label={{
+            value: 'avg',
+            position: 'left',
+            fill: chartColors.avg,
+            fontSize: 11,
+          }}
+        />
+        <Area
+          yAxisId="volume"
+          type="monotone"
+          dataKey="volume"
+          fill="url(#volumeGradient)"
+          stroke="none"
+        />
         <Bar
+          yAxisId="volume"
           dataKey="volume"
           fill={chartColors.bar}
           radius={[4, 4, 0, 0]}
           maxBarSize={40}
         />
-      </BarChart>
+        {hasWorkoutVariance && (
+          <Line
+            yAxisId="workouts"
+            type="monotone"
+            dataKey="workouts"
+            stroke={chartColors.line}
+            strokeWidth={2}
+            dot={false}
+          />
+        )}
+      </ComposedChart>
     </ResponsiveContainer>
   )
 }

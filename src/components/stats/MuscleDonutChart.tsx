@@ -1,4 +1,5 @@
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { useState } from 'react'
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from 'recharts'
 
 type MuscleGroupData = {
   muscle: string
@@ -63,24 +64,32 @@ type LegendPayloadEntry = {
 
 function CustomLegend({
   payload,
+  data,
 }: {
   payload?: Array<LegendPayloadEntry>
+  data: Array<MuscleGroupData>
 }) {
   if (!payload) return null
 
   return (
     <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2">
-      {payload.map((entry) => (
-        <div key={entry.value} className="flex items-center gap-1.5">
-          <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
-          <span className="text-xs text-zinc-400 capitalize">
-            {formatMuscleName(entry.value)}
-          </span>
-        </div>
-      ))}
+      {payload.map((entry) => {
+        const item = data.find((d) => d.muscle === entry.value)
+        return (
+          <div key={entry.value} className="flex items-center gap-1.5">
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-xs text-zinc-400 capitalize">
+              {formatMuscleName(entry.value)}
+            </span>
+            {item && (
+              <span className="text-xs text-zinc-500">{item.count}</span>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -122,7 +131,37 @@ function renderLabel({
   )
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function renderActiveShape(props: any) {
+  const {
+    cx,
+    cy,
+    innerRadius,
+    outerRadius,
+    startAngle,
+    endAngle,
+    fill,
+  } = props
+
+  return (
+    <g>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius - 2}
+        outerRadius={outerRadius + 6}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+      />
+    </g>
+  )
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export default function MuscleDonutChart({ data }: Props) {
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
+
   if (data.length === 0) {
     return (
       <div className="h-[280px] flex items-center justify-center text-zinc-500">
@@ -130,6 +169,8 @@ export default function MuscleDonutChart({ data }: Props) {
       </div>
     )
   }
+
+  const totalSets = data.reduce((sum, d) => sum + d.count, 0)
 
   return (
     <ResponsiveContainer width="100%" height={280}>
@@ -145,6 +186,10 @@ export default function MuscleDonutChart({ data }: Props) {
           paddingAngle={2}
           label={renderLabel}
           labelLine={false}
+          activeIndex={activeIndex}
+          activeShape={renderActiveShape}
+          onMouseEnter={(_, index) => setActiveIndex(index)}
+          onMouseLeave={() => setActiveIndex(undefined)}
         >
           {data.map((entry) => (
             <Cell
@@ -154,8 +199,30 @@ export default function MuscleDonutChart({ data }: Props) {
             />
           ))}
         </Pie>
+        {/* Center text showing total sets */}
+        <text
+          x="50%"
+          y="42%"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="white"
+          fontSize={22}
+          fontWeight={700}
+        >
+          {totalSets}
+        </text>
+        <text
+          x="50%"
+          y="50%"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="#a1a1aa"
+          fontSize={12}
+        >
+          sets
+        </text>
         <Tooltip content={<CustomTooltip />} />
-        <Legend content={<CustomLegend />} />
+        <Legend content={<CustomLegend data={data} />} />
       </PieChart>
     </ResponsiveContainer>
   )

@@ -14,69 +14,90 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
       ? { not: null as null, gte: new Date(data.startDate) }
       : { not: null as null }
 
-    // Total completed workouts
-    const totalWorkouts = await prisma.workoutSession.count({
-      where: {
-        userId: data.userId,
-        completedAt: dateFilter,
-      },
-    })
+    // Compute previous period date range for comparison
+    let previousDateFilter:
+      | { not: null; gte: Date; lt: Date }
+      | undefined
+    let previousPrFilter: { gte: Date; lt: Date } | undefined
 
-    // Total workout time (in seconds)
-    const workoutTimes = await prisma.workoutSession.aggregate({
-      where: {
-        userId: data.userId,
-        completedAt: dateFilter,
-      },
-      _sum: {
-        durationSeconds: true,
-      },
-    })
-    const totalTimeSeconds = workoutTimes._sum.durationSeconds ?? 0
+    if (data.startDate) {
+      const startMs = new Date(data.startDate).getTime()
+      const nowMs = Date.now()
+      const durationMs = nowMs - startMs
+      const previousStart = new Date(startMs - durationMs)
+      const previousEnd = new Date(startMs)
+      previousDateFilter = {
+        not: null as null,
+        gte: previousStart,
+        lt: previousEnd,
+      }
+      previousPrFilter = { gte: previousStart, lt: previousEnd }
+    }
 
-    // Total volume
-    const allSets = await prisma.workoutSet.findMany({
-      where: {
-        workoutSession: {
-          userId: data.userId,
-          completedAt: dateFilter,
-        },
-        isWarmup: false,
-      },
-      select: {
-        weight: true,
-        reps: true,
-      },
-    })
+    async function queryPeriodStats(
+      completedAtFilter: typeof dateFilter,
+      prFilter?: { gte: Date; lt?: Date },
+    ) {
+      const [workouts, times, sets, prs] = await Promise.all([
+        prisma.workoutSession.count({
+          where: { userId: data.userId, completedAt: completedAtFilter },
+        }),
+        prisma.workoutSession.aggregate({
+          where: { userId: data.userId, completedAt: completedAtFilter },
+          _sum: { durationSeconds: true },
+        }),
+        prisma.workoutSet.findMany({
+          where: {
+            workoutSession: {
+              userId: data.userId,
+              completedAt: completedAtFilter,
+            },
+            isWarmup: false,
+          },
+          select: { weight: true, reps: true },
+        }),
+        prisma.personalRecord.count({
+          where: {
+            userId: data.userId,
+            ...(prFilter ? { achievedAt: prFilter } : {}),
+          },
+        }),
+      ])
 
-    let totalVolume = 0
-    for (const set of allSets) {
-      if (set.weight && set.reps) {
-        totalVolume += set.weight * set.reps
+      let volume = 0
+      for (const set of sets) {
+        if (set.weight && set.reps) {
+          volume += set.weight * set.reps
+        }
+      }
+
+      return {
+        totalWorkouts: workouts,
+        totalTimeSeconds: times._sum.durationSeconds ?? 0,
+        totalVolume: volume,
+        totalPRs: prs,
       }
     }
 
-    // Total PRs
-    const totalPRs = await prisma.personalRecord.count({
-      where: {
-        userId: data.userId,
-        ...(data.startDate
-          ? { achievedAt: { gte: new Date(data.startDate) } }
-          : {}),
-      },
-    })
-
-    // Current streak (always unfiltered)
-    const currentStreak = await calculateStreak(data.userId)
+    const [currentStats, previousStats, currentStreak] = await Promise.all([
+      queryPeriodStats(
+        dateFilter,
+        data.startDate
+          ? { gte: new Date(data.startDate) }
+          : undefined,
+      ),
+      previousDateFilter
+        ? queryPeriodStats(previousDateFilter, previousPrFilter)
+        : Promise.resolve(undefined),
+      calculateStreak(data.userId),
+    ])
 
     return {
       stats: {
-        totalWorkouts,
-        totalTimeSeconds,
-        totalVolume,
-        totalPRs,
+        ...currentStats,
         currentStreak,
       },
+      previousStats,
     }
   })
 
@@ -543,4 +564,159 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
     }
 
     return { grouped, total: allPRs.length }
+  })
+
+// ============================================
+// WORKOUT CONSISTENCY (heatmap data)
+// ============================================
+
+export const getWorkoutConsistency = createServerFn({ method: 'GET' })
+  .inputValidator((data: { userId: string }) => data)
+  .handler(async ({ data }) => {
+    // Always last 16 weeks regardless of time range filter
+    const today = new Date()
+    const sixteenWeeksAgo = new Date(today)
+    sixteenWeeksAgo.setDate(sixteenWeeksAgo.getDate() - 16 * 7)
+    sixteenWeeksAgo.setHours(0, 0, 0, 0)
+
+    const sessions = await prisma.workoutSession.findMany({
+      where: {
+        userId: data.userId,
+        completedAt: { not: null, gte: sixteenWeeksAgo },
+      },
+      select: { completedAt: true },
+    })
+
+    const dayMap: Record<string, number> = {}
+    for (const session of sessions) {
+      if (session.completedAt) {
+        const dateKey = session.completedAt.toISOString().split('T')[0]
+        dayMap[dateKey] = (dayMap[dateKey] ?? 0) + 1
+      }
+    }
+
+    return { dayMap }
+  })
+
+// ============================================
+// RPE STATS
+// ============================================
+
+export const getRpeStats = createServerFn({ method: 'GET' })
+  .inputValidator((data: { userId: string; startDate?: string }) => data)
+  .handler(async ({ data }) => {
+    const dateFilter = data.startDate
+      ? { not: null as null, gte: new Date(data.startDate) }
+      : { not: null as null }
+
+    const setsWithRpe = await prisma.workoutSet.findMany({
+      where: {
+        workoutSession: {
+          userId: data.userId,
+          completedAt: dateFilter,
+        },
+        isWarmup: false,
+        rpe: { not: null },
+      },
+      select: {
+        rpe: true,
+        workoutSession: {
+          select: { id: true, completedAt: true },
+        },
+      },
+      orderBy: {
+        workoutSession: { completedAt: 'asc' },
+      },
+    })
+
+    if (setsWithRpe.length === 0) return null
+
+    // Distribution (count per RPE 1-10)
+    const distribution: Record<number, number> = {}
+    let totalRpe = 0
+    for (const set of setsWithRpe) {
+      const rpe = set.rpe!
+      distribution[rpe] = (distribution[rpe] ?? 0) + 1
+      totalRpe += rpe
+    }
+
+    // Average RPE per session (last 20 sessions)
+    const sessionRpes = new Map<string, { total: number; count: number; date: string }>()
+    for (const set of setsWithRpe) {
+      const sessionId = set.workoutSession.id
+      const existing = sessionRpes.get(sessionId)
+      if (existing) {
+        existing.total += set.rpe!
+        existing.count++
+      } else {
+        sessionRpes.set(sessionId, {
+          total: set.rpe!,
+          count: 1,
+          date: set.workoutSession.completedAt!.toISOString().split('T')[0],
+        })
+      }
+    }
+
+    const trend = Array.from(sessionRpes.values())
+      .map((s) => ({
+        avgRpe: Math.round((s.total / s.count) * 10) / 10,
+        date: s.date,
+      }))
+      .slice(-20)
+
+    return {
+      avgRpe: Math.round((totalRpe / setsWithRpe.length) * 10) / 10,
+      totalRatedSets: setsWithRpe.length,
+      distribution,
+      trend,
+    }
+  })
+
+// ============================================
+// PR TIMELINE
+// ============================================
+
+export const getPrTimeline = createServerFn({ method: 'GET' })
+  .inputValidator(
+    (data: { userId: string; limit?: number; startDate?: string }) => data,
+  )
+  .handler(async ({ data }) => {
+    const prs = await prisma.personalRecord.findMany({
+      where: {
+        userId: data.userId,
+        previousRecord: { not: null },
+        ...(data.startDate
+          ? { achievedAt: { gte: new Date(data.startDate) } }
+          : {}),
+      },
+      include: {
+        exercise: {
+          select: { name: true, muscleGroup: true },
+        },
+      },
+      orderBy: { achievedAt: 'desc' },
+      take: data.limit ?? 15,
+    })
+
+    return {
+      timeline: prs.map((pr) => {
+        const improvement =
+          pr.previousRecord && pr.previousRecord > 0
+            ? Math.round(
+                ((pr.value - pr.previousRecord) / pr.previousRecord) * 100,
+              )
+            : null
+
+        return {
+          id: pr.id,
+          exerciseName: pr.exercise.name,
+          muscleGroup: pr.exercise.muscleGroup,
+          recordType: pr.recordType,
+          value: pr.value,
+          previousRecord: pr.previousRecord,
+          improvement,
+          achievedAt: pr.achievedAt,
+        }
+      }),
+    }
   })

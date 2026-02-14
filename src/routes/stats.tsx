@@ -1,12 +1,15 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
+  Activity,
   BarChart3,
+  Calendar,
   Clock,
   Dumbbell,
   Flame,
   LineChart,
   Star,
+  Target,
   TrendingUp,
   Trophy,
   Weight,
@@ -19,17 +22,27 @@ import TimeRangeSelector, {
   getStartDateForRange,
   type TimeRange,
 } from '@/components/progression/TimeRangeSelector'
+import StatCard from '@/components/stats/StatCard'
+import StatsSkeleton from '@/components/stats/StatsSkeleton'
+import StatsSection from '@/components/stats/StatsSection'
 import VolumeChart from '@/components/stats/VolumeChart'
 import MuscleDonutChart from '@/components/stats/MuscleDonutChart'
+import MuscleRadarChart from '@/components/stats/MuscleRadarChart'
 import DurationStats from '@/components/stats/DurationStats'
 import MoodStats from '@/components/stats/MoodStats'
+import WeeklyHeatmap from '@/components/stats/WeeklyHeatmap'
+import RpeChart from '@/components/stats/RpeChart'
+import PrTimeline from '@/components/stats/PrTimeline'
 import {
   getDurationStats,
   getExerciseStats,
   getMoodStats,
   getOverviewStats,
+  getPrTimeline,
   getRecentPRs,
+  getRpeStats,
   getVolumeHistory,
+  getWorkoutConsistency,
 } from '@/lib/stats.server'
 import { formatDuration, formatVolume } from '@/lib/formatting'
 
@@ -43,6 +56,13 @@ type OverviewStats = {
   totalVolume: number
   totalPRs: number
   currentStreak: number
+}
+
+type PreviousStats = {
+  totalWorkouts: number
+  totalTimeSeconds: number
+  totalVolume: number
+  totalPRs: number
 }
 
 type WeekData = {
@@ -91,6 +111,24 @@ type MoodData = {
   trend: Array<{ mood: number; date: string }>
 }
 
+type RpeData = {
+  avgRpe: number
+  totalRatedSets: number
+  distribution: Record<number, number>
+  trend: Array<{ avgRpe: number; date: string }>
+}
+
+type PrTimelineEntry = {
+  id: string
+  exerciseName: string
+  muscleGroup: MuscleGroup | null
+  recordType: RecordType
+  value: number
+  previousRecord: number | null
+  improvement: number | null
+  achievedAt: Date
+}
+
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -118,6 +156,11 @@ function formatPRDisplay(pr: PRData): string {
   }
 }
 
+function percentChange(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0
+  return Math.round(((current - previous) / previous) * 100)
+}
+
 const rangeLabels: Record<TimeRange, string> = {
   '1w': 'Past Week',
   '1m': 'Past Month',
@@ -133,12 +176,18 @@ function StatsPage() {
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<TimeRange>('all')
   const [overview, setOverview] = useState<OverviewStats | null>(null)
+  const [previousStats, setPreviousStats] = useState<PreviousStats | undefined>(
+    undefined,
+  )
   const [volumeHistory, setVolumeHistory] = useState<Array<WeekData>>([])
   const [topExercises, setTopExercises] = useState<Array<TopExercise>>([])
   const [muscleGroups, setMuscleGroups] = useState<Array<MuscleGroupData>>([])
   const [recentPRs, setRecentPRs] = useState<Array<PRData>>([])
   const [durationData, setDurationData] = useState<DurationData | null>(null)
   const [moodData, setMoodData] = useState<MoodData | null>(null)
+  const [consistency, setConsistency] = useState<Record<string, number>>({})
+  const [rpeData, setRpeData] = useState<RpeData | null>(null)
+  const [prTimeline, setPrTimeline] = useState<Array<PrTimelineEntry>>([])
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -155,6 +204,9 @@ function StatsPage() {
           prsRes,
           durationRes,
           moodRes,
+          consistencyRes,
+          rpeRes,
+          prTimelineRes,
         ] = await Promise.all([
           getOverviewStats({ data: { userId: user.id, startDate } }),
           getVolumeHistory({ data: { userId: user.id, startDate } }),
@@ -162,15 +214,22 @@ function StatsPage() {
           getRecentPRs({ data: { userId: user.id, limit: 5, startDate } }),
           getDurationStats({ data: { userId: user.id, startDate } }),
           getMoodStats({ data: { userId: user.id, startDate } }),
+          getWorkoutConsistency({ data: { userId: user.id } }),
+          getRpeStats({ data: { userId: user.id, startDate } }),
+          getPrTimeline({ data: { userId: user.id, limit: 15, startDate } }),
         ])
 
         setOverview(overviewRes.stats)
+        setPreviousStats(overviewRes.previousStats)
         setVolumeHistory(volumeRes.weeks)
         setTopExercises(exerciseRes.topExercises)
         setMuscleGroups(exerciseRes.muscleGroups)
         setRecentPRs(prsRes.prs)
         setDurationData(durationRes)
         setMoodData(moodRes)
+        setConsistency(consistencyRes.dayMap)
+        setRpeData(rpeRes)
+        setPrTimeline(prTimelineRes.timeline)
       } catch (error) {
         console.error('Failed to fetch stats:', error)
       } finally {
@@ -188,6 +247,8 @@ function StatsPage() {
     })
   }
 
+  const hasPreviousStats = previousStats !== undefined && timeRange !== 'all'
+
   if (loading) {
     return (
       <AppLayout title="Stats">
@@ -195,9 +256,7 @@ function StatsPage() {
           <div className="flex justify-center">
             <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
           </div>
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <StatsSkeleton />
         </div>
       </AppLayout>
     )
@@ -211,8 +270,11 @@ function StatsPage() {
           <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
         </div>
 
-        {/* Overview Stats */}
-        <section>
+        {/* 1. Overview Hero Cards */}
+        <section
+          className="animate-fade-in"
+          style={{ animationDelay: '0ms' }}
+        >
           <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1">
             {rangeLabels[timeRange]}
           </h2>
@@ -222,85 +284,179 @@ function StatsPage() {
               label="Workouts"
               value={overview?.totalWorkouts.toString() ?? '0'}
               color="blue"
+              change={
+                hasPreviousStats
+                  ? {
+                      value: percentChange(
+                        overview?.totalWorkouts ?? 0,
+                        previousStats.totalWorkouts,
+                      ),
+                      label: 'vs prev',
+                    }
+                  : undefined
+              }
             />
             <StatCard
               icon={<Weight className="w-5 h-5" />}
               label="Volume"
               value={formatVolume(overview?.totalVolume ?? 0)}
               color="green"
+              change={
+                hasPreviousStats
+                  ? {
+                      value: percentChange(
+                        overview?.totalVolume ?? 0,
+                        previousStats.totalVolume,
+                      ),
+                      label: 'vs prev',
+                    }
+                  : undefined
+              }
             />
             <StatCard
               icon={<Clock className="w-5 h-5" />}
               label="Time"
               value={formatDuration(overview?.totalTimeSeconds ?? 0)}
               color="purple"
+              change={
+                hasPreviousStats
+                  ? {
+                      value: percentChange(
+                        overview?.totalTimeSeconds ?? 0,
+                        previousStats.totalTimeSeconds,
+                      ),
+                      label: 'vs prev',
+                    }
+                  : undefined
+              }
             />
             <StatCard
               icon={<Trophy className="w-5 h-5" />}
               label="PRs"
               value={overview?.totalPRs.toString() ?? '0'}
               color="yellow"
+              change={
+                hasPreviousStats
+                  ? {
+                      value: percentChange(
+                        overview?.totalPRs ?? 0,
+                        previousStats.totalPRs,
+                      ),
+                      label: 'vs prev',
+                    }
+                  : undefined
+              }
             />
           </div>
-
-          {/* Streak highlight */}
-          {overview && overview.currentStreak > 0 && (
-            <div className="mt-3 p-4 rounded-xl bg-gradient-to-r from-orange-600/20 to-red-600/20 border border-orange-500/30">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                  <Flame className="w-5 h-5 text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-white">
-                    {overview.currentStreak} Week Streak
-                  </p>
-                  <p className="text-sm text-zinc-400">Keep it going!</p>
-                </div>
-              </div>
-            </div>
-          )}
         </section>
 
-        {/* Workout Duration */}
-        {durationData && durationData.sessionCount > 0 && (
-          <section>
-            <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Workout Duration
-            </h2>
-            <DurationStats data={durationData} />
-          </section>
+        {/* 2. Streak Banner */}
+        {overview && overview.currentStreak > 0 && (
+          <div
+            className="p-4 rounded-xl bg-gradient-to-r from-orange-600/20 to-red-600/20 border border-orange-500/30 animate-fade-in"
+            style={{ animationDelay: '50ms' }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                <Flame className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-white">
+                  {overview.currentStreak} Week Streak
+                </p>
+                <p className="text-sm text-zinc-400">Keep it going!</p>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* Mood */}
-        {moodData && moodData.moodCount > 0 && (
-          <section>
-            <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
-              <Star className="w-4 h-4" />
-              Mood
-            </h2>
-            <MoodStats data={moodData} />
-          </section>
+        {/* 3. Weekly Activity Heatmap */}
+        {Object.keys(consistency).length > 0 && (
+          <StatsSection
+            icon={<Calendar className="w-4 h-4" />}
+            title="Workout Consistency"
+            subtitle="Last 16 weeks"
+            style={{ animationDelay: '100ms' }}
+          >
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+              <WeeklyHeatmap dayMap={consistency} />
+            </div>
+          </StatsSection>
         )}
 
-        {/* Volume Trend */}
-        <section>
-          <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Volume Trend
-          </h2>
+        {/* 4. Volume Trend */}
+        <StatsSection
+          icon={<BarChart3 className="w-4 h-4" />}
+          title="Volume Trend"
+          style={{ animationDelay: '150ms' }}
+        >
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
             <VolumeChart data={volumeHistory} />
           </div>
-        </section>
+        </StatsSection>
 
-        {/* Top Exercises */}
+        {/* 5. Workout Duration */}
+        {durationData && durationData.sessionCount > 0 && (
+          <StatsSection
+            icon={<Clock className="w-4 h-4" />}
+            title="Workout Duration"
+            style={{ animationDelay: '200ms' }}
+          >
+            <DurationStats data={durationData} />
+          </StatsSection>
+        )}
+
+        {/* 6. Mood */}
+        {moodData && moodData.moodCount > 0 && (
+          <StatsSection
+            icon={<Star className="w-4 h-4" />}
+            title="Mood"
+            style={{ animationDelay: '250ms' }}
+          >
+            <MoodStats data={moodData} />
+          </StatsSection>
+        )}
+
+        {/* 7. RPE Insights */}
+        {rpeData && (
+          <StatsSection
+            icon={<Activity className="w-4 h-4" />}
+            title="RPE Insights"
+            subtitle={`${rpeData.totalRatedSets} rated sets`}
+            style={{ animationDelay: '300ms' }}
+          >
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+              <RpeChart data={rpeData} />
+            </div>
+          </StatsSection>
+        )}
+
+        {/* 8. Muscle Balance Radar + Donut */}
+        {muscleGroups.length > 0 && (
+          <StatsSection
+            icon={<Target className="w-4 h-4" />}
+            title="Muscle Balance"
+            style={{ animationDelay: '350ms' }}
+          >
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+              <MuscleRadarChart data={muscleGroups} />
+            </div>
+            <div className="mt-3 p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+              <p className="text-xs font-medium text-zinc-400 mb-2">
+                Set Distribution
+              </p>
+              <MuscleDonutChart data={muscleGroups} />
+            </div>
+          </StatsSection>
+        )}
+
+        {/* 9. Top Exercises */}
         {topExercises.length > 0 && (
-          <section>
-            <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              Most Trained
-            </h2>
+          <StatsSection
+            icon={<TrendingUp className="w-4 h-4" />}
+            title="Most Trained"
+            style={{ animationDelay: '400ms' }}
+          >
             <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
               {topExercises.map((ex, i) => (
                 <div
@@ -311,7 +467,9 @@ function StatsPage() {
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{ex.name}</p>
+                    <p className="font-medium text-white truncate">
+                      {ex.name}
+                    </p>
                     {ex.muscleGroup && (
                       <MuscleGroupBadge
                         muscleGroup={ex.muscleGroup}
@@ -337,28 +495,28 @@ function StatsPage() {
                 </div>
               ))}
             </div>
-          </section>
+          </StatsSection>
         )}
 
-        {/* Muscle Group Distribution */}
-        {muscleGroups.length > 0 && (
-          <section>
-            <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1">
-              Muscle Distribution
-            </h2>
+        {/* 10. PR Timeline + Recent PRs */}
+        {prTimeline.length > 0 && (
+          <StatsSection
+            icon={<Trophy className="w-4 h-4" />}
+            title="PR Timeline"
+            style={{ animationDelay: '450ms' }}
+          >
             <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-              <MuscleDonutChart data={muscleGroups} />
+              <PrTimeline timeline={prTimeline} />
             </div>
-          </section>
+          </StatsSection>
         )}
 
-        {/* Recent PRs */}
         {recentPRs.length > 0 && (
-          <section>
-            <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
-              <Trophy className="w-4 h-4" />
-              Recent PRs
-            </h2>
+          <StatsSection
+            icon={<Trophy className="w-4 h-4" />}
+            title="Recent PRs"
+            style={{ animationDelay: '500ms' }}
+          >
             <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
               {recentPRs.map((pr) => (
                 <div key={pr.id} className="p-3 flex items-center gap-3">
@@ -379,7 +537,7 @@ function StatsPage() {
                 </div>
               ))}
             </div>
-          </section>
+          </StatsSection>
         )}
 
         {/* Empty state if no data */}
@@ -396,37 +554,5 @@ function StatsPage() {
         )}
       </div>
     </AppLayout>
-  )
-}
-
-// Stat card component
-function StatCard({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-  color: 'blue' | 'green' | 'purple' | 'yellow'
-}) {
-  const colorClasses = {
-    blue: 'bg-blue-500/20 text-blue-400',
-    green: 'bg-green-500/20 text-green-400',
-    purple: 'bg-purple-500/20 text-purple-400',
-    yellow: 'bg-yellow-500/20 text-yellow-400',
-  }
-
-  return (
-    <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-      <div
-        className={`w-10 h-10 rounded-lg ${colorClasses[color]} flex items-center justify-center mb-3`}
-      >
-        {icon}
-      </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-sm text-zinc-400">{label}</p>
-    </div>
   )
 }
