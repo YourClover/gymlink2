@@ -14,6 +14,7 @@ import {
 import type { AchievementRarity, Exercise, WorkoutSet } from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
+import { Skeleton, SkeletonStatsCard } from '@/components/ui/Skeleton'
 import MoodRating from '@/components/workout/MoodRating'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import { AchievementToast } from '@/components/achievements'
@@ -280,8 +281,33 @@ function WorkoutSummaryPage() {
   if (loading) {
     return (
       <AppLayout showNav={false}>
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="p-4 space-y-4">
+          <div className="text-center py-6">
+            <div className="h-6 w-40 bg-zinc-800 animate-pulse rounded mx-auto mb-2" />
+            <div className="h-8 w-48 bg-zinc-800 animate-pulse rounded mx-auto" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-32 mb-2" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                  <Skeleton className="w-5 h-5" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </AppLayout>
     )
@@ -353,7 +379,10 @@ function WorkoutSummaryPage() {
 
         {/* Stats Grid */}
         <div className="p-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div
+            className="grid grid-cols-2 gap-3 animate-fade-in"
+            style={{ animationFillMode: 'backwards' }}
+          >
             {/* Duration */}
             <div
               className={`p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 ${isEditingDuration ? 'col-span-2' : ''}`}
@@ -471,10 +500,14 @@ function WorkoutSummaryPage() {
         <div className="px-4 pb-4">
           <h3 className="text-lg font-semibold text-white mb-3">Exercises</h3>
           <div className="space-y-2">
-            {exerciseSummaries.map((summary) => (
+            {exerciseSummaries.map((summary, index) => (
               <div
                 key={summary.exercise.id}
-                className="bg-zinc-800/50 rounded-xl overflow-hidden"
+                className="bg-zinc-800/50 rounded-xl overflow-hidden border border-zinc-700/50 animate-fade-in"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
               >
                 <button
                   onClick={() =>
@@ -510,7 +543,7 @@ function WorkoutSummaryPage() {
 
                 {expandedExerciseId === summary.exercise.id && (
                   <div className="px-4 pb-4 space-y-2">
-                    {summary.sets.map((set, index) => (
+                    {summary.sets.map((set, setIndex) => (
                       <div
                         key={set.id}
                         className={`flex items-center gap-3 p-2 rounded-lg ${
@@ -524,7 +557,7 @@ function WorkoutSummaryPage() {
                               : 'bg-blue-600/30 text-blue-400'
                           }`}
                         >
-                          {index + 1}
+                          {setIndex + 1}
                         </span>
                         <div className="flex-1">
                           {set.weight != null && set.reps != null ? (

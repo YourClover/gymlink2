@@ -66,6 +66,64 @@ export const SkeletonChallengeCard = memo(function SkeletonChallengeCard() {
   )
 })
 
+// Skeleton for plan cards (matches PlanCard layout)
+export const SkeletonPlanCard = memo(function SkeletonPlanCard() {
+  return (
+    <div
+      className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4"
+      aria-hidden="true"
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <Skeleton className="h-5 w-36 mb-2" />
+          <Skeleton className="h-3 w-20 mb-2" />
+          <div className="flex gap-2">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+        </div>
+        <Skeleton className="w-5 h-5 rounded" />
+      </div>
+    </div>
+  )
+})
+
+// Skeleton for PR rows (matches PR row layout)
+export const SkeletonPRRow = memo(function SkeletonPRRow() {
+  return (
+    <div className="p-4 flex items-center gap-3" aria-hidden="true">
+      <Skeleton className="w-10 h-10 rounded-full" />
+      <div className="flex-1">
+        <Skeleton className="h-4 w-32 mb-1" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+      <Skeleton className="h-3 w-16" />
+    </div>
+  )
+})
+
+// Skeleton for form fields
+export const SkeletonFormField = memo(function SkeletonFormField() {
+  return (
+    <div aria-hidden="true">
+      <Skeleton className="h-3 w-20 mb-2" />
+      <Skeleton className="h-10 w-full rounded-lg" />
+    </div>
+  )
+})
+
+// Skeleton for progress chart area
+export const SkeletonChart = memo(function SkeletonChart() {
+  return (
+    <div
+      className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50"
+      aria-hidden="true"
+    >
+      <Skeleton className="h-[250px] w-full rounded-lg" />
+    </div>
+  )
+})
+
 // Skeleton for notification items (matches notification row layout)
 export const SkeletonNotificationItem = memo(
   function SkeletonNotificationItem() {

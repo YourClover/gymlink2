@@ -24,6 +24,7 @@ import {
   reorderPlanDays,
   updatePlan,
 } from '@/lib/plans.server'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuth } from '@/context/AuthContext'
 
 export const Route = createFileRoute('/plans/$planId/')({
@@ -175,8 +176,25 @@ function PlanDetailPage() {
   if (loading) {
     return (
       <AppLayout showNav={false}>
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="p-4 space-y-4">
+          <Skeleton className="h-7 w-48 mx-auto" />
+          <Skeleton className="h-4 w-64 mx-auto" />
+          <div className="space-y-3 mt-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-8 h-8 rounded-full" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-28 mb-1" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </AppLayout>
     )
@@ -303,16 +321,24 @@ function PlanDetailPage() {
               </p>
             </div>
             {plan.planDays.map((day, index) => (
-              <PlanDayCard
+              <div
                 key={day.id}
-                day={day}
-                onPress={() => handleDayPress(day.id)}
-                onMoveUp={() => handleMoveDay(index, 'up')}
-                onMoveDown={() => handleMoveDay(index, 'down')}
-                showReorder={plan.planDays.length > 1}
-                isFirst={index === 0}
-                isLast={index === plan.planDays.length - 1}
-              />
+                className="animate-fade-in"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <PlanDayCard
+                  day={day}
+                  onPress={() => handleDayPress(day.id)}
+                  onMoveUp={() => handleMoveDay(index, 'up')}
+                  onMoveDown={() => handleMoveDay(index, 'down')}
+                  showReorder={plan.planDays.length > 1}
+                  isFirst={index === 0}
+                  isLast={index === plan.planDays.length - 1}
+                />
+              </div>
             ))}
           </div>
         )}

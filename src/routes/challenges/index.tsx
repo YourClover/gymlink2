@@ -38,6 +38,7 @@ interface ChallengeData {
   userCompletedAt: Date | null
   participantCount: number
   creator: { name: string }
+  exercise?: { name: string } | null
 }
 
 interface PublicChallengeData {
@@ -51,6 +52,7 @@ interface PublicChallengeData {
   endDate: Date
   participantCount: number
   creator: { name: string }
+  exercise?: { name: string } | null
 }
 
 function ChallengesPage() {

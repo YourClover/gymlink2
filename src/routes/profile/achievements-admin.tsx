@@ -1,6 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import {
+  ArrowLeft,
+  Award,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react'
 import type {
   AchievementCategory,
   AchievementRarity,
@@ -15,6 +23,8 @@ import {
 } from '@/lib/achievements.server'
 import { getExercises } from '@/lib/exercises.server'
 import AppLayout from '@/components/AppLayout'
+import { Skeleton } from '@/components/ui/Skeleton'
+import EmptyState from '@/components/ui/EmptyState'
 import { AchievementBadge } from '@/components/achievements'
 
 export const Route = createFileRoute('/profile/achievements-admin')({
@@ -261,19 +271,46 @@ function AchievementsAdminPage() {
 
         {/* List */}
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 animate-fade-in"
+                style={{
+                  animationDelay: `${i * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <Skeleton className="w-10 h-10 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="w-8 h-8 rounded-lg" />
+                <Skeleton className="w-8 h-8 rounded-lg" />
+              </div>
+            ))}
           </div>
         ) : achievements.length === 0 ? (
-          <div className="text-center py-8 text-zinc-500">
-            No achievements yet
-          </div>
+          <EmptyState
+            icon={<Award className="w-8 h-8" />}
+            title="No achievements yet"
+            description="Create achievements to reward users for their progress."
+            action={{
+              label: 'Create Achievement',
+              onClick: openCreateModal,
+            }}
+          />
         ) : (
           <div className="space-y-3">
-            {achievements.map((achievement) => (
+            {achievements.map((achievement, index) => (
               <div
                 key={achievement.id}
-                className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-lg"
+                className={`flex items-center gap-4 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 animate-fade-in`}
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
               >
                 <AchievementBadge
                   icon={achievement.icon}

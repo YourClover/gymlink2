@@ -165,7 +165,6 @@ function RegisterPage() {
   const [emailCheckError, setEmailCheckError] = useState(false)
   const [emailTouched, setEmailTouched] = useState(false)
   const [nameTouched, setNameTouched] = useState(false)
-  const [_passwordTouched, setPasswordTouched] = useState(false)
   const [confirmTouched, setConfirmTouched] = useState(false)
 
   // Derived validation states
@@ -361,7 +360,6 @@ function RegisterPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onBlur={() => setPasswordTouched(true)}
                 required
                 autoComplete="new-password"
                 className="w-full px-4 py-3 pr-10 rounded-lg bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

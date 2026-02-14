@@ -18,6 +18,7 @@ import {
   updateExercise,
 } from '@/lib/exercises.server'
 import { useAuth } from '@/context/AuthContext'
+import { SkeletonExerciseCard } from '@/components/ui/Skeleton'
 
 export const Route = createFileRoute('/exercises/')({
   component: ExercisesPage,
@@ -172,8 +173,19 @@ function ExercisesPage() {
         {/* Exercise List */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="p-4 space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-fade-in"
+                  style={{
+                    animationDelay: `${i * 50}ms`,
+                    animationFillMode: 'backwards',
+                  }}
+                >
+                  <SkeletonExerciseCard />
+                </div>
+              ))}
             </div>
           ) : exercises.length === 0 ? (
             <EmptyState
@@ -186,13 +198,21 @@ function ExercisesPage() {
               <p className="text-sm text-zinc-500 mb-3">
                 {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
               </p>
-              {exercises.map((exercise) => (
-                <ExerciseCard
+              {exercises.map((exercise, index) => (
+                <div
                   key={exercise.id}
-                  exercise={exercise}
-                  onPress={() => setSelectedExercise(exercise)}
-                  showDescription
-                />
+                  className="animate-fade-in"
+                  style={{
+                    animationDelay: `${index * 30}ms`,
+                    animationFillMode: 'backwards',
+                  }}
+                >
+                  <ExerciseCard
+                    exercise={exercise}
+                    onPress={() => setSelectedExercise(exercise)}
+                    showDescription
+                  />
+                </div>
               ))}
             </div>
           )}

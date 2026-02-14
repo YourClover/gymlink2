@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Check, Loader2, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { checkUsernameAvailable, createUserProfile } from '@/lib/profile.server'
@@ -34,10 +34,15 @@ function ProfileSetupPage() {
     }
   }, [])
 
+  const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^a-zA-Z0-9_]/g, '')
     setUsername(value)
-    checkAvailability(value)
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current)
+    }
+    checkTimeoutRef.current = setTimeout(() => checkAvailability(value), 300)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

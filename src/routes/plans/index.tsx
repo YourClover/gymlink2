@@ -6,6 +6,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import PlanCard from '@/components/plans/PlanCard'
 import ImportPlanModal from '@/components/sharing/ImportPlanModal'
 import { getPlans } from '@/lib/plans.server'
+import { SkeletonPlanCard } from '@/components/ui/SocialSkeletons'
 import { useAuth } from '@/context/AuthContext'
 
 export const Route = createFileRoute('/plans/')({
@@ -59,8 +60,19 @@ function PlansPage() {
     <AppLayout title="Workout Plans">
       <div className="flex flex-col h-full">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="animate-fade-in"
+                style={{
+                  animationDelay: `${i * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <SkeletonPlanCard />
+              </div>
+            ))}
           </div>
         ) : plans.length === 0 ? (
           <div className="flex-1 flex items-center justify-center px-4">
@@ -80,12 +92,20 @@ function PlansPage() {
           </div>
         ) : (
           <div className="p-4 space-y-3">
-            {plans.map((plan) => (
-              <PlanCard
+            {plans.map((plan, index) => (
+              <div
                 key={plan.id}
-                plan={plan}
-                onPress={() => handlePlanPress(plan.id)}
-              />
+                className="animate-fade-in"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <PlanCard
+                  plan={plan}
+                  onPress={() => handlePlanPress(plan.id)}
+                />
+              </div>
             ))}
           </div>
         )}

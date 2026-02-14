@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
+import { SkeletonPlanCard } from '@/components/ui/SocialSkeletons'
 import ImportPlanModal from '@/components/sharing/ImportPlanModal'
 import { useAuth } from '@/context/AuthContext'
 import { getPlan, getPlans } from '@/lib/plans.server'
@@ -190,8 +192,27 @@ function WorkoutPage() {
     <AppLayout title="Training">
       <div className="px-4 py-6 space-y-6">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="space-y-6">
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-zinc-800 animate-pulse rounded-lg" />
+                <div className="flex-1">
+                  <div className="h-4 w-28 bg-zinc-800 animate-pulse rounded mb-1" />
+                  <div className="h-3 w-48 bg-zinc-800 animate-pulse rounded" />
+                </div>
+                <div className="h-8 w-16 bg-zinc-800 animate-pulse rounded-lg" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-5 w-24 bg-zinc-800 animate-pulse rounded" />
+              <SkeletonPlanCard />
+              <SkeletonPlanCard />
+            </div>
+            <div className="space-y-3">
+              <div className="h-5 w-36 bg-zinc-800 animate-pulse rounded" />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
           </div>
         ) : (
           <>
@@ -291,10 +312,14 @@ function WorkoutPage() {
                 />
               ) : (
                 <div className="space-y-2">
-                  {plans.map((plan) => (
+                  {plans.map((plan, index) => (
                     <div
                       key={plan.id}
-                      className="bg-zinc-800/50 rounded-xl overflow-hidden border border-zinc-700/50"
+                      className="bg-zinc-800/50 rounded-xl overflow-hidden border border-zinc-700/50 animate-fade-in"
+                      style={{
+                        animationDelay: `${index * 50}ms`,
+                        animationFillMode: 'backwards',
+                      }}
                     >
                       {/* Plan header */}
                       <div className="flex items-center">
@@ -412,14 +437,14 @@ function WorkoutPage() {
                 Recent Workouts
               </h2>
               {recentWorkouts.length === 0 ? (
-                <div className="p-6 rounded-xl bg-zinc-800/30 border border-zinc-700/30 text-center">
-                  <p className="text-zinc-500 text-sm">
-                    Your recent workouts will appear here
-                  </p>
-                </div>
+                <EmptyState
+                  icon={<Clock className="w-8 h-8" />}
+                  title="No recent workouts"
+                  description="Your recent workouts will appear here after you complete them."
+                />
               ) : (
                 <div className="space-y-2">
-                  {recentWorkouts.map((workout) => (
+                  {recentWorkouts.map((workout, index) => (
                     <button
                       key={workout.id}
                       onClick={() =>
@@ -428,7 +453,11 @@ function WorkoutPage() {
                           params: { sessionId: workout.id },
                         })
                       }
-                      className="w-full p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-800/70 transition-colors text-left"
+                      className="w-full p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-800/70 transition-colors text-left animate-fade-in"
+                      style={{
+                        animationDelay: `${index * 50}ms`,
+                        animationFillMode: 'backwards',
+                      }}
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-zinc-700/50">

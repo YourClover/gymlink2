@@ -20,8 +20,16 @@ function NewChallengePage() {
   const [challengeType, setChallengeType] =
     useState<ChallengeType>('TOTAL_WORKOUTS')
   const [targetValue, setTargetValue] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.toISOString().split('T')[0]
+  })
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 8)
+    return d.toISOString().split('T')[0]
+  })
   const [maxParticipants, setMaxParticipants] = useState('')
   const [isPublic, setIsPublic] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -106,18 +114,6 @@ function NewChallengePage() {
   }
 
   const selectedType = challengeTypes.find((t) => t.value === challengeType)
-
-  // Set default dates
-  if (!startDate) {
-    const today = new Date()
-    today.setDate(today.getDate() + 1)
-    setStartDate(today.toISOString().split('T')[0])
-  }
-  if (!endDate) {
-    const nextWeek = new Date()
-    nextWeek.setDate(nextWeek.getDate() + 8)
-    setEndDate(nextWeek.toISOString().split('T')[0])
-  }
 
   return (
     <AppLayout showNav={false}>

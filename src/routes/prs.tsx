@@ -4,7 +4,8 @@ import { ArrowLeft, LineChart, TrendingUp, Trophy } from 'lucide-react'
 import type { MuscleGroup, RecordType } from '@prisma/client'
 import type { PRSortMode } from '@/components/prs/PRSortSelector'
 import { useAuth } from '@/context/AuthContext'
-import AppLayout from '@/components/AppLayout'
+import { SkeletonPRRow } from '@/components/ui/SocialSkeletons'
+import EmptyState from '@/components/ui/EmptyState'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import PRSortSelector from '@/components/prs/PRSortSelector'
 import { getUserExercisePRs } from '@/lib/stats.server'
@@ -145,11 +146,26 @@ function PRsPage() {
 
   if (loading) {
     return (
-      <AppLayout title="My PRs" showNav={false}>
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-zinc-900">
+        <header className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="p-2 -ml-2 w-9 h-9" />
+            <h1 className="text-lg font-semibold text-white">My PRs</h1>
+          </div>
+        </header>
+        <div className="px-4 py-4 space-y-4">
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonPRRow key={i} />
+            ))}
+          </div>
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonPRRow key={i} />
+            ))}
+          </div>
         </div>
-      </AppLayout>
+      </div>
     )
   }
 
@@ -158,7 +174,10 @@ function PRsPage() {
     const isRecent = isNewPR(pr)
 
     return (
-      <div key={pr.exerciseId} className="p-4 flex items-center gap-3">
+      <div
+        key={`${pr.exerciseId}-${pr.recordType}`}
+        className="p-4 flex items-center gap-3"
+      >
         <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
           <Trophy className="w-5 h-5 text-yellow-400" />
         </div>
@@ -219,15 +238,15 @@ function PRsPage() {
 
       <div className="px-4 py-4 space-y-6 safe-area-pb pb-8">
         {total === 0 ? (
-          <div className="p-8 rounded-xl bg-zinc-800/50 border border-zinc-700/50 text-center">
-            <Trophy className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">
-              No PRs yet
-            </h2>
-            <p className="text-zinc-400 max-w-sm mx-auto">
-              Complete workouts to start tracking your personal records
-            </p>
-          </div>
+          <EmptyState
+            icon={<Trophy className="w-8 h-8" />}
+            title="No PRs yet"
+            description="Complete workouts to start tracking your personal records."
+            action={{
+              label: 'Start Workout',
+              onClick: () => navigate({ to: '/workout' }),
+            }}
+          />
         ) : (
           <>
             {/* Sort selector */}
@@ -235,8 +254,15 @@ function PRsPage() {
 
             {/* Grouped by muscle (default) */}
             {sortMode === 'muscle' &&
-              sortedGroups.map(([muscleGroup, exercises]) => (
-                <section key={muscleGroup}>
+              sortedGroups.map(([muscleGroup, exercises], index) => (
+                <section
+                  key={muscleGroup}
+                  className="animate-fade-in"
+                  style={{
+                    animationDelay: `${index * 50}ms`,
+                    animationFillMode: 'backwards',
+                  }}
+                >
                   <div className="flex items-center gap-2 mb-3 px-1">
                     <MuscleGroupBadge
                       muscleGroup={muscleGroup as MuscleGroup}
@@ -255,7 +281,10 @@ function PRsPage() {
 
             {/* Flat list (newest or improvement) */}
             {(sortMode === 'newest' || sortMode === 'improvement') && (
-              <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+              <div
+                className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50 animate-fade-in"
+                style={{ animationFillMode: 'backwards' }}
+              >
                 {sortedFlatPRs.map(renderPRRow)}
               </div>
             )}

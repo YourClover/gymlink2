@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { ArrowLeft, Loader2, QrCode, Search, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getProfileByCode, searchUsers } from '@/lib/profile.server'
@@ -53,11 +53,15 @@ function UserSearchPage() {
     [user],
   )
 
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setQuery(value)
-    // Debounce search
-    setTimeout(() => handleSearch(value), 300)
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+    searchTimeoutRef.current = setTimeout(() => handleSearch(value), 300)
   }
 
   const handleCodeSubmit = async (e: React.FormEvent) => {

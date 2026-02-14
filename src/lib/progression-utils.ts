@@ -32,6 +32,10 @@ export function calculateVolume(
   if (weight && timeSeconds) {
     return weight * timeSeconds
   }
+  // Bodyweight: count reps as volume when no weight
+  if (reps && !weight) {
+    return reps
+  }
   return 0
 }
 
@@ -66,12 +70,29 @@ export function calculateMetricValue(
 }
 
 /**
- * Get available metrics for an exercise based on its type
+ * Get available metrics for an exercise based on its type and equipment
  */
-export function getAvailableMetrics(isTimed: boolean): Array<{
+export function getAvailableMetrics(
+  isTimed: boolean,
+  equipment?: string,
+): Array<{
   value: ProgressionMetric
   label: string
 }> {
+  if (equipment === 'BODYWEIGHT' && isTimed) {
+    return [
+      { value: 'max_time', label: 'Duration' },
+      { value: 'volume', label: 'Weighted Duration' },
+    ]
+  }
+
+  if (equipment === 'BODYWEIGHT') {
+    return [
+      { value: 'max_reps', label: 'Max Reps' },
+      { value: 'volume', label: 'Volume' },
+    ]
+  }
+
   if (isTimed) {
     return [
       { value: 'max_time', label: 'Duration' },

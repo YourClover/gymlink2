@@ -5,6 +5,9 @@ import type { Equipment, MuscleGroup, RecordType } from '@prisma/client'
 import type { TimeRange } from '@/components/progression/TimeRangeSelector'
 import type { ProgressionDataPoint } from '@/lib/progression.server'
 import type { ProgressionMetric } from '@/lib/progression-utils'
+import { Skeleton, SkeletonStatsCard } from '@/components/ui/Skeleton'
+import { SkeletonChart } from '@/components/ui/SocialSkeletons'
+import EmptyState from '@/components/ui/EmptyState'
 import { useAuth } from '@/context/AuthContext'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import ProgressionChart from '@/components/progression/ProgressionChart'
@@ -68,21 +71,24 @@ function ProgressPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('all')
   const [metric, setMetric] = useState<ProgressionMetric>('max_weight')
 
-  // Get available metrics based on exercise type
+  // Get available metrics based on exercise type and equipment
   const availableMetrics = useMemo(() => {
     if (!summary) return []
-    return getAvailableMetrics(summary.exercise.isTimed)
+    return getAvailableMetrics(
+      summary.exercise.isTimed,
+      summary.exercise.equipment,
+    )
   }, [summary])
 
   // Set default metric when exercise loads
   useEffect(() => {
-    if (
-      availableMetrics.length > 0 &&
-      !availableMetrics.find((m) => m.value === metric)
-    ) {
-      setMetric(availableMetrics[0].value)
+    if (availableMetrics.length > 0) {
+      const currentValid = availableMetrics.find((m) => m.value === metric)
+      if (!currentValid) {
+        setMetric(availableMetrics[0].value)
+      }
     }
-  }, [availableMetrics, metric])
+  }, [availableMetrics])
 
   // Fetch summary and recent sessions
   useEffect(() => {
@@ -183,8 +189,38 @@ function ProgressPage() {
 
   if (!summary && loading) {
     return (
-      <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-zinc-900">
+        <header className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="p-2 -ml-2 w-9 h-9" />
+            <div className="flex-1">
+              <Skeleton className="h-5 w-40 mb-1" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        </header>
+        <div className="px-4 py-4 space-y-5">
+          <SkeletonChart />
+          <div className="grid grid-cols-3 gap-3">
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+          </div>
+          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-3">
+            <Skeleton className="h-4 w-24 mb-3" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-20 mb-1" />
+                    <Skeleton className="h-3 w-12" />
+                  </div>
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -203,9 +239,15 @@ function ProgressPage() {
             <h1 className="text-lg font-semibold text-white">Progress</h1>
           </div>
         </header>
-        <div className="p-8 text-center">
-          <p className="text-zinc-400">Exercise not found</p>
-        </div>
+        <EmptyState
+          icon={<Dumbbell className="w-8 h-8" />}
+          title="Exercise not found"
+          description="This exercise could not be found or has no data yet."
+          action={{
+            label: 'Go Back',
+            onClick: () => window.history.back(),
+          }}
+        />
       </div>
     )
   }
@@ -241,7 +283,10 @@ function ProgressPage() {
       <div className="px-4 py-4 space-y-5 safe-area-pb pb-8">
         {/* Current PR */}
         {summary.currentPR && (
-          <div className="p-4 rounded-xl bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30">
+          <div
+            className="p-4 rounded-xl bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 animate-fade-in"
+            style={{ animationFillMode: 'backwards' }}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-yellow-400" />
@@ -291,7 +336,10 @@ function ProgressPage() {
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-3 gap-3">
+        <div
+          className="grid grid-cols-3 gap-3 animate-fade-in"
+          style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}
+        >
           <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50 text-center">
             <p className="text-xl font-bold text-white">
               {summary.totalSessions}
@@ -323,7 +371,10 @@ function ProgressPage() {
 
         {/* Recent Sessions */}
         {recentSessions.length > 0 && (
-          <section>
+          <section
+            className="animate-fade-in"
+            style={{ animationDelay: '150ms', animationFillMode: 'backwards' }}
+          >
             <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Recent Sessions
@@ -345,6 +396,16 @@ function ProgressPage() {
                         <Clock className="w-3 h-3" />
                         {formatTime(session.bestTime)}
                       </p>
+                    ) : summary.exercise.equipment === 'BODYWEIGHT' &&
+                      session.bestWeight === 0 ? (
+                      <>
+                        <p className="text-sm font-medium text-white">
+                          {session.bestReps} reps
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          {session.setCount} sets
+                        </p>
+                      </>
                     ) : (
                       <>
                         <p className="text-sm font-medium text-white">

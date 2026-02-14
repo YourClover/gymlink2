@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import type { Exercise } from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
+import { Skeleton } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -249,8 +250,27 @@ function DayDetailPage() {
   if (loading) {
     return (
       <AppLayout showNav={false}>
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="p-4 space-y-4">
+          <div className="text-center">
+            <Skeleton className="h-3 w-24 mx-auto mb-1" />
+            <Skeleton className="h-6 w-40 mx-auto" />
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-lg" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-32 mb-2" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </AppLayout>
     )
@@ -372,17 +392,25 @@ function DayDetailPage() {
                 {planDay.planExercises.length !== 1 ? 's' : ''}
               </p>
               {planDay.planExercises.map((planExercise, index) => (
-                <PlanExerciseCard
+                <div
                   key={planExercise.id}
-                  planExercise={planExercise}
-                  onPress={() => setEditingExercise(planExercise)}
-                  onRemove={() => setExerciseToRemove(planExercise)}
-                  showReorder={planDay.planExercises.length > 1}
-                  isFirst={index === 0}
-                  isLast={index === planDay.planExercises.length - 1}
-                  onMoveUp={() => handleMoveExercise(index, 'up')}
-                  onMoveDown={() => handleMoveExercise(index, 'down')}
-                />
+                  className="animate-fade-in"
+                  style={{
+                    animationDelay: `${index * 50}ms`,
+                    animationFillMode: 'backwards',
+                  }}
+                >
+                  <PlanExerciseCard
+                    planExercise={planExercise}
+                    onPress={() => setEditingExercise(planExercise)}
+                    onRemove={() => setExerciseToRemove(planExercise)}
+                    showReorder={planDay.planExercises.length > 1}
+                    isFirst={index === 0}
+                    isLast={index === planDay.planExercises.length - 1}
+                    onMoveUp={() => handleMoveExercise(index, 'up')}
+                    onMoveDown={() => handleMoveExercise(index, 'down')}
+                  />
+                </div>
               ))}
             </div>
           )}

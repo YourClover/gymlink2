@@ -16,6 +16,8 @@ import {
 import type { MuscleGroup } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
+import { SkeletonCard, SkeletonStatsCard } from '@/components/ui/Skeleton'
+import EmptyState from '@/components/ui/EmptyState'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import {
   getActiveSession,
@@ -153,8 +155,23 @@ function DashboardPage() {
     <AppLayout>
       <div className="px-4 py-6 space-y-6">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="space-y-6">
+            <div>
+              <div className="h-8 w-48 bg-zinc-800 animate-pulse rounded mb-2" />
+              <div className="h-4 w-64 bg-zinc-800 animate-pulse rounded" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <SkeletonStatsCard />
+              <SkeletonStatsCard />
+              <SkeletonStatsCard />
+              <SkeletonStatsCard />
+            </div>
+            <div className="space-y-2">
+              <div className="h-5 w-36 bg-zinc-800 animate-pulse rounded" />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
           </div>
         ) : (
           <>
@@ -268,7 +285,13 @@ function DashboardPage() {
             </div>
 
             {/* Stats Overview */}
-            <div className="space-y-3">
+            <div
+              className="space-y-3 animate-fade-in"
+              style={{
+                animationDelay: '100ms',
+                animationFillMode: 'backwards',
+              }}
+            >
               <h2 className="text-lg font-semibold text-white">This Week</h2>
               <div className="grid grid-cols-2 gap-3">
                 <StatCard
@@ -299,27 +322,29 @@ function DashboardPage() {
             </div>
 
             {/* Recent Workouts */}
-            <div className="space-y-3">
+            <div
+              className="space-y-3 animate-fade-in"
+              style={{
+                animationDelay: '200ms',
+                animationFillMode: 'backwards',
+              }}
+            >
               <h2 className="text-lg font-semibold text-white">
                 Recent Workouts
               </h2>
               {recentWorkouts.length === 0 ? (
-                <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700/50 text-center">
-                  <Dumbbell className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-                  <p className="text-zinc-400">No workouts yet</p>
-                  <p className="text-sm text-zinc-500 mt-1">
-                    Start your first workout to track your progress
-                  </p>
-                  <button
-                    onClick={() => navigate({ to: '/workout' })}
-                    className="inline-block mt-4 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                  >
-                    Start Workout
-                  </button>
-                </div>
+                <EmptyState
+                  icon={<Dumbbell className="w-8 h-8" />}
+                  title="No workouts yet"
+                  description="Start your first workout to track your progress."
+                  action={{
+                    label: 'Start Workout',
+                    onClick: () => navigate({ to: '/workout' }),
+                  }}
+                />
               ) : (
                 <div className="space-y-2">
-                  {recentWorkouts.map((workout) => (
+                  {recentWorkouts.map((workout, index) => (
                     <button
                       key={workout.id}
                       onClick={() =>
@@ -328,7 +353,11 @@ function DashboardPage() {
                           params: { sessionId: workout.id },
                         })
                       }
-                      className="w-full p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-800/70 transition-colors text-left"
+                      className="w-full p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-800/70 transition-colors text-left animate-fade-in"
+                      style={{
+                        animationDelay: `${300 + index * 50}ms`,
+                        animationFillMode: 'backwards',
+                      }}
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-zinc-700/50">

@@ -20,6 +20,7 @@ import RestTimer, {
   getPersistedRestTimer,
 } from '@/components/workout/RestTimer'
 import ExercisePicker from '@/components/exercises/ExercisePicker'
+import { SkeletonExerciseCard } from '@/components/ui/Skeleton'
 import {
   deleteWorkoutSet,
   discardWorkoutSession,
@@ -371,8 +372,14 @@ function ActiveWorkoutPage() {
   if (loading) {
     return (
       <AppLayout showNav={false}>
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="p-4 space-y-3">
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-5 w-32 bg-zinc-800 animate-pulse rounded" />
+            <div className="h-8 w-20 bg-zinc-800 animate-pulse rounded-lg" />
+          </div>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonExerciseCard key={i} />
+          ))}
         </div>
       </AppLayout>
     )
@@ -422,21 +429,29 @@ function ActiveWorkoutPage() {
           </div>
         ) : (
           <div className="p-4 space-y-3">
-            {exercises.map((ex) => (
-              <ExerciseWorkoutCard
+            {exercises.map((ex, index) => (
+              <div
                 key={ex.exercise.id}
-                exercise={ex.exercise}
-                sets={ex.sets}
-                planExercise={ex.planExercise}
-                isExpanded={expandedExerciseId === ex.exercise.id}
-                onToggleExpand={() =>
-                  setExpandedExerciseId((current) =>
-                    current === ex.exercise.id ? null : ex.exercise.id,
-                  )
-                }
-                onLogSet={() => handleOpenSetLogger(ex)}
-                onDeleteSet={handleDeleteSet}
-              />
+                className="animate-fade-in"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <ExerciseWorkoutCard
+                  exercise={ex.exercise}
+                  sets={ex.sets}
+                  planExercise={ex.planExercise}
+                  isExpanded={expandedExerciseId === ex.exercise.id}
+                  onToggleExpand={() =>
+                    setExpandedExerciseId((current) =>
+                      current === ex.exercise.id ? null : ex.exercise.id,
+                    )
+                  }
+                  onLogSet={() => handleOpenSetLogger(ex)}
+                  onDeleteSet={handleDeleteSet}
+                />
+              </div>
             ))}
           </div>
         )}

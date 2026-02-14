@@ -246,6 +246,10 @@ export const getExerciseRecentSessions = createServerFn({ method: 'GET' })
           if (set.weight && set.reps) {
             totalVolume += set.weight * set.reps
           }
+          // Track best reps for bodyweight exercises (no weight)
+          if (!set.weight && set.reps && set.reps > bestReps) {
+            bestReps = set.reps
+          }
           if (set.timeSeconds && set.timeSeconds > bestTime) {
             bestTime = set.timeSeconds
           }

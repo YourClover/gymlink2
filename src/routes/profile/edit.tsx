@@ -1,9 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Loader2, Save } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, UserCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getUserProfile, updateUserProfile } from '@/lib/profile.server'
 import AppLayout from '@/components/AppLayout'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { SkeletonFormField } from '@/components/ui/SocialSkeletons'
+import EmptyState from '@/components/ui/EmptyState'
 
 export const Route = createFileRoute('/profile/edit')({
   component: ProfileEditPage,
@@ -66,8 +69,21 @@ function ProfileEditPage() {
   if (isLoading) {
     return (
       <AppLayout title="Edit Profile" showNav={false}>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+        <div className="p-4 space-y-6">
+          <div className="flex items-center justify-between mb-6">
+            <Skeleton className="w-9 h-9 rounded-lg" />
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="w-16 h-8 rounded-lg" />
+          </div>
+          <SkeletonFormField />
+          <SkeletonFormField />
+          <SkeletonFormField />
+          <div className="space-y-4">
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-16 w-full rounded-lg" />
+            <Skeleton className="h-16 w-full rounded-lg" />
+            <Skeleton className="h-16 w-full rounded-lg" />
+          </div>
         </div>
       </AppLayout>
     )
@@ -76,17 +92,15 @@ function ProfileEditPage() {
   if (!profile) {
     return (
       <AppLayout title="Edit Profile" showNav={false}>
-        <div className="p-4 text-center">
-          <p className="text-zinc-400 mb-4">
-            You need to set up your profile first.
-          </p>
-          <button
-            onClick={() => navigate({ to: '/profile/setup' })}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-          >
-            Set Up Profile
-          </button>
-        </div>
+        <EmptyState
+          icon={<UserCircle className="w-8 h-8" />}
+          title="Set up your profile first"
+          description="Create your profile to customize your settings and privacy."
+          action={{
+            label: 'Set Up Profile',
+            onClick: () => navigate({ to: '/profile/setup' }),
+          }}
+        />
       </AppLayout>
     )
   }
@@ -118,7 +132,10 @@ function ProfileEditPage() {
         </div>
 
         {/* Username (read-only) */}
-        <div className="mb-6">
+        <div
+          className="mb-6 animate-fade-in"
+          style={{ animationDelay: '50ms', animationFillMode: 'backwards' }}
+        >
           <label className="block text-sm text-zinc-400 mb-1">Username</label>
           <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-zinc-500">
             @{profile.username}
@@ -129,7 +146,10 @@ function ProfileEditPage() {
         </div>
 
         {/* Profile Code */}
-        <div className="mb-6">
+        <div
+          className="mb-6 animate-fade-in"
+          style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}
+        >
           <label className="block text-sm text-zinc-400 mb-1">
             Profile Code
           </label>
@@ -142,7 +162,10 @@ function ProfileEditPage() {
         </div>
 
         {/* Bio */}
-        <div className="mb-6">
+        <div
+          className="mb-6 animate-fade-in"
+          style={{ animationDelay: '150ms', animationFillMode: 'backwards' }}
+        >
           <label className="block text-sm text-zinc-400 mb-1">Bio</label>
           <textarea
             value={bio}
@@ -156,10 +179,13 @@ function ProfileEditPage() {
         </div>
 
         {/* Privacy Settings */}
-        <div className="space-y-4">
+        <div
+          className="space-y-4 animate-fade-in"
+          style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}
+        >
           <h2 className="text-lg font-semibold text-white">Privacy</h2>
 
-          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer">
+          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer border border-zinc-700/50">
             <div>
               <p className="text-white font-medium">Private Profile</p>
               <p className="text-sm text-zinc-500">
@@ -174,7 +200,7 @@ function ProfileEditPage() {
             />
           </label>
 
-          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer">
+          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer border border-zinc-700/50">
             <div>
               <p className="text-white font-medium">Show Achievements</p>
               <p className="text-sm text-zinc-500">
@@ -189,7 +215,7 @@ function ProfileEditPage() {
             />
           </label>
 
-          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer">
+          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer border border-zinc-700/50">
             <div>
               <p className="text-white font-medium">Show Stats</p>
               <p className="text-sm text-zinc-500">
