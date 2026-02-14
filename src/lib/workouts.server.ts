@@ -1,9 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
-import type { PrismaClient } from '@prisma/client'
 import { RecordType, WeightUnit } from '@prisma/client'
 import { prisma } from './db'
 import { checkAchievements } from './achievements.server'
 import { updateChallengeProgress } from './challenges.server'
+import type { PrismaClient } from '@prisma/client'
 
 type PrismaTransactionClient = Parameters<
   Parameters<PrismaClient['$transaction']>[0]
@@ -58,10 +58,7 @@ async function recalculatePR(
   })
 
   // Find best score per recordType
-  const bestByType = new Map<
-    RecordType,
-    { score: number; setId: string }
-  >()
+  const bestByType = new Map<RecordType, { score: number; setId: string }>()
 
   for (const set of sets) {
     const result = calculatePRScore(
@@ -86,9 +83,7 @@ async function recalculatePR(
     where: { userId, exerciseId },
   })
 
-  const existingByType = new Map(
-    existingPRs.map((pr) => [pr.recordType, pr]),
-  )
+  const existingByType = new Map(existingPRs.map((pr) => [pr.recordType, pr]))
 
   // Upsert best PRs, delete orphaned record types
   for (const recordType of Object.values(RecordType)) {
@@ -96,7 +91,11 @@ async function recalculatePR(
     const existingPR = existingByType.get(recordType)
 
     if (best) {
-      if (existingPR && existingPR.value === best.score && existingPR.workoutSetId === best.setId) {
+      if (
+        existingPR &&
+        existingPR.value === best.score &&
+        existingPR.workoutSetId === best.setId
+      ) {
         // PR unchanged, skip
         continue
       }
@@ -472,9 +471,7 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
                 where: { id: existingPR.workoutSetId },
                 select: { workoutSessionId: true },
               })
-              if (
-                existingSet?.workoutSessionId === setData.workoutSessionId
-              ) {
+              if (existingSet?.workoutSessionId === setData.workoutSessionId) {
                 // Same session — preserve the original beaten value
                 previousRecord = existingPR.previousRecord
               } else {
@@ -745,4 +742,166 @@ export const getLastExerciseSets = createServerFn({ method: 'GET' })
         sets: lastSession.workoutSets,
       },
     }
+  })
+
+// ============================================
+// MONTHLY CALENDAR DATA
+// ============================================
+
+export const getMonthlyWorkoutDays = createServerFn({ method: 'GET' })
+  .inputValidator((data: { userId: string; year: number; month: number }) => {
+    if (data.month < 1 || data.month > 12) {
+      throw new Error('month must be between 1 and 12')
+    }
+    return data
+  })
+  .handler(async ({ data }) => {
+    const startDate = new Date(data.year, data.month - 1, 1)
+    const endDate = new Date(data.year, data.month, 1)
+
+    const sessions = await prisma.workoutSession.findMany({
+      where: {
+        userId: data.userId,
+        completedAt: { gte: startDate, lt: endDate },
+      },
+      orderBy: { completedAt: 'asc' },
+      include: {
+        workoutPlan: { select: { name: true } },
+        planDay: { select: { name: true } },
+        workoutSets: {
+          select: {
+            exercise: {
+              select: { name: true, muscleGroup: true },
+            },
+          },
+          distinct: ['exerciseId'],
+        },
+        _count: { select: { workoutSets: true } },
+      },
+    })
+
+    const dayMap: Record<
+      number,
+      Array<{
+        id: string
+        completedAt: Date | null
+        durationSeconds: number | null
+        workoutPlan: { name: string } | null
+        planDay: { name: string } | null
+        _count: { workoutSets: number }
+        workoutSets: Array<{
+          exercise: { name: string; muscleGroup: string }
+        }>
+      }>
+    > = {}
+
+    for (const session of sessions) {
+      if (!session.completedAt) continue
+      const day = session.completedAt.getDate()
+      dayMap[day] ??= []
+      dayMap[day].push({
+        id: session.id,
+        completedAt: session.completedAt,
+        durationSeconds: session.durationSeconds,
+        workoutPlan: session.workoutPlan,
+        planDay: session.planDay,
+        _count: session._count,
+        workoutSets: session.workoutSets,
+      })
+    }
+
+    return { dayMap }
+  })
+
+// ============================================
+// FILTERED WORKOUTS
+// ============================================
+
+export const getFilteredWorkouts = createServerFn({ method: 'GET' })
+  .inputValidator(
+    (data: {
+      userId: string
+      limit?: number
+      offset?: number
+      muscleGroups?: Array<string>
+      planId?: string
+      exerciseSearch?: string
+      startDate?: string
+      endDate?: string
+    }) => {
+      if (data.limit !== undefined && (data.limit < 1 || data.limit > 100)) {
+        throw new Error('limit must be between 1 and 100')
+      }
+      return data
+    },
+  )
+  .handler(async ({ data }) => {
+    const where: Record<string, unknown> = {
+      userId: data.userId,
+      completedAt: { not: null },
+    }
+
+    // Date range filter
+    if (data.startDate || data.endDate) {
+      const completedAt: Record<string, unknown> = { not: null }
+      if (data.startDate) completedAt.gte = new Date(data.startDate)
+      if (data.endDate) completedAt.lte = new Date(data.endDate)
+      where.completedAt = completedAt
+    }
+
+    // Plan filter
+    if (data.planId) {
+      where.workoutPlanId = data.planId
+    }
+
+    // Exercise search and muscle group filters use workoutSets relation
+    if (data.exerciseSearch || data.muscleGroups?.length) {
+      const exerciseFilter: Record<string, unknown> = {}
+
+      if (data.exerciseSearch) {
+        exerciseFilter.name = {
+          contains: data.exerciseSearch,
+          mode: 'insensitive',
+        }
+      }
+
+      if (data.muscleGroups?.length) {
+        exerciseFilter.muscleGroup = { in: data.muscleGroups }
+      }
+
+      where.workoutSets = {
+        some: {
+          exercise: exerciseFilter,
+        },
+      }
+    }
+
+    const whereClause = where as any
+
+    const [workouts, total] = await Promise.all([
+      prisma.workoutSession.findMany({
+        where: whereClause,
+        orderBy: { completedAt: 'desc' },
+        take: data.limit ?? 50,
+        skip: data.offset ?? 0,
+        include: {
+          workoutPlan: { select: { name: true } },
+          planDay: { select: { name: true } },
+          workoutSets: {
+            select: {
+              exercise: {
+                select: { name: true, muscleGroup: true },
+              },
+            },
+            distinct: ['exerciseId'],
+          },
+          _count: { select: { workoutSets: true } },
+        },
+      }),
+      prisma.workoutSession.count({
+        where: whereClause,
+      }),
+    ])
+
+    return { workouts, total }
   })

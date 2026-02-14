@@ -15,12 +15,12 @@ import {
   Weight,
 } from 'lucide-react'
 import type { MuscleGroup, RecordType } from '@prisma/client'
+import type { TimeRange } from '@/components/progression/TimeRangeSelector'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import TimeRangeSelector, {
   getStartDateForRange,
-  type TimeRange,
 } from '@/components/progression/TimeRangeSelector'
 import StatCard from '@/components/stats/StatCard'
 import StatsSkeleton from '@/components/stats/StatsSkeleton'
@@ -271,10 +271,7 @@ function StatsPage() {
         </div>
 
         {/* 1. Overview Hero Cards */}
-        <section
-          className="animate-fade-in"
-          style={{ animationDelay: '0ms' }}
-        >
+        <section className="animate-fade-in" style={{ animationDelay: '0ms' }}>
           <h2 className="text-sm font-medium text-zinc-400 mb-3 px-1">
             {rangeLabels[timeRange]}
           </h2>
@@ -467,9 +464,7 @@ function StatsPage() {
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">
-                      {ex.name}
-                    </p>
+                    <p className="font-medium text-white truncate">{ex.name}</p>
                     {ex.muscleGroup && (
                       <MuscleGroupBadge
                         muscleGroup={ex.muscleGroup}

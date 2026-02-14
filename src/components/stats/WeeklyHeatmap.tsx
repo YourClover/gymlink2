@@ -119,9 +119,7 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
                 <div
                   key={`${weekIdx}-${dayIdx}`}
                   className={`h-[14px] rounded-sm transition-colors ${
-                    isFuture
-                      ? 'bg-zinc-800/30'
-                      : intensityClasses[intensity]
+                    isFuture ? 'bg-zinc-800/30' : intensityClasses[intensity]
                   } ${isToday ? 'ring-1 ring-blue-400' : ''}`}
                   onMouseEnter={(e) => {
                     if (!isFuture) {

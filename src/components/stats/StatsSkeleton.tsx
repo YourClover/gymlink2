@@ -1,8 +1,6 @@
 function Shimmer({ className }: { className: string }) {
   return (
-    <div
-      className={`animate-pulse rounded-xl bg-zinc-800/50 ${className}`}
-    />
+    <div className={`animate-pulse rounded-xl bg-zinc-800/50 ${className}`} />
   )
 }
 

@@ -123,9 +123,7 @@ export default function RpeChart({ data }: Props) {
           <p className="text-xs text-zinc-400">Avg RPE</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-white">
-            {data.totalRatedSets}
-          </p>
+          <p className="text-2xl font-bold text-white">{data.totalRatedSets}</p>
           <p className="text-xs text-zinc-400">Rated sets</p>
         </div>
       </div>

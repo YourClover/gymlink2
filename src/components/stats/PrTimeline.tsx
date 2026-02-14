@@ -1,5 +1,5 @@
-import type { MuscleGroup, RecordType } from '@prisma/client'
 import { TrendingUp, Trophy } from 'lucide-react'
+import type { MuscleGroup, RecordType } from '@prisma/client'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 
 type PrEntry = {
@@ -94,10 +94,7 @@ export default function PrTimeline({ timeline }: Props) {
                   {recordTypeLabels[pr.recordType]}
                 </span>
                 {pr.muscleGroup && (
-                  <MuscleGroupBadge
-                    muscleGroup={pr.muscleGroup}
-                    size="sm"
-                  />
+                  <MuscleGroupBadge muscleGroup={pr.muscleGroup} size="sm" />
                 )}
               </div>
 

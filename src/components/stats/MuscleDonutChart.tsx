@@ -1,5 +1,13 @@
 import { useState } from 'react'
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from 'recharts'
+import {
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Sector,
+  Tooltip,
+} from 'recharts'
 
 type MuscleGroupData = {
   muscle: string
@@ -131,17 +139,8 @@ function renderLabel({
   )
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 function renderActiveShape(props: any) {
-  const {
-    cx,
-    cy,
-    innerRadius,
-    outerRadius,
-    startAngle,
-    endAngle,
-    fill,
-  } = props
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props
 
   return (
     <g>
@@ -157,7 +156,6 @@ function renderActiveShape(props: any) {
     </g>
   )
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function MuscleDonutChart({ data }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)

@@ -11,13 +11,11 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId: string; startDate?: string }) => data)
   .handler(async ({ data }) => {
     const dateFilter = data.startDate
-      ? { not: null as null, gte: new Date(data.startDate) }
-      : { not: null as null }
+      ? { not: null, gte: new Date(data.startDate) }
+      : { not: null }
 
     // Compute previous period date range for comparison
-    let previousDateFilter:
-      | { not: null; gte: Date; lt: Date }
-      | undefined
+    let previousDateFilter: { not: null; gte: Date; lt: Date } | undefined
     let previousPrFilter: { gte: Date; lt: Date } | undefined
 
     if (data.startDate) {
@@ -27,7 +25,7 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
       const previousStart = new Date(startMs - durationMs)
       const previousEnd = new Date(startMs)
       previousDateFilter = {
-        not: null as null,
+        not: null,
         gte: previousStart,
         lt: previousEnd,
       }
@@ -82,9 +80,7 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
     const [currentStats, previousStats, currentStreak] = await Promise.all([
       queryPeriodStats(
         dateFilter,
-        data.startDate
-          ? { gte: new Date(data.startDate) }
-          : undefined,
+        data.startDate ? { gte: new Date(data.startDate) } : undefined,
       ),
       previousDateFilter
         ? queryPeriodStats(previousDateFilter, previousPrFilter)
@@ -119,7 +115,10 @@ export const getVolumeHistory = createServerFn({ method: 'GET' })
     if (data.startDate) {
       const rangeStart = new Date(data.startDate)
       const diffMs = currentWeekStart.getTime() - rangeStart.getTime()
-      weeksToFetch = Math.max(1, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1)
+      weeksToFetch = Math.max(
+        1,
+        Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1,
+      )
       startDate = getWeekStart(rangeStart)
     } else {
       weeksToFetch = data.weeks ?? 12
@@ -201,8 +200,8 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId: string; startDate?: string }) => data)
   .handler(async ({ data }) => {
     const dateFilter = data.startDate
-      ? { not: null as null, gte: new Date(data.startDate) }
-      : { not: null as null }
+      ? { not: null, gte: new Date(data.startDate) }
+      : { not: null }
 
     // Most trained exercises (by working set count)
     const exerciseCounts = await prisma.workoutSet.groupBy({
@@ -352,8 +351,8 @@ export const getDurationStats = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId: string; startDate?: string }) => data)
   .handler(async ({ data }) => {
     const dateFilter = data.startDate
-      ? { not: null as null, gte: new Date(data.startDate) }
-      : { not: null as null }
+      ? { not: null, gte: new Date(data.startDate) }
+      : { not: null }
 
     const agg = await prisma.workoutSession.aggregate({
       where: {
@@ -399,8 +398,8 @@ export const getMoodStats = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId: string; startDate?: string }) => data)
   .handler(async ({ data }) => {
     const dateFilter = data.startDate
-      ? { not: null as null, gte: new Date(data.startDate) }
-      : { not: null as null }
+      ? { not: null, gte: new Date(data.startDate) }
+      : { not: null }
 
     const agg = await prisma.workoutSession.aggregate({
       where: {
@@ -480,6 +479,7 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
         weight: number | null
         recordType: RecordType
         achievedAt: Date
+        previousRecord: number | null
       }
     >()
 
@@ -497,6 +497,7 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
           weight: pr.workoutSet.weight ?? null,
           recordType: pr.recordType,
           achievedAt: pr.achievedAt,
+          previousRecord: pr.previousRecord,
         })
       }
     }
@@ -545,6 +546,7 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
         weight: number | null
         recordType: RecordType
         achievedAt: Date
+        previousRecord: number | null
       }>
     > = {}
 
@@ -560,6 +562,7 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
         weight: pr.weight,
         recordType: pr.recordType,
         achievedAt: pr.achievedAt,
+        previousRecord: pr.previousRecord,
       })
     }
 
@@ -606,8 +609,8 @@ export const getRpeStats = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId: string; startDate?: string }) => data)
   .handler(async ({ data }) => {
     const dateFilter = data.startDate
-      ? { not: null as null, gte: new Date(data.startDate) }
-      : { not: null as null }
+      ? { not: null, gte: new Date(data.startDate) }
+      : { not: null }
 
     const setsWithRpe = await prisma.workoutSet.findMany({
       where: {
@@ -641,7 +644,10 @@ export const getRpeStats = createServerFn({ method: 'GET' })
     }
 
     // Average RPE per session (last 20 sessions)
-    const sessionRpes = new Map<string, { total: number; count: number; date: string }>()
+    const sessionRpes = new Map<
+      string,
+      { total: number; count: number; date: string }
+    >()
     for (const set of setsWithRpe) {
       const sessionId = set.workoutSession.id
       const existing = sessionRpes.get(sessionId)

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
 import { TrendingDown, TrendingUp } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 type Props = {
   icon: ReactNode

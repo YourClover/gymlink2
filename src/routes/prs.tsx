@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { ArrowLeft, LineChart, Trophy } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, LineChart, TrendingUp, Trophy } from 'lucide-react'
 import type { MuscleGroup, RecordType } from '@prisma/client'
+import type { PRSortMode } from '@/components/prs/PRSortSelector'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
+import PRSortSelector from '@/components/prs/PRSortSelector'
 import { getUserExercisePRs } from '@/lib/stats.server'
 
 export const Route = createFileRoute('/prs')({
@@ -21,6 +23,7 @@ type ExercisePR = {
   weight: number | null
   recordType: RecordType
   achievedAt: Date
+  previousRecord: number | null
 }
 
 type GroupedPRs = Record<string, Array<ExercisePR>>
@@ -32,6 +35,7 @@ function PRsPage() {
   const [loading, setLoading] = useState(true)
   const [grouped, setGrouped] = useState<GroupedPRs>({})
   const [total, setTotal] = useState(0)
+  const [sortMode, setSortMode] = useState<PRSortMode>('muscle')
 
   useEffect(() => {
     const fetchPRs = async () => {
@@ -69,10 +73,10 @@ function PRsPage() {
     switch (pr.recordType) {
       case 'MAX_VOLUME':
         if (pr.weight && pr.reps) {
-          return `${pr.weight}kg × ${pr.reps} reps`
+          return `${pr.weight}kg x ${pr.reps} reps`
         }
         if (pr.weight && pr.timeSeconds) {
-          return `${pr.weight}kg × ${formatTime(pr.timeSeconds)}`
+          return `${pr.weight}kg x ${formatTime(pr.timeSeconds)}`
         }
         return `Score: ${pr.value.toLocaleString()}`
       case 'MAX_TIME':
@@ -86,6 +90,21 @@ function PRsPage() {
     }
   }
 
+  const getImprovement = (pr: ExercisePR): number | null => {
+    if (pr.previousRecord && pr.previousRecord > 0) {
+      return Math.round(
+        ((pr.value - pr.previousRecord) / pr.previousRecord) * 100,
+      )
+    }
+    return null
+  }
+
+  const isNewPR = (pr: ExercisePR): boolean => {
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    return new Date(pr.achievedAt) > sevenDaysAgo
+  }
+
   const muscleGroupOrder: Array<MuscleGroup> = [
     'CHEST',
     'BACK',
@@ -96,6 +115,27 @@ function PRsPage() {
     'CARDIO',
     'FULL_BODY',
   ]
+
+  // Get all PRs as a flat list
+  const allPRs = useMemo(() => Object.values(grouped).flat(), [grouped])
+
+  // Sorted flat list for non-grouped modes
+  const sortedFlatPRs = useMemo(() => {
+    if (sortMode === 'newest') {
+      return [...allPRs].sort(
+        (a, b) =>
+          new Date(b.achievedAt).getTime() - new Date(a.achievedAt).getTime(),
+      )
+    }
+    if (sortMode === 'improvement') {
+      return [...allPRs].sort((a, b) => {
+        const aImp = getImprovement(a) ?? -1
+        const bImp = getImprovement(b) ?? -1
+        return bImp - aImp
+      })
+    }
+    return allPRs
+  }, [allPRs, sortMode])
 
   const sortedGroups = Object.entries(grouped).sort(([a], [b]) => {
     const aIndex = muscleGroupOrder.indexOf(a as MuscleGroup)
@@ -110,6 +150,52 @@ function PRsPage() {
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
       </AppLayout>
+    )
+  }
+
+  const renderPRRow = (pr: ExercisePR) => {
+    const improvement = getImprovement(pr)
+    const isRecent = isNewPR(pr)
+
+    return (
+      <div key={pr.exerciseId} className="p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+          <Trophy className="w-5 h-5 text-yellow-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-white truncate">{pr.exerciseName}</p>
+            {isRecent && (
+              <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-semibold uppercase flex-shrink-0">
+                New
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-zinc-400">{formatPR(pr)}</p>
+            {improvement !== null && improvement > 0 && (
+              <span className="flex items-center gap-0.5 text-xs font-medium text-green-400">
+                <TrendingUp className="w-3 h-3" />+{improvement}%
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="text-xs text-zinc-500 text-right mr-2 flex-shrink-0">
+          {formatDate(pr.achievedAt)}
+        </div>
+        <button
+          onClick={() =>
+            navigate({
+              to: '/progress/$exerciseId',
+              params: { exerciseId: pr.exerciseId },
+            })
+          }
+          className="p-2 text-zinc-400 hover:text-blue-400 rounded-lg hover:bg-zinc-700/50 transition-colors focus:outline-none active:scale-95"
+          title="View progress"
+        >
+          <LineChart className="w-4 h-4" />
+        </button>
+      </div>
     )
   }
 
@@ -143,52 +229,37 @@ function PRsPage() {
             </p>
           </div>
         ) : (
-          sortedGroups.map(([muscleGroup, exercises]) => (
-            <section key={muscleGroup}>
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <MuscleGroupBadge
-                  muscleGroup={muscleGroup as MuscleGroup}
-                  size="sm"
-                />
-                <span className="text-sm text-zinc-500">
-                  {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
-                {exercises.map((pr) => (
-                  <div
-                    key={pr.exerciseId}
-                    className="p-4 flex items-center gap-3"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                      <Trophy className="w-5 h-5 text-yellow-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate">
-                        {pr.exerciseName}
-                      </p>
-                      <p className="text-sm text-zinc-400">{formatPR(pr)}</p>
-                    </div>
-                    <div className="text-xs text-zinc-500 text-right mr-2">
-                      {formatDate(pr.achievedAt)}
-                    </div>
-                    <button
-                      onClick={() =>
-                        navigate({
-                          to: '/progress/$exerciseId',
-                          params: { exerciseId: pr.exerciseId },
-                        })
-                      }
-                      className="p-2 text-zinc-400 hover:text-blue-400 rounded-lg hover:bg-zinc-700/50 transition-colors focus:outline-none active:scale-95"
-                      title="View progress"
-                    >
-                      <LineChart className="w-4 h-4" />
-                    </button>
+          <>
+            {/* Sort selector */}
+            <PRSortSelector value={sortMode} onChange={setSortMode} />
+
+            {/* Grouped by muscle (default) */}
+            {sortMode === 'muscle' &&
+              sortedGroups.map(([muscleGroup, exercises]) => (
+                <section key={muscleGroup}>
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <MuscleGroupBadge
+                      muscleGroup={muscleGroup as MuscleGroup}
+                      size="sm"
+                    />
+                    <span className="text-sm text-zinc-500">
+                      {exercises.length} exercise
+                      {exercises.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                ))}
+                  <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+                    {exercises.map(renderPRRow)}
+                  </div>
+                </section>
+              ))}
+
+            {/* Flat list (newest or improvement) */}
+            {(sortMode === 'newest' || sortMode === 'improvement') && (
+              <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+                {sortedFlatPRs.map(renderPRRow)}
               </div>
-            </section>
-          ))
+            )}
+          </>
         )}
       </div>
     </div>

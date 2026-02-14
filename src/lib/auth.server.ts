@@ -5,9 +5,9 @@ import {
   hashPassword,
   verifyPassword,
   verifyToken,
-  type JWTPayload,
 } from './auth'
 import { EMAIL_REGEX, PASSWORD_MIN_LENGTH } from './constants'
+import type { JWTPayload } from './auth'
 
 // Development-only logging helper
 const isDev = process.env.NODE_ENV !== 'production'

@@ -61,9 +61,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
         borderColor: chartColors.tooltipBorder,
       }}
     >
-      <p className="text-xs text-zinc-400">
-        {formatDateShort(data.weekStart)}
-      </p>
+      <p className="text-xs text-zinc-400">{formatDateShort(data.weekStart)}</p>
       <p className="text-sm font-medium text-white">
         {data.volume >= 1000
           ? `${(data.volume / 1000).toFixed(1)}k kg`
@@ -91,14 +89,18 @@ export default function VolumeChart({ data }: Props) {
     data.reduce((sum, w) => sum + w.volume, 0) /
     (data.filter((w) => w.volume > 0).length || 1)
 
-  const hasWorkoutVariance =
-    new Set(data.map((w) => w.workouts)).size > 1
+  const hasWorkoutVariance = new Set(data.map((w) => w.workouts)).size > 1
 
   return (
     <ResponsiveContainer width="100%" height={240}>
       <ComposedChart
         data={data}
-        margin={{ top: 10, right: hasWorkoutVariance ? 40 : 10, left: 0, bottom: 0 }}
+        margin={{
+          top: 10,
+          right: hasWorkoutVariance ? 40 : 10,
+          left: 0,
+          bottom: 0,
+        }}
       >
         <defs>
           <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">

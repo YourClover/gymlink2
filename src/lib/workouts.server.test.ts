@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RecordType, WeightUnit } from '@prisma/client'
-import { mockPrisma } from '@/test/setup'
 import { calculatePRScore } from './workouts.server'
+import { mockPrisma } from '@/test/setup'
 
 // We test the business logic directly by testing with mocked Prisma
 // TanStack server functions are RPC-based and don't return values when called directly in tests
