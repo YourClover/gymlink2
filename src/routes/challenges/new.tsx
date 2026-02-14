@@ -135,7 +135,10 @@ function NewChallengePage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name */}
-          <div>
+          <div
+            className="animate-fade-in"
+            style={{ animationDelay: '50ms', animationFillMode: 'backwards' }}
+          >
             <label className="block text-sm text-zinc-400 mb-1">
               Challenge Name
             </label>
@@ -151,7 +154,10 @@ function NewChallengePage() {
           </div>
 
           {/* Description */}
-          <div>
+          <div
+            className="animate-fade-in"
+            style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}
+          >
             <label className="block text-sm text-zinc-400 mb-1">
               Description (optional)
             </label>
@@ -166,7 +172,10 @@ function NewChallengePage() {
           </div>
 
           {/* Challenge Type */}
-          <div>
+          <div
+            className="animate-fade-in"
+            style={{ animationDelay: '150ms', animationFillMode: 'backwards' }}
+          >
             <label className="block text-sm text-zinc-400 mb-2">
               Challenge Type
             </label>
@@ -176,10 +185,10 @@ function NewChallengePage() {
                   key={type.value}
                   type="button"
                   onClick={() => setChallengeType(type.value)}
-                  className={`p-3 rounded-lg text-left ${
+                  className={`p-3 rounded-lg text-left transition-colors ${
                     challengeType === type.value
                       ? 'bg-blue-600/20 border-2 border-blue-500'
-                      : 'bg-zinc-800 border border-zinc-700'
+                      : 'bg-zinc-800 border border-zinc-700 hover:bg-zinc-700/30'
                   }`}
                 >
                   <p className="font-medium text-white">{type.label}</p>
@@ -260,7 +269,10 @@ function NewChallengePage() {
           )}
 
           {/* Target Value */}
-          <div>
+          <div
+            className="animate-fade-in"
+            style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}
+          >
             <label className="block text-sm text-zinc-400 mb-1">
               Target ({selectedType?.unit})
             </label>
@@ -277,7 +289,10 @@ function NewChallengePage() {
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
+          <div
+            className="grid grid-cols-2 gap-4 animate-fade-in"
+            style={{ animationDelay: '250ms', animationFillMode: 'backwards' }}
+          >
             <div>
               <label className="block text-sm text-zinc-400 mb-1">
                 Start Date
@@ -306,7 +321,10 @@ function NewChallengePage() {
           </div>
 
           {/* Max Participants */}
-          <div>
+          <div
+            className="animate-fade-in"
+            style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}
+          >
             <label className="block text-sm text-zinc-400 mb-1">
               Max Participants (optional)
             </label>
@@ -321,7 +339,10 @@ function NewChallengePage() {
           </div>
 
           {/* Public Toggle */}
-          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer">
+          <label
+            className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 cursor-pointer animate-fade-in"
+            style={{ animationDelay: '350ms', animationFillMode: 'backwards' }}
+          >
             <div>
               <p className="text-white font-medium">Public Challenge</p>
               <p className="text-sm text-zinc-500">

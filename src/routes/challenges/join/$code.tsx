@@ -48,7 +48,7 @@ function JoinChallengeByCodePage() {
   if (isJoining) {
     return (
       <div className="min-h-screen bg-zinc-900 flex items-center justify-center p-4">
-        <div className="text-center">
+        <div className="text-center animate-fade-in">
           <Target className="w-12 h-12 text-blue-500 mx-auto mb-4" />
           <Loader2 className="w-6 h-6 text-zinc-500 animate-spin mx-auto mb-4" />
           <p className="text-white">Joining challenge...</p>
@@ -59,15 +59,17 @@ function JoinChallengeByCodePage() {
 
   return (
     <div className="min-h-screen bg-zinc-900 flex items-center justify-center p-4">
-      <div className="text-center max-w-md">
-        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+      <div className="max-w-md w-full rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-8 text-center animate-fade-in">
+        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+          <AlertCircle className="w-8 h-8 text-red-500" />
+        </div>
         <h1 className="text-xl font-bold text-white mb-2">
           Unable to Join Challenge
         </h1>
         <p className="text-zinc-400 mb-6">{error}</p>
         <button
           onClick={() => navigate({ to: '/challenges' })}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors"
         >
           Go to Challenges
         </button>

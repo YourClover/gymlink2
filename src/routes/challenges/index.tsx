@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   ChevronRight,
@@ -18,6 +18,8 @@ import {
   joinChallenge,
 } from '@/lib/challenges.server'
 import AppLayout from '@/components/AppLayout'
+import EmptyState from '@/components/ui/EmptyState'
+import { SkeletonChallengeCard } from '@/components/ui/SocialSkeletons'
 
 export const Route = createFileRoute('/challenges/')({
   component: ChallengesPage,
@@ -53,6 +55,7 @@ interface PublicChallengeData {
 
 function ChallengesPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [tab, setTab] = useState<
     'active' | 'upcoming' | 'completed' | 'discover'
   >('active')
@@ -152,6 +155,37 @@ function ChallengesPage() {
     return Math.min(100, (challenge.userProgress / challenge.targetValue) * 100)
   }
 
+  const emptyStates = {
+    active: {
+      icon: <Target className="w-7 h-7" />,
+      title: 'No active challenges',
+      description: 'Create or join a challenge to get started',
+      action: {
+        label: 'Create Challenge',
+        onClick: () => navigate({ to: '/challenges/new' }),
+      },
+    },
+    upcoming: {
+      icon: <Clock className="w-7 h-7" />,
+      title: 'No upcoming challenges',
+      description: 'Create a challenge with a future start date',
+    },
+    completed: {
+      icon: <Trophy className="w-7 h-7" />,
+      title: 'No completed challenges',
+      description: 'Finish challenges to see them here',
+    },
+    discover: {
+      icon: <Compass className="w-7 h-7" />,
+      title: 'No public challenges available',
+      description: 'Check back later or create your own public challenge',
+      action: {
+        label: 'Create Challenge',
+        onClick: () => navigate({ to: '/challenges/new' }),
+      },
+    },
+  }
+
   return (
     <AppLayout title="Challenges">
       <div className="p-4">
@@ -159,9 +193,11 @@ function ChallengesPage() {
         <div className="flex gap-2 mb-4">
           <Link
             to="/challenges/new"
-            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium"
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-700/50 text-white py-3 font-medium transition-colors"
           >
-            <Plus className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-blue-400" />
+            </div>
             Create Challenge
           </Link>
         </div>
@@ -213,17 +249,32 @@ function ChallengesPage() {
 
         {/* Challenges List */}
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="animate-fade-in"
+                style={{
+                  animationDelay: `${i * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <SkeletonChallengeCard />
+              </div>
+            ))}
           </div>
         ) : tab === 'discover' ? (
           // Discover tab - show public challenges
           publicChallenges.length > 0 ? (
             <div className="space-y-3">
-              {publicChallenges.map((challenge) => (
+              {publicChallenges.map((challenge, index) => (
                 <div
                   key={challenge.id}
-                  className="bg-zinc-800/50 rounded-xl p-4"
+                  className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4 hover:bg-zinc-700/50 transition-colors animate-fade-in"
+                  style={{
+                    animationDelay: `${index * 50}ms`,
+                    animationFillMode: 'backwards',
+                  }}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
@@ -290,24 +341,20 @@ function ChallengesPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Compass className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-              <h3 className="text-white font-medium mb-1">
-                No public challenges available
-              </h3>
-              <p className="text-sm text-zinc-500">
-                Check back later or create your own public challenge
-              </p>
-            </div>
+            <EmptyState {...emptyStates.discover} />
           )
         ) : filteredChallenges.length > 0 ? (
           <div className="space-y-3">
-            {filteredChallenges.map((challenge) => (
+            {filteredChallenges.map((challenge, index) => (
               <Link
                 key={challenge.id}
                 to="/challenges/$challengeId"
                 params={{ challengeId: challenge.id }}
-                className="block bg-zinc-800/50 rounded-xl p-4 hover:bg-zinc-700/50 transition-colors"
+                className="block bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4 hover:bg-zinc-700/50 transition-colors animate-fade-in"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
@@ -363,17 +410,7 @@ function ChallengesPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <Target className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-            <h3 className="text-white font-medium mb-1">No {tab} challenges</h3>
-            <p className="text-sm text-zinc-500">
-              {tab === 'active'
-                ? 'Create or join a challenge to get started'
-                : tab === 'upcoming'
-                  ? 'No upcoming challenges yet'
-                  : 'Complete challenges to see them here'}
-            </p>
-          </div>
+          <EmptyState {...emptyStates[tab]} />
         )}
       </div>
     </AppLayout>

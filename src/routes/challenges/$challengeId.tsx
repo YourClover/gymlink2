@@ -20,6 +20,13 @@ import {
   leaveChallenge,
 } from '@/lib/challenges.server'
 import AppLayout from '@/components/AppLayout'
+import EmptyState from '@/components/ui/EmptyState'
+import {
+  Skeleton,
+  SkeletonLeaderboardRow,
+  SkeletonStatsCard,
+} from '@/components/ui/Skeleton'
+import StatsSection from '@/components/stats/StatsSection'
 
 export const Route = createFileRoute('/challenges/$challengeId')({
   component: ChallengeDetailPage,
@@ -177,17 +184,43 @@ function ChallengeDetailPage() {
   const getRankBadge = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Crown className="w-5 h-5 text-yellow-500" />
+        return (
+          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
+            <Crown className="w-4 h-4 text-yellow-500" />
+          </div>
+        )
       case 2:
-        return <Medal className="w-5 h-5 text-zinc-400" />
+        return (
+          <div className="w-8 h-8 rounded-full bg-zinc-400/20 flex items-center justify-center">
+            <Medal className="w-4 h-4 text-zinc-400" />
+          </div>
+        )
       case 3:
-        return <Medal className="w-5 h-5 text-amber-600" />
+        return (
+          <div className="w-8 h-8 rounded-full bg-amber-600/20 flex items-center justify-center">
+            <Medal className="w-4 h-4 text-amber-600" />
+          </div>
+        )
       default:
         return (
-          <span className="w-5 h-5 flex items-center justify-center text-zinc-500 text-sm">
-            {rank}
-          </span>
+          <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+            <span className="text-zinc-500 text-sm font-medium">{rank}</span>
+          </div>
         )
+    }
+  }
+
+  const getPodiumClasses = (rank: number, isCurrentUser: boolean) => {
+    if (isCurrentUser) return 'bg-blue-600/20 border border-blue-500/30'
+    switch (rank) {
+      case 1:
+        return 'border-yellow-500/30 bg-yellow-500/5 border'
+      case 2:
+        return 'border-zinc-400/30 bg-zinc-400/5 border'
+      case 3:
+        return 'border-amber-600/30 bg-amber-600/5 border'
+      default:
+        return 'bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-700/50 transition-all'
     }
   }
 
@@ -203,8 +236,51 @@ function ChallengeDetailPage() {
   if (isLoading) {
     return (
       <AppLayout showNav={false}>
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+        <div className="p-4">
+          {/* Header skeleton */}
+          <div className="flex items-center gap-3 mb-6">
+            <Skeleton className="w-9 h-9 rounded-lg" />
+            <div className="flex-1">
+              <Skeleton className="h-5 w-48 mb-1" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          {/* Description skeleton */}
+          <Skeleton className="h-4 w-full mb-2" />
+          <Skeleton className="h-4 w-3/4 mb-6" />
+          {/* Stats grid skeleton */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+            <div className="col-span-2">
+              <SkeletonStatsCard />
+            </div>
+          </div>
+          {/* Progress skeleton */}
+          <div className="bg-zinc-800/50 rounded-xl p-4 mb-6">
+            <div className="flex justify-between mb-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <Skeleton className="h-3 w-full rounded-full" />
+          </div>
+          {/* Leaderboard skeleton */}
+          <Skeleton className="h-4 w-28 mb-3" />
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="animate-fade-in"
+                style={{
+                  animationDelay: `${i * 50}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <SkeletonLeaderboardRow />
+              </div>
+            ))}
+          </div>
         </div>
       </AppLayout>
     )
@@ -213,14 +289,16 @@ function ChallengeDetailPage() {
   if (!challenge) {
     return (
       <AppLayout showNav={false}>
-        <div className="p-4 text-center py-12">
-          <p className="text-zinc-400">Challenge not found</p>
-          <Link
-            to="/challenges"
-            className="text-blue-500 hover:text-blue-400 mt-2 inline-block"
-          >
-            Back to challenges
-          </Link>
+        <div className="p-4">
+          <EmptyState
+            icon={<Target className="w-7 h-7" />}
+            title="Challenge not found"
+            description="This challenge may have been removed"
+            action={{
+              label: 'Back to Challenges',
+              onClick: () => navigate({ to: '/challenges' }),
+            }}
+          />
         </div>
       </AppLayout>
     )
@@ -233,7 +311,10 @@ function ChallengeDetailPage() {
     <AppLayout showNav={false}>
       <div className="p-4">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
+        <div
+          className="flex items-center gap-3 mb-6 animate-fade-in"
+          style={{ animationFillMode: 'backwards' }}
+        >
           <button
             onClick={() => navigate({ to: '/challenges' })}
             className="p-2 -ml-2 hover:bg-zinc-800 rounded-lg"
@@ -253,12 +334,26 @@ function ChallengeDetailPage() {
 
         {/* Description */}
         {challenge.description && (
-          <p className="text-zinc-400 mb-4">{challenge.description}</p>
+          <p
+            className="text-zinc-400 mb-4 animate-fade-in"
+            style={{
+              animationDelay: '50ms',
+              animationFillMode: 'backwards',
+            }}
+          >
+            {challenge.description}
+          </p>
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-zinc-800/50 rounded-xl p-3">
+        <div
+          className="grid grid-cols-2 gap-3 mb-6 animate-fade-in"
+          style={{
+            animationDelay: '100ms',
+            animationFillMode: 'backwards',
+          }}
+        >
+          <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-3">
             <div className="flex items-center gap-2 text-zinc-400 mb-1">
               <Target className="w-4 h-4" />
               <span className="text-sm">Goal</span>
@@ -272,7 +367,7 @@ function ChallengeDetailPage() {
             </p>
           </div>
 
-          <div className="bg-zinc-800/50 rounded-xl p-3">
+          <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-3">
             <div className="flex items-center gap-2 text-zinc-400 mb-1">
               <Users className="w-4 h-4" />
               <span className="text-sm">Participants</span>
@@ -283,7 +378,7 @@ function ChallengeDetailPage() {
             </p>
           </div>
 
-          <div className="bg-zinc-800/50 rounded-xl p-3 col-span-2">
+          <div className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-3 col-span-2">
             <div className="flex items-center gap-2 text-zinc-400 mb-1">
               <Clock className="w-4 h-4" />
               <span className="text-sm">Duration</span>
@@ -297,7 +392,13 @@ function ChallengeDetailPage() {
 
         {/* User Progress */}
         {isParticipating && challenge.status === 'ACTIVE' && (
-          <div className="bg-zinc-800/50 rounded-xl p-4 mb-6">
+          <div
+            className="bg-zinc-800/50 rounded-xl border border-zinc-700/50 p-4 mb-6 animate-fade-in"
+            style={{
+              animationDelay: '150ms',
+              animationFillMode: 'backwards',
+            }}
+          >
             <div className="flex justify-between items-center mb-2">
               <span className="text-white font-medium">Your Progress</span>
               <span className="text-zinc-400">
@@ -320,7 +421,13 @@ function ChallengeDetailPage() {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 mb-6">
+        <div
+          className="flex gap-2 mb-6 animate-fade-in"
+          style={{
+            animationDelay: '200ms',
+            animationFillMode: 'backwards',
+          }}
+        >
           {!isParticipating && challenge.status !== 'COMPLETED' && (
             <button
               onClick={handleJoin}
@@ -360,76 +467,83 @@ function ChallengeDetailPage() {
         </div>
 
         {/* Leaderboard */}
-        <div>
-          <h2 className="text-lg font-semibold text-white mb-3">Leaderboard</h2>
-          <div className="space-y-2">
-            {challenge.participants.map((participant) => {
-              const isCurrentUser = participant.userId === user?.id
-              const participantProgress =
-                (participant.progress / challenge.targetValue) * 100
+        <div
+          className="animate-fade-in"
+          style={{
+            animationDelay: '250ms',
+            animationFillMode: 'backwards',
+          }}
+        >
+          <StatsSection icon={<Trophy />} title="Leaderboard">
+            <div className="space-y-2">
+              {challenge.participants.map((participant, index) => {
+                const isCurrentUser = participant.userId === user?.id
+                const participantProgress =
+                  (participant.progress / challenge.targetValue) * 100
 
-              return (
-                <Link
-                  key={participant.id}
-                  to="/u/$username"
-                  params={{ username: participant.profile?.username ?? '' }}
-                  className={`flex items-center gap-3 p-3 rounded-lg ${
-                    isCurrentUser
-                      ? 'bg-blue-600/20 border border-blue-500/30'
-                      : 'bg-zinc-800/50'
-                  }`}
-                >
-                  <div className="w-8 flex items-center justify-center">
+                return (
+                  <Link
+                    key={participant.id}
+                    to="/u/$username"
+                    params={{
+                      username: participant.profile?.username ?? '',
+                    }}
+                    className={`flex items-center gap-3 p-3 rounded-xl animate-fade-in ${getPodiumClasses(participant.rank, isCurrentUser)}`}
+                    style={{
+                      animationDelay: `${300 + index * 50}ms`,
+                      animationFillMode: 'backwards',
+                    }}
+                  >
                     {getRankBadge(participant.rank)}
-                  </div>
 
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                    {participant.profile?.avatarUrl ? (
-                      <img
-                        src={participant.profile.avatarUrl}
-                        alt={`${participant.user.name}'s profile picture`}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      getInitials(participant.user.name)
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`font-medium truncate ${
-                        isCurrentUser ? 'text-blue-400' : 'text-white'
-                      }`}
-                    >
-                      {participant.user.name}
-                      {isCurrentUser && ' (You)'}
-                    </p>
-                    <div className="h-1.5 bg-zinc-700 rounded-full overflow-hidden mt-1">
-                      <div
-                        className={`h-full transition-all ${
-                          participant.completedAt
-                            ? 'bg-green-500'
-                            : 'bg-blue-600'
-                        }`}
-                        style={{
-                          width: `${Math.min(100, participantProgress)}%`,
-                        }}
-                      />
+                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                      {participant.profile?.avatarUrl ? (
+                        <img
+                          src={participant.profile.avatarUrl}
+                          alt={`${participant.user.name}'s profile picture`}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        getInitials(participant.user.name)
+                      )}
                     </div>
-                  </div>
 
-                  <div className="text-right">
-                    <p className="font-bold text-white">
-                      {Math.round(participant.progress)}
-                    </p>
-                    {participant.completedAt && (
-                      <Trophy className="w-4 h-4 text-yellow-500" />
-                    )}
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`font-medium truncate ${
+                          isCurrentUser ? 'text-blue-400' : 'text-white'
+                        }`}
+                      >
+                        {participant.user.name}
+                        {isCurrentUser && ' (You)'}
+                      </p>
+                      <div className="h-1.5 bg-zinc-700 rounded-full overflow-hidden mt-1">
+                        <div
+                          className={`h-full transition-all ${
+                            participant.completedAt
+                              ? 'bg-green-500'
+                              : 'bg-blue-600'
+                          }`}
+                          style={{
+                            width: `${Math.min(100, participantProgress)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="font-bold text-white">
+                        {Math.round(participant.progress)}
+                      </p>
+                      {participant.completedAt && (
+                        <Trophy className="w-4 h-4 text-yellow-500" />
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </StatsSection>
         </div>
       </div>
     </AppLayout>
