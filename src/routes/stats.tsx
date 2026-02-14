@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   Activity,
@@ -39,7 +39,6 @@ import {
   getMoodStats,
   getOverviewStats,
   getPrTimeline,
-  getRecentPRs,
   getRpeStats,
   getVolumeHistory,
   getWorkoutConsistency,
@@ -84,19 +83,6 @@ type MuscleGroupData = {
   percentage: number
 }
 
-type PRData = {
-  id: string
-  exerciseName: string
-  muscleGroup: MuscleGroup | null
-  isTimed: boolean
-  recordType: RecordType
-  value: number
-  weight: number | null
-  reps: number | null
-  timeSeconds: number | null
-  achievedAt: Date
-}
-
 type DurationData = {
   avgDurationSeconds: number
   maxDurationSeconds: number
@@ -129,33 +115,6 @@ type PrTimelineEntry = {
   achievedAt: Date
 }
 
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
-function formatPRDisplay(pr: PRData): string {
-  switch (pr.recordType) {
-    case 'MAX_VOLUME':
-      if (pr.weight && pr.reps) {
-        return `${pr.weight}kg × ${pr.reps} reps`
-      }
-      if (pr.weight && pr.timeSeconds) {
-        return `${pr.weight}kg × ${formatTime(pr.timeSeconds)}`
-      }
-      return `Score: ${pr.value}`
-    case 'MAX_TIME':
-      return formatTime(pr.value)
-    case 'MAX_REPS':
-      return `${pr.value} reps`
-    case 'MAX_WEIGHT':
-      return `${pr.value}kg`
-    default:
-      return `${pr.value}`
-  }
-}
-
 function percentChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0
   return Math.round(((current - previous) / previous) * 100)
@@ -182,7 +141,6 @@ function StatsPage() {
   const [volumeHistory, setVolumeHistory] = useState<Array<WeekData>>([])
   const [topExercises, setTopExercises] = useState<Array<TopExercise>>([])
   const [muscleGroups, setMuscleGroups] = useState<Array<MuscleGroupData>>([])
-  const [recentPRs, setRecentPRs] = useState<Array<PRData>>([])
   const [durationData, setDurationData] = useState<DurationData | null>(null)
   const [moodData, setMoodData] = useState<MoodData | null>(null)
   const [consistency, setConsistency] = useState<Record<string, number>>({})
@@ -201,7 +159,6 @@ function StatsPage() {
           overviewRes,
           volumeRes,
           exerciseRes,
-          prsRes,
           durationRes,
           moodRes,
           consistencyRes,
@@ -211,12 +168,11 @@ function StatsPage() {
           getOverviewStats({ data: { userId: user.id, startDate } }),
           getVolumeHistory({ data: { userId: user.id, startDate } }),
           getExerciseStats({ data: { userId: user.id, startDate } }),
-          getRecentPRs({ data: { userId: user.id, limit: 5, startDate } }),
           getDurationStats({ data: { userId: user.id, startDate } }),
           getMoodStats({ data: { userId: user.id, startDate } }),
           getWorkoutConsistency({ data: { userId: user.id } }),
           getRpeStats({ data: { userId: user.id, startDate } }),
-          getPrTimeline({ data: { userId: user.id, limit: 15, startDate } }),
+          getPrTimeline({ data: { userId: user.id, limit: 5, startDate } }),
         ])
 
         setOverview(overviewRes.stats)
@@ -224,7 +180,6 @@ function StatsPage() {
         setVolumeHistory(volumeRes.weeks)
         setTopExercises(exerciseRes.topExercises)
         setMuscleGroups(exerciseRes.muscleGroups)
-        setRecentPRs(prsRes.prs)
         setDurationData(durationRes)
         setMoodData(moodRes)
         setConsistency(consistencyRes.dayMap)
@@ -239,13 +194,6 @@ function StatsPage() {
 
     fetchStats()
   }, [user, timeRange])
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
-  }
 
   const hasPreviousStats = previousStats !== undefined && timeRange !== 'all'
 
@@ -493,44 +441,23 @@ function StatsPage() {
           </StatsSection>
         )}
 
-        {/* 10. PR Timeline + Recent PRs */}
+        {/* 10. Recent PRs */}
         {prTimeline.length > 0 && (
           <StatsSection
             icon={<Trophy className="w-4 h-4" />}
-            title="PR Timeline"
+            title="Recent PRs"
+            headerAction={
+              <Link
+                to="/prs"
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                View all &rarr;
+              </Link>
+            }
             style={{ animationDelay: '450ms' }}
           >
             <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
               <PrTimeline timeline={prTimeline} />
-            </div>
-          </StatsSection>
-        )}
-
-        {recentPRs.length > 0 && (
-          <StatsSection
-            icon={<Trophy className="w-4 h-4" />}
-            title="Recent PRs"
-            style={{ animationDelay: '500ms' }}
-          >
-            <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
-              {recentPRs.map((pr) => (
-                <div key={pr.id} className="p-3 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                    <Trophy className="w-4 h-4 text-yellow-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">
-                      {pr.exerciseName}
-                    </p>
-                    <p className="text-sm text-zinc-400">
-                      {formatPRDisplay(pr)}
-                    </p>
-                  </div>
-                  <div className="text-xs text-zinc-500">
-                    {formatDate(pr.achievedAt)}
-                  </div>
-                </div>
-              ))}
             </div>
           </StatsSection>
         )}

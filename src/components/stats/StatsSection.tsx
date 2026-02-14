@@ -4,6 +4,7 @@ type Props = {
   icon: ReactNode
   title: string
   subtitle?: string
+  headerAction?: ReactNode
   children: ReactNode
   style?: React.CSSProperties
 }
@@ -12,6 +13,7 @@ export default function StatsSection({
   icon,
   title,
   subtitle,
+  headerAction,
   children,
   style,
 }: Props) {
@@ -25,6 +27,10 @@ export default function StatsSection({
         {subtitle && (
           <span className="text-xs text-zinc-500 ml-auto">{subtitle}</span>
         )}
+        {headerAction && !subtitle && (
+          <span className="ml-auto">{headerAction}</span>
+        )}
+        {headerAction && subtitle && <span className="ml-2">{headerAction}</span>}
       </div>
       {children}
     </section>
