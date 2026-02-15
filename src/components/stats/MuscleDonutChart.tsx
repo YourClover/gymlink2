@@ -219,7 +219,7 @@ export default function MuscleDonutChart({ data }: Props) {
         >
           sets
         </text>
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip />} cursor={false} />
         <Legend content={<CustomLegend data={data} />} />
       </PieChart>
     </ResponsiveContainer>

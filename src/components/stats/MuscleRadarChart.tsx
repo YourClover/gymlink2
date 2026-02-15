@@ -75,7 +75,7 @@ export default function MuscleRadarChart({ data }: Props) {
           dataKey="label"
           tick={{ fill: '#a1a1aa', fontSize: 11 }}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip />} cursor={false} />
         <Radar
           dataKey="count"
           stroke="#3b82f6"

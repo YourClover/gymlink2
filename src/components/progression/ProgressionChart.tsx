@@ -119,7 +119,7 @@ export default function ProgressionChart({ data, metric }: Props) {
             return value.toString()
           }}
         />
-        <Tooltip content={<CustomTooltip metric={metric} />} />
+        <Tooltip content={<CustomTooltip metric={metric} />} cursor={false} />
         <Line
           type="monotone"
           dataKey="value"
