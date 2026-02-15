@@ -39,11 +39,29 @@ code {
   }
 }
 
-/* Prevent tap highlight flash on charts (mobile) */
+/* Prevent white box / flash on chart touch on mobile */
 .recharts-responsive-container,
-.recharts-responsive-container svg {
+.recharts-wrapper,
+.recharts-wrapper * {
   -webkit-tap-highlight-color: transparent;
   outline: none;
+}
+
+.recharts-tooltip-wrapper {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.recharts-default-tooltip {
+  background-color: #18181b !important;
+  border-color: #3f3f46 !important;
+}
+
+.recharts-wrapper {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
 }
 
 /* Prevent text selection on mobile UI elements */
