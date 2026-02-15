@@ -134,6 +134,49 @@ export const SkeletonLeaderboardRow = memo(function SkeletonLeaderboardRow() {
   )
 })
 
+// Skeleton for the private profile page
+export const SkeletonProfilePage = memo(function SkeletonProfilePage() {
+  return (
+    <div className="px-4 py-6 space-y-6">
+      {/* Header card */}
+      <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+        <div className="flex items-center gap-4">
+          <SkeletonAvatar size="lg" />
+          <div className="flex-1">
+            <Skeleton className="h-5 w-32 mb-2" />
+            <Skeleton className="h-4 w-24 mb-1" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <Skeleton className="flex-1 h-9 rounded-lg" />
+          <Skeleton className="flex-1 h-9 rounded-lg" />
+        </div>
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonStatsCard key={i} />
+        ))}
+      </div>
+
+      {/* List sections */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-20" />
+        <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
+          <Skeleton className="h-14 w-full rounded-t-xl" />
+          <Skeleton className="h-14 w-full rounded-b-xl" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-20 w-full rounded-xl" />
+      </div>
+    </div>
+  )
+})
+
 // Skeleton for profile header
 export const SkeletonProfileHeader = memo(function SkeletonProfileHeader() {
   return (

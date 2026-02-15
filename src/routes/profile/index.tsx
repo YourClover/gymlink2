@@ -2,13 +2,16 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   Award,
+  Calendar,
   Check,
   ChevronRight,
   Dumbbell,
   Edit,
+  Flame,
   History,
   LogOut,
   Mail,
+  Medal,
   Settings,
   Share2,
   Shield,
@@ -21,7 +24,10 @@ import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import { AchievementBadge } from '@/components/achievements'
 import { getUserAchievements } from '@/lib/achievements.server'
-import { getUserProfile } from '@/lib/profile.server'
+import { getUserProfile, getProfileStats } from '@/lib/profile.server'
+import { getFollowCounts } from '@/lib/social.server'
+import { formatVolume } from '@/lib/formatting'
+import { SkeletonProfilePage } from '@/components/ui/Skeleton'
 import StatsSection from '@/components/stats/StatsSection'
 
 export const Route = createFileRoute('/profile/')({
@@ -40,6 +46,20 @@ interface ProfileData {
   profileCode: string
   bio: string | null
   isPrivate: boolean
+  user: { createdAt: Date | string }
+}
+
+interface ProfileStats {
+  totalWorkouts: number
+  totalPRs: number
+  totalVolume: number
+  totalAchievements: number
+}
+
+interface FollowCountsData {
+  followersCount: number
+  followingCount: number
+  pendingCount: number
 }
 
 function ProfilePage() {
@@ -52,17 +72,27 @@ function ProfilePage() {
     total: 0,
   })
   const [profile, setProfile] = useState<ProfileData | null>(null)
+  const [stats, setStats] = useState<ProfileStats | null>(null)
+  const [followCounts, setFollowCounts] = useState<FollowCountsData | null>(
+    null,
+  )
+  const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     async function loadData() {
       if (!user?.id) return
 
+      setLoading(true)
       try {
-        // Load achievements
-        const achievementResult = await getUserAchievements({
-          data: { userId: user.id },
-        })
+        // Load achievements, profile, and stats in parallel
+        const [achievementResult, profileResult, statsResult] =
+          await Promise.all([
+            getUserAchievements({ data: { userId: user.id } }),
+            getUserProfile({ data: { userId: user.id } }),
+            getProfileStats({ data: { userId: user.id } }),
+          ])
+
         setAchievementStats({
           earned: achievementResult.earnedCount,
           total: achievementResult.totalCount,
@@ -75,20 +105,34 @@ function ProfilePage() {
         }))
         setRecentAchievements(recent)
 
-        // Load profile
-        const profileResult = await getUserProfile({
-          data: { userId: user.id },
-        })
+        if (statsResult.stats) {
+          setStats({
+            totalWorkouts: statsResult.stats.totalWorkouts,
+            totalPRs: statsResult.stats.totalPRs,
+            totalVolume: statsResult.stats.totalVolume,
+            totalAchievements: statsResult.stats.totalAchievements,
+          })
+        }
+
         if (profileResult.profile) {
           setProfile({
             username: profileResult.profile.username,
             profileCode: profileResult.profile.profileCode,
             bio: profileResult.profile.bio,
             isPrivate: profileResult.profile.isPrivate,
+            user: { createdAt: profileResult.profile.user.createdAt },
           })
+
+          // Load follow counts once we know profile exists
+          const followResult = await getFollowCounts({
+            data: { userId: user.id },
+          })
+          setFollowCounts(followResult)
         }
       } catch (error) {
         console.error('Failed to load data:', error)
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -101,6 +145,22 @@ function ProfilePage() {
     await navigator.clipboard.writeText(url)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const formatDate = (date: Date | string) => {
+    const d = typeof date === 'string' ? new Date(date) : date
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
+  if (loading) {
+    return (
+      <AppLayout title="Profile">
+        <SkeletonProfilePage />
+      </AppLayout>
+    )
   }
 
   return (
@@ -125,6 +185,13 @@ function ProfilePage() {
                   <span className="inline-block bg-zinc-700/50 px-2 py-0.5 rounded-md text-xs font-mono text-zinc-400 mt-1">
                     {profile.profileCode}
                   </span>
+                  {profile.bio && (
+                    <p className="text-sm text-zinc-400 mt-2">{profile.bio}</p>
+                  )}
+                  <div className="flex items-center gap-1 text-xs text-zinc-500 mt-1">
+                    <Calendar className="w-3 h-3" />
+                    Joined {formatDate(profile.user.createdAt)}
+                  </div>
                 </>
               ) : (
                 <div className="flex items-center gap-1 text-zinc-400 text-sm">
@@ -172,13 +239,56 @@ function ProfilePage() {
           )}
         </div>
 
+        {/* Stats Grid */}
+        {stats && (
+          <div
+            className="grid grid-cols-2 gap-3 animate-fade-in"
+            style={{ animationDelay: '50ms', animationFillMode: 'backwards' }}
+          >
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Dumbbell className="w-4 h-4 text-blue-400" />
+                <span className="text-sm text-zinc-400">Workouts</span>
+              </div>
+              <p className="text-2xl font-bold text-white">
+                {stats.totalWorkouts}
+              </p>
+            </div>
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm text-zinc-400">PRs</span>
+              </div>
+              <p className="text-2xl font-bold text-white">{stats.totalPRs}</p>
+            </div>
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Flame className="w-4 h-4 text-orange-400" />
+                <span className="text-sm text-zinc-400">Volume</span>
+              </div>
+              <p className="text-2xl font-bold text-white">
+                {formatVolume(stats.totalVolume)}
+              </p>
+            </div>
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Medal className="w-4 h-4 text-purple-400" />
+                <span className="text-sm text-zinc-400">Badges</span>
+              </div>
+              <p className="text-2xl font-bold text-white">
+                {stats.totalAchievements}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Social Stats */}
         {profile && (
           <StatsSection
             icon={<Users />}
             title="Social"
             style={{
-              animationDelay: '50ms',
+              animationDelay: '100ms',
               animationFillMode: 'backwards',
             }}
           >
@@ -189,9 +299,30 @@ function ProfilePage() {
               >
                 <div className="flex items-center gap-3">
                   <Users className="w-5 h-5 text-zinc-400" />
-                  <span className="text-white">Followers & Following</span>
+                  {followCounts ? (
+                    <span className="text-white">
+                      <span className="font-semibold">
+                        {followCounts.followersCount}
+                      </span>{' '}
+                      Followers{' '}
+                      <span className="text-zinc-500 mx-1">&middot;</span>{' '}
+                      <span className="font-semibold">
+                        {followCounts.followingCount}
+                      </span>{' '}
+                      Following
+                    </span>
+                  ) : (
+                    <span className="text-white">Followers & Following</span>
+                  )}
                 </div>
-                <ChevronRight className="w-5 h-5 text-zinc-500" />
+                <div className="flex items-center gap-2">
+                  {followCounts && followCounts.pendingCount > 0 && (
+                    <span className="bg-blue-600 text-white text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                      {followCounts.pendingCount}
+                    </span>
+                  )}
+                  <ChevronRight className="w-5 h-5 text-zinc-500" />
+                </div>
               </Link>
               <Link
                 to="/users/search"
@@ -212,7 +343,7 @@ function ProfilePage() {
           icon={<Award />}
           title="Achievements"
           style={{
-            animationDelay: '100ms',
+            animationDelay: '150ms',
             animationFillMode: 'backwards',
           }}
         >
@@ -265,7 +396,7 @@ function ProfilePage() {
           icon={<History />}
           title="Activity"
           style={{
-            animationDelay: '150ms',
+            animationDelay: '200ms',
             animationFillMode: 'backwards',
           }}
         >
@@ -298,7 +429,7 @@ function ProfilePage() {
           icon={<Settings />}
           title="Settings"
           style={{
-            animationDelay: '200ms',
+            animationDelay: '250ms',
             animationFillMode: 'backwards',
           }}
         >
@@ -340,7 +471,7 @@ function ProfilePage() {
           icon={<User />}
           title="Account"
           style={{
-            animationDelay: '250ms',
+            animationDelay: '300ms',
             animationFillMode: 'backwards',
           }}
         >
