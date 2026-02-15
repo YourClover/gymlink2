@@ -203,44 +203,6 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
       ? { not: null, gte: new Date(data.startDate) }
       : { not: null }
 
-    // Most trained exercises (by working set count)
-    const exerciseCounts = await prisma.workoutSet.groupBy({
-      by: ['exerciseId'],
-      where: {
-        workoutSession: {
-          userId: data.userId,
-          completedAt: dateFilter,
-        },
-        isWarmup: false,
-      },
-      _count: {
-        id: true,
-      },
-      orderBy: {
-        _count: {
-          id: 'desc',
-        },
-      },
-      take: 5,
-    })
-
-    // Get exercise details
-    const exerciseIds = exerciseCounts.map((e) => e.exerciseId)
-    const exercises = await prisma.exercise.findMany({
-      where: { id: { in: exerciseIds } },
-      select: { id: true, name: true, muscleGroup: true },
-    })
-
-    const topExercises = exerciseCounts.map((ec) => {
-      const exercise = exercises.find((e) => e.id === ec.exerciseId)
-      return {
-        exerciseId: ec.exerciseId,
-        name: exercise?.name ?? 'Unknown',
-        muscleGroup: exercise?.muscleGroup ?? null,
-        setCount: ec._count.id,
-      }
-    })
-
     // Muscle group distribution
     const muscleGroupCounts = await prisma.workoutSet.groupBy({
       by: ['exerciseId'],
@@ -285,7 +247,6 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
       .sort((a, b) => b.count - a.count)
 
     return {
-      topExercises,
       muscleGroups,
       totalSets,
     }

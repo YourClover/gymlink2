@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import {
   Activity,
@@ -8,10 +8,8 @@ import {
   Clock,
   Dumbbell,
   Flame,
-  LineChart,
   Star,
   Target,
-  TrendingUp,
   Trophy,
   Weight,
 } from 'lucide-react'
@@ -19,7 +17,6 @@ import type { AchievementRarity, MuscleGroup, RecordType } from '@prisma/client'
 import type { TimeRange } from '@/components/progression/TimeRangeSelector'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
-import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
 import TimeRangeSelector, {
   getStartDateForRange,
 } from '@/components/progression/TimeRangeSelector'
@@ -71,13 +68,6 @@ type WeekData = {
   weekStart: string
   volume: number
   workouts: number
-}
-
-type TopExercise = {
-  exerciseId: string
-  name: string
-  muscleGroup: MuscleGroup | null
-  setCount: number
 }
 
 type MuscleGroupData = {
@@ -133,7 +123,6 @@ const rangeLabels: Record<TimeRange, string> = {
 
 function StatsPage() {
   const { user } = useAuth()
-  const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<TimeRange>('all')
@@ -142,7 +131,6 @@ function StatsPage() {
     undefined,
   )
   const [volumeHistory, setVolumeHistory] = useState<Array<WeekData>>([])
-  const [topExercises, setTopExercises] = useState<Array<TopExercise>>([])
   const [muscleGroups, setMuscleGroups] = useState<Array<MuscleGroupData>>([])
   const [durationData, setDurationData] = useState<DurationData | null>(null)
   const [moodData, setMoodData] = useState<MoodData | null>(null)
@@ -199,7 +187,6 @@ function StatsPage() {
         setOverview(overviewRes.stats)
         setPreviousStats(overviewRes.previousStats)
         setVolumeHistory(volumeRes.weeks)
-        setTopExercises(exerciseRes.topExercises)
         setMuscleGroups(exerciseRes.muscleGroups)
         setDurationData(durationRes)
         setMoodData(moodRes)
@@ -473,53 +460,7 @@ function StatsPage() {
           </StatsSection>
         )}
 
-        {/* 10. Top Exercises */}
-        {topExercises.length > 0 && (
-          <StatsSection
-            icon={<TrendingUp className="w-4 h-4" />}
-            title="Most Trained"
-            style={{ animationDelay: '450ms' }}
-          >
-            <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
-              {topExercises.map((ex, i) => (
-                <div
-                  key={ex.exerciseId}
-                  className="p-3 flex items-center gap-3"
-                >
-                  <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-medium text-zinc-300">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{ex.name}</p>
-                    {ex.muscleGroup && (
-                      <MuscleGroupBadge
-                        muscleGroup={ex.muscleGroup}
-                        size="sm"
-                      />
-                    )}
-                  </div>
-                  <div className="text-sm text-zinc-400 mr-2">
-                    {ex.setCount} sets
-                  </div>
-                  <button
-                    onClick={() =>
-                      navigate({
-                        to: '/progress/$exerciseId',
-                        params: { exerciseId: ex.exerciseId },
-                      })
-                    }
-                    className="p-2 text-zinc-400 hover:text-blue-400 rounded-lg hover:bg-zinc-700/50 transition-colors focus:outline-none active:scale-95"
-                    title="View progress"
-                  >
-                    <LineChart className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </StatsSection>
-        )}
-
-        {/* 11. Recent PRs */}
+        {/* 10. Recent PRs */}
         {prTimeline.length > 0 && (
           <StatsSection
             icon={<Trophy className="w-4 h-4" />}
