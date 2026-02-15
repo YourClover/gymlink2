@@ -15,6 +15,14 @@ export default function StatsSkeleton() {
         <Shimmer className="h-28" />
       </div>
 
+      {/* Achievement placeholder */}
+      <div className="space-y-2">
+        <Shimmer className="h-4 w-28" />
+        <Shimmer className="h-16" />
+        <Shimmer className="h-20" />
+        <Shimmer className="h-14" />
+      </div>
+
       {/* Heatmap placeholder */}
       <div className="space-y-2">
         <Shimmer className="h-4 w-40" />

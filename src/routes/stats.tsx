@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useRef, useState } from 'react'
 import {
   Activity,
+  Award,
   BarChart3,
   Calendar,
   Clock,
@@ -14,7 +15,7 @@ import {
   Trophy,
   Weight,
 } from 'lucide-react'
-import type { MuscleGroup, RecordType } from '@prisma/client'
+import type { AchievementRarity, MuscleGroup, RecordType } from '@prisma/client'
 import type { TimeRange } from '@/components/progression/TimeRangeSelector'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
@@ -33,6 +34,7 @@ import MoodStats from '@/components/stats/MoodStats'
 import WeeklyHeatmap from '@/components/stats/WeeklyHeatmap'
 import RpeChart from '@/components/stats/RpeChart'
 import PrTimeline from '@/components/stats/PrTimeline'
+import AchievementShowcase from '@/components/stats/AchievementShowcase'
 import {
   getDurationStats,
   getExerciseStats,
@@ -43,6 +45,7 @@ import {
   getVolumeHistory,
   getWorkoutConsistency,
 } from '@/lib/stats.server'
+import { getUserAchievements } from '@/lib/achievements.server'
 import { formatDuration, formatVolume } from '@/lib/formatting'
 
 export const Route = createFileRoute('/stats')({
@@ -146,6 +149,24 @@ function StatsPage() {
   const [consistency, setConsistency] = useState<Record<string, number>>({})
   const [rpeData, setRpeData] = useState<RpeData | null>(null)
   const [prTimeline, setPrTimeline] = useState<Array<PrTimelineEntry>>([])
+  const [achievementData, setAchievementData] = useState<{
+    earnedCount: number
+    totalCount: number
+    recentEarned: Array<{
+      id: string
+      earnedAt: Date
+      achievement: {
+        id: string
+        name: string
+        icon: string
+        rarity: AchievementRarity
+      }
+    }>
+    rarityBreakdown: Partial<
+      Record<AchievementRarity, { earned: number; total: number }>
+    >
+  } | null>(null)
+  const achievementCacheRef = useRef<typeof achievementData>(null)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -185,6 +206,39 @@ function StatsPage() {
         setConsistency(consistencyRes.dayMap)
         setRpeData(rpeRes)
         setPrTimeline(prTimelineRes.timeline)
+
+        // Fetch achievements only once (not affected by time range)
+        if (!achievementCacheRef.current) {
+          const achRes = await getUserAchievements({
+            data: { userId: user.id },
+          })
+          const recentEarned = achRes.earned.slice(0, 5)
+          const earnedSet = new Set(achRes.earnedSet)
+          const rarityBreakdown: Partial<
+            Record<AchievementRarity, { earned: number; total: number }>
+          > = {}
+          for (const a of achRes.all) {
+            let entry = rarityBreakdown[a.rarity]
+            if (!entry) {
+              entry = { earned: 0, total: 0 }
+              rarityBreakdown[a.rarity] = entry
+            }
+            entry.total++
+            if (earnedSet.has(a.id)) {
+              entry.earned++
+            }
+          }
+          const computed = {
+            earnedCount: achRes.earnedCount,
+            totalCount: achRes.totalCount,
+            recentEarned,
+            rarityBreakdown,
+          }
+          achievementCacheRef.current = computed
+          setAchievementData(computed)
+        } else {
+          setAchievementData(achievementCacheRef.current)
+        }
       } catch (error) {
         console.error('Failed to fetch stats:', error)
       } finally {
@@ -315,13 +369,37 @@ function StatsPage() {
           </div>
         )}
 
-        {/* 3. Weekly Activity Heatmap */}
+        {/* 3. Achievement Showcase */}
+        {achievementData && achievementData.totalCount > 0 && (
+          <StatsSection
+            icon={<Award className="w-4 h-4" />}
+            title="Achievements"
+            headerAction={
+              <Link
+                to="/achievements"
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                View all &rarr;
+              </Link>
+            }
+            style={{ animationDelay: '100ms' }}
+          >
+            <AchievementShowcase
+              earnedCount={achievementData.earnedCount}
+              totalCount={achievementData.totalCount}
+              recentEarned={achievementData.recentEarned}
+              rarityBreakdown={achievementData.rarityBreakdown}
+            />
+          </StatsSection>
+        )}
+
+        {/* 4. Weekly Activity Heatmap */}
         {Object.keys(consistency).length > 0 && (
           <StatsSection
             icon={<Calendar className="w-4 h-4" />}
             title="Workout Consistency"
             subtitle="Last 16 weeks"
-            style={{ animationDelay: '100ms' }}
+            style={{ animationDelay: '150ms' }}
           >
             <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
               <WeeklyHeatmap dayMap={consistency} />
@@ -329,46 +407,46 @@ function StatsPage() {
           </StatsSection>
         )}
 
-        {/* 4. Volume Trend */}
+        {/* 5. Volume Trend */}
         <StatsSection
           icon={<BarChart3 className="w-4 h-4" />}
           title="Volume Trend"
-          style={{ animationDelay: '150ms' }}
+          style={{ animationDelay: '200ms' }}
         >
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
             <VolumeChart data={volumeHistory} />
           </div>
         </StatsSection>
 
-        {/* 5. Workout Duration */}
+        {/* 6. Workout Duration */}
         {durationData && durationData.sessionCount > 0 && (
           <StatsSection
             icon={<Clock className="w-4 h-4" />}
             title="Workout Duration"
-            style={{ animationDelay: '200ms' }}
+            style={{ animationDelay: '250ms' }}
           >
             <DurationStats data={durationData} />
           </StatsSection>
         )}
 
-        {/* 6. Mood */}
+        {/* 7. Mood */}
         {moodData && moodData.moodCount > 0 && (
           <StatsSection
             icon={<Star className="w-4 h-4" />}
             title="Mood"
-            style={{ animationDelay: '250ms' }}
+            style={{ animationDelay: '300ms' }}
           >
             <MoodStats data={moodData} />
           </StatsSection>
         )}
 
-        {/* 7. RPE Insights */}
+        {/* 8. RPE Insights */}
         {rpeData && (
           <StatsSection
             icon={<Activity className="w-4 h-4" />}
             title="RPE Insights"
             subtitle={`${rpeData.totalRatedSets} rated sets`}
-            style={{ animationDelay: '300ms' }}
+            style={{ animationDelay: '350ms' }}
           >
             <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
               <RpeChart data={rpeData} />
@@ -376,12 +454,12 @@ function StatsPage() {
           </StatsSection>
         )}
 
-        {/* 8. Muscle Balance Radar + Donut */}
+        {/* 9. Muscle Balance Radar + Donut */}
         {muscleGroups.length > 0 && (
           <StatsSection
             icon={<Target className="w-4 h-4" />}
             title="Muscle Balance"
-            style={{ animationDelay: '350ms' }}
+            style={{ animationDelay: '400ms' }}
           >
             <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
               <MuscleRadarChart data={muscleGroups} />
@@ -395,12 +473,12 @@ function StatsPage() {
           </StatsSection>
         )}
 
-        {/* 9. Top Exercises */}
+        {/* 10. Top Exercises */}
         {topExercises.length > 0 && (
           <StatsSection
             icon={<TrendingUp className="w-4 h-4" />}
             title="Most Trained"
-            style={{ animationDelay: '400ms' }}
+            style={{ animationDelay: '450ms' }}
           >
             <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50">
               {topExercises.map((ex, i) => (
@@ -441,7 +519,7 @@ function StatsPage() {
           </StatsSection>
         )}
 
-        {/* 10. Recent PRs */}
+        {/* 11. Recent PRs */}
         {prTimeline.length > 0 && (
           <StatsSection
             icon={<Trophy className="w-4 h-4" />}
@@ -454,7 +532,7 @@ function StatsPage() {
                 View all &rarr;
               </Link>
             }
-            style={{ animationDelay: '450ms' }}
+            style={{ animationDelay: '500ms' }}
           >
             <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
               <PrTimeline timeline={prTimeline} />

@@ -30,7 +30,9 @@ export default function StatsSection({
         {headerAction && !subtitle && (
           <span className="ml-auto">{headerAction}</span>
         )}
-        {headerAction && subtitle && <span className="ml-2">{headerAction}</span>}
+        {headerAction && subtitle && (
+          <span className="ml-2">{headerAction}</span>
+        )}
       </div>
       {children}
     </section>
