@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, LineChart, TrendingUp, Trophy } from 'lucide-react'
 import type { MuscleGroup, RecordType } from '@prisma/client'
@@ -32,6 +32,7 @@ type GroupedPRs = Record<string, Array<ExercisePR>>
 function PRsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const router = useRouter()
 
   const [loading, setLoading] = useState(true)
   const [grouped, setGrouped] = useState<GroupedPRs>({})
@@ -224,7 +225,7 @@ function PRsPage() {
       <header className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
         <div className="flex items-center gap-3 px-4 py-3">
           <button
-            onClick={() => navigate({ to: '/profile' })}
+            onClick={() => router.history.back()}
             className="p-2 -ml-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

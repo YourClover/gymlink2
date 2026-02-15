@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
 import { ArrowLeft, Loader2, QrCode, Search, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -24,6 +24,7 @@ interface UserResult {
 function UserSearchPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const router = useRouter()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Array<UserResult>>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -106,9 +107,9 @@ function UserSearchPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={() => navigate({ to: '/profile' })}
+            onClick={() => router.history.back()}
             className="p-2 -ml-2 hover:bg-zinc-800 rounded-lg"
-            aria-label="Back to profile"
+            aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5 text-zinc-400" />
           </button>

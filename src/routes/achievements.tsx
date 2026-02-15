@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import type { AchievementCategory, AchievementRarity } from '@prisma/client'
@@ -32,6 +32,7 @@ interface UserAchievement {
 
 function AchievementsPage() {
   const { user } = useAuth()
+  const router = useRouter()
   const [achievements, setAchievements] = useState<Array<Achievement>>([])
   const [earnedAchievements, setEarnedAchievements] = useState<
     Array<UserAchievement>
@@ -63,12 +64,12 @@ function AchievementsPage() {
       <div className="min-h-screen bg-zinc-900 flex flex-col">
         <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
           <div className="flex items-center gap-3 px-4 py-4">
-            <Link
-              to="/profile"
+            <button
+              onClick={() => router.history.back()}
               className="p-1 -ml-1 text-zinc-400 hover:text-white"
             >
               <ArrowLeft className="w-6 h-6" />
-            </Link>
+            </button>
             <h1 className="text-xl font-bold text-white">Achievements</h1>
           </div>
         </header>
@@ -88,12 +89,12 @@ function AchievementsPage() {
     <div className="min-h-screen bg-zinc-900 flex flex-col">
       <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
         <div className="flex items-center gap-3 px-4 py-4">
-          <Link
-            to="/profile"
+          <button
+            onClick={() => router.history.back()}
             className="p-1 -ml-1 text-zinc-400 hover:text-white"
           >
             <ArrowLeft className="w-6 h-6" />
-          </Link>
+          </button>
           <h1 className="text-xl font-bold text-white">Achievements</h1>
         </div>
       </header>

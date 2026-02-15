@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, MoreVertical, UserPlus, Users } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -39,6 +39,7 @@ interface MutualData {
 function FollowersPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const router = useRouter()
   const [tab, setTab] = useState<
     'followers' | 'following' | 'mutuals' | 'requests'
   >('followers')
@@ -245,7 +246,7 @@ function FollowersPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={() => navigate({ to: '/profile' })}
+            onClick={() => router.history.back()}
             className="p-2 -ml-2 hover:bg-zinc-800 rounded-lg"
           >
             <ArrowLeft className="w-5 h-5 text-zinc-400" />
