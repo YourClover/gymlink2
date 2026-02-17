@@ -1,4 +1,9 @@
-import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
+import {
+  Link,
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
 import { ArrowLeft, Loader2, QrCode, Search, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'

@@ -1,4 +1,5 @@
 import {
+  Link,
   createFileRoute,
   useLocation,
   useNavigate,
@@ -329,9 +330,19 @@ function DashboardPage() {
                 animationFillMode: 'backwards',
               }}
             >
-              <h2 className="text-lg font-semibold text-white">
-                Recent Workouts
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">
+                  Recent Workouts
+                </h2>
+                {recentWorkouts.length > 0 && (
+                  <Link
+                    to="/history"
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    View all &rarr;
+                  </Link>
+                )}
+              </div>
               {recentWorkouts.length === 0 ? (
                 <EmptyState
                   icon={<Dumbbell className="w-8 h-8" />}
