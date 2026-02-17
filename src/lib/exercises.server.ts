@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { ExerciseType } from '@prisma/client'
 import { prisma } from './db'
-import type { Equipment, MuscleGroup } from '@prisma/client'
+import type { Equipment, ExerciseType, MuscleGroup  } from '@prisma/client'
 
 // Get exercises with optional filtering
 export const getExercises = createServerFn({ method: 'GET' })
@@ -78,7 +77,7 @@ export const createExercise = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const {
       userId,
-      exerciseType = ExerciseType.STRENGTH,
+      exerciseType = 'STRENGTH' as ExerciseType,
       isTimed = false,
       ...rest
     } = data

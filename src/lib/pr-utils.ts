@@ -1,4 +1,4 @@
-import { RecordType } from '@prisma/client'
+import type { RecordType } from '@prisma/client'
 
 /**
  * Internal base score for bodyweight exercises. When equipment is BODYWEIGHT,
@@ -14,10 +14,10 @@ export const BODYWEIGHT_BASE_SCORE = 60
  * MAX_TIME and MAX_REPS share the same tier (bodyweight equivalents).
  */
 export const PR_PRIORITY: Record<RecordType, number> = {
-  [RecordType.MAX_VOLUME]: 0,
-  [RecordType.MAX_TIME]: 1,
-  [RecordType.MAX_REPS]: 1,
-  [RecordType.MAX_WEIGHT]: 2,
+  MAX_VOLUME: 0,
+  MAX_TIME: 1,
+  MAX_REPS: 1,
+  MAX_WEIGHT: 2,
 }
 
 type PRRecord = {

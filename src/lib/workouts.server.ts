@@ -1,10 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
-import { RecordType, WeightUnit } from '@prisma/client'
 import { prisma } from './db'
 import { checkAchievements } from './achievements.server'
 import { updateChallengeProgress } from './challenges.server'
 import { BODYWEIGHT_BASE_SCORE, isDominatedByExistingPR } from './pr-utils'
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient, RecordType, WeightUnit  } from '@prisma/client'
 
 type PrismaTransactionClient = Parameters<
   Parameters<PrismaClient['$transaction']>[0]
@@ -28,14 +27,14 @@ export function calculatePRScore(
       if (effectiveWeight > 0 && timeSeconds > 0) {
         return {
           score: effectiveWeight * timeSeconds,
-          recordType: RecordType.MAX_VOLUME,
+          recordType: 'MAX_VOLUME' as RecordType,
         }
       }
     } else {
       if (effectiveWeight > 0 && reps > 0) {
         return {
           score: effectiveWeight * reps,
-          recordType: RecordType.MAX_VOLUME,
+          recordType: 'MAX_VOLUME' as RecordType,
         }
       }
     }
@@ -44,15 +43,18 @@ export function calculatePRScore(
 
   if (isTimed) {
     if (weight > 0 && timeSeconds > 0) {
-      return { score: weight * timeSeconds, recordType: RecordType.MAX_VOLUME }
+      return {
+        score: weight * timeSeconds,
+        recordType: 'MAX_VOLUME' as RecordType,
+      }
     } else if (timeSeconds > 0) {
-      return { score: timeSeconds, recordType: RecordType.MAX_TIME }
+      return { score: timeSeconds, recordType: 'MAX_TIME' as RecordType }
     }
   } else {
     if (weight > 0 && reps > 0) {
-      return { score: weight * reps, recordType: RecordType.MAX_VOLUME }
+      return { score: weight * reps, recordType: 'MAX_VOLUME' as RecordType }
     } else if (reps > 0) {
-      return { score: reps, recordType: RecordType.MAX_REPS }
+      return { score: reps, recordType: 'MAX_REPS' as RecordType }
     }
   }
   return null
@@ -111,7 +113,13 @@ async function recalculatePR(
   const existingByType = new Map(existingPRs.map((pr) => [pr.recordType, pr]))
 
   // Upsert best PRs, delete orphaned record types
-  for (const recordType of Object.values(RecordType)) {
+  const allRecordTypes: Array<RecordType> = [
+    'MAX_VOLUME',
+    'MAX_TIME',
+    'MAX_REPS',
+    'MAX_WEIGHT',
+  ]
+  for (const recordType of allRecordTypes) {
     const best = bestByType.get(recordType)
     const existingPR = existingByType.get(recordType)
 
@@ -435,7 +443,7 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
           reps: setData.reps,
           timeSeconds: setData.timeSeconds,
           weight: setData.weight,
-          weightUnit: setData.weightUnit ?? WeightUnit.KG,
+          weightUnit: setData.weightUnit ?? ('KG' as WeightUnit),
           isWarmup: setData.isWarmup ?? false,
           isDropset: setData.isDropset ?? false,
           rpe: setData.rpe,
