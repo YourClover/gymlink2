@@ -1,37 +1,73 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
+import {
+  requirePlanAccess,
+  requirePlanEditAccess,
+  requirePlanOwnership,
+} from './plan-auth'
 
 // ============================================
 // WORKOUT PLAN OPERATIONS
 // ============================================
 
-// Get user's plans with day counts
+// Get user's plans (owned + shared)
 export const getPlans = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId: string }) => data)
   .handler(async ({ data }) => {
+    // Own plans
     const plans = await prisma.workoutPlan.findMany({
       where: { userId: data.userId },
       include: {
         _count: {
-          select: { planDays: true },
+          select: { planDays: true, collaborators: true },
         },
       },
       orderBy: { updatedAt: 'desc' },
     })
 
-    return { plans }
+    // Plans shared with me (accepted collaborations)
+    const collaborations = await prisma.planCollaborator.findMany({
+      where: {
+        userId: data.userId,
+        inviteStatus: 'ACCEPTED',
+      },
+      include: {
+        workoutPlan: {
+          include: {
+            user: { select: { name: true } },
+            _count: {
+              select: { planDays: true, collaborators: true },
+            },
+          },
+        },
+      },
+      orderBy: { workoutPlan: { updatedAt: 'desc' } },
+    })
+
+    const sharedPlans = collaborations.map((c) => ({
+      ...c.workoutPlan,
+      ownerName: c.workoutPlan.user.name,
+      role: c.role,
+    }))
+
+    return { plans, sharedPlans }
   })
 
 // Get single plan with full details
 export const getPlan = createServerFn({ method: 'GET' })
   .inputValidator((data: { id: string; userId: string }) => data)
   .handler(async ({ data }) => {
-    const plan = await prisma.workoutPlan.findFirst({
-      where: {
-        id: data.id,
-        userId: data.userId,
-      },
+    const access = await requirePlanAccess(data.id, data.userId)
+
+    const plan = await prisma.workoutPlan.findUnique({
+      where: { id: data.id },
       include: {
+        user: { select: { id: true, name: true } },
+        collaborators: {
+          where: { inviteStatus: 'ACCEPTED' },
+          include: { user: { select: { id: true, name: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
         planDays: {
           orderBy: { dayOrder: 'asc' },
           include: {
@@ -49,7 +85,31 @@ export const getPlan = createServerFn({ method: 'GET' })
       },
     })
 
-    return { plan }
+    // Check for pending invite
+    let pendingInvite = false
+    if (!access.isOwner) {
+      const invite = await prisma.planCollaborator.findUnique({
+        where: {
+          workoutPlanId_userId: {
+            workoutPlanId: data.id,
+            userId: data.userId,
+          },
+        },
+        select: { inviteStatus: true },
+      })
+      if (invite?.inviteStatus === 'PENDING') {
+        pendingInvite = true
+      }
+    }
+
+    return {
+      plan,
+      access: {
+        isOwner: access.isOwner,
+        role: access.role,
+      },
+      pendingInvite,
+    }
   })
 
 // Create a new plan
@@ -82,14 +142,7 @@ export const updatePlan = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { id, userId, ...updateData } = data
 
-    // Verify ownership
-    const existing = await prisma.workoutPlan.findFirst({
-      where: { id, userId },
-    })
-
-    if (!existing) {
-      throw new Error('Plan not found')
-    }
+    await requirePlanEditAccess(id, userId)
 
     const plan = await prisma.workoutPlan.update({
       where: { id },
@@ -103,14 +156,7 @@ export const updatePlan = createServerFn({ method: 'POST' })
 export const deletePlan = createServerFn({ method: 'POST' })
   .inputValidator((data: { id: string; userId: string }) => data)
   .handler(async ({ data }) => {
-    // Verify ownership
-    const existing = await prisma.workoutPlan.findFirst({
-      where: { id: data.id, userId: data.userId },
-    })
-
-    if (!existing) {
-      throw new Error('Plan not found')
-    }
+    await requirePlanOwnership(data.id, data.userId)
 
     await prisma.workoutPlan.delete({
       where: { id: data.id },
@@ -156,14 +202,7 @@ export const createPlanDay = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { userId, ...dayData } = data
 
-    // Verify plan ownership
-    const plan = await prisma.workoutPlan.findFirst({
-      where: { id: dayData.workoutPlanId, userId },
-    })
-
-    if (!plan) {
-      throw new Error('Plan not found')
-    }
+    await requirePlanEditAccess(dayData.workoutPlanId, userId)
 
     const planDay = await prisma.planDay.create({
       data: {
@@ -191,15 +230,16 @@ export const updatePlanDay = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { id, userId, ...updateData } = data
 
-    // Verify ownership through plan
     const existing = await prisma.planDay.findFirst({
       where: { id },
-      include: { workoutPlan: { select: { userId: true } } },
+      select: { workoutPlanId: true },
     })
 
-    if (!existing || existing.workoutPlan.userId !== userId) {
+    if (!existing) {
       throw new Error('Day not found')
     }
+
+    await requirePlanEditAccess(existing.workoutPlanId, userId)
 
     const planDay = await prisma.planDay.update({
       where: { id },
@@ -213,15 +253,16 @@ export const updatePlanDay = createServerFn({ method: 'POST' })
 export const deletePlanDay = createServerFn({ method: 'POST' })
   .inputValidator((data: { id: string; userId: string }) => data)
   .handler(async ({ data }) => {
-    // Verify ownership through plan
     const existing = await prisma.planDay.findFirst({
       where: { id: data.id },
-      include: { workoutPlan: { select: { userId: true } } },
+      select: { workoutPlanId: true },
     })
 
-    if (!existing || existing.workoutPlan.userId !== data.userId) {
+    if (!existing) {
       throw new Error('Day not found')
     }
+
+    await requirePlanEditAccess(existing.workoutPlanId, data.userId)
 
     await prisma.planDay.delete({
       where: { id: data.id },
@@ -237,14 +278,7 @@ export const reorderPlanDays = createServerFn({ method: 'POST' })
       data,
   )
   .handler(async ({ data }) => {
-    // Verify plan ownership
-    const plan = await prisma.workoutPlan.findFirst({
-      where: { id: data.workoutPlanId, userId: data.userId },
-    })
-
-    if (!plan) {
-      throw new Error('Plan not found')
-    }
+    await requirePlanEditAccess(data.workoutPlanId, data.userId)
 
     // Update each day's order
     await Promise.all(
@@ -282,15 +316,16 @@ export const addPlanExercise = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { userId, ...exerciseData } = data
 
-    // Verify ownership through plan day
     const planDay = await prisma.planDay.findFirst({
       where: { id: exerciseData.planDayId },
-      include: { workoutPlan: { select: { userId: true } } },
+      select: { workoutPlanId: true },
     })
 
-    if (!planDay || planDay.workoutPlan.userId !== userId) {
+    if (!planDay) {
       throw new Error('Day not found')
     }
+
+    await requirePlanEditAccess(planDay.workoutPlanId, userId)
 
     const planExercise = await prisma.planExercise.create({
       data: {
@@ -329,19 +364,18 @@ export const updatePlanExercise = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { id, userId, ...updateData } = data
 
-    // Verify ownership through plan day and plan
     const existing = await prisma.planExercise.findFirst({
       where: { id },
       include: {
-        planDay: {
-          include: { workoutPlan: { select: { userId: true } } },
-        },
+        planDay: { select: { workoutPlanId: true } },
       },
     })
 
-    if (!existing || existing.planDay.workoutPlan.userId !== userId) {
+    if (!existing) {
       throw new Error('Exercise not found')
     }
+
+    await requirePlanEditAccess(existing.planDay.workoutPlanId, userId)
 
     const planExercise = await prisma.planExercise.update({
       where: { id },
@@ -358,19 +392,18 @@ export const updatePlanExercise = createServerFn({ method: 'POST' })
 export const removePlanExercise = createServerFn({ method: 'POST' })
   .inputValidator((data: { id: string; userId: string }) => data)
   .handler(async ({ data }) => {
-    // Verify ownership through plan day and plan
     const existing = await prisma.planExercise.findFirst({
       where: { id: data.id },
       include: {
-        planDay: {
-          include: { workoutPlan: { select: { userId: true } } },
-        },
+        planDay: { select: { workoutPlanId: true } },
       },
     })
 
-    if (!existing || existing.planDay.workoutPlan.userId !== data.userId) {
+    if (!existing) {
       throw new Error('Exercise not found')
     }
+
+    await requirePlanEditAccess(existing.planDay.workoutPlanId, data.userId)
 
     await prisma.planExercise.delete({
       where: { id: data.id },
@@ -386,15 +419,16 @@ export const reorderPlanExercises = createServerFn({ method: 'POST' })
       data,
   )
   .handler(async ({ data }) => {
-    // Verify ownership through plan day
     const planDay = await prisma.planDay.findFirst({
       where: { id: data.planDayId },
-      include: { workoutPlan: { select: { userId: true } } },
+      select: { workoutPlanId: true },
     })
 
-    if (!planDay || planDay.workoutPlan.userId !== data.userId) {
+    if (!planDay) {
       throw new Error('Day not found')
     }
+
+    await requirePlanEditAccess(planDay.workoutPlanId, data.userId)
 
     // Update each exercise's order
     await Promise.all(
@@ -428,9 +462,20 @@ export const getPlanDay = createServerFn({ method: 'GET' })
       },
     })
 
-    if (!planDay || planDay.workoutPlan.userId !== data.userId) {
-      return { planDay: null }
+    if (!planDay) {
+      return { planDay: null, access: null }
     }
 
-    return { planDay }
+    const access = await requirePlanAccess(
+      planDay.workoutPlan.id,
+      data.userId,
+    )
+
+    return {
+      planDay,
+      access: {
+        isOwner: access.isOwner,
+        role: access.role,
+      },
+    }
   })

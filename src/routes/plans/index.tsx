@@ -21,13 +21,19 @@ type PlanWithCount = {
   createdAt: Date
   updatedAt: Date
   userId: string
-  _count: { planDays: number }
+  _count: { planDays: number; collaborators: number }
+}
+
+type SharedPlan = PlanWithCount & {
+  ownerName: string
+  role: string
 }
 
 function PlansPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [plans, setPlans] = useState<Array<PlanWithCount>>([])
+  const [sharedPlans, setSharedPlans] = useState<Array<SharedPlan>>([])
   const [loading, setLoading] = useState(true)
   const [showImportModal, setShowImportModal] = useState(false)
 
@@ -38,6 +44,7 @@ function PlansPage() {
       try {
         const result = await getPlans({ data: { userId: user.id } })
         setPlans(result.plans)
+        setSharedPlans(result.sharedPlans as Array<SharedPlan>)
       } catch (error) {
         console.error('Failed to fetch plans:', error)
       } finally {
@@ -55,6 +62,8 @@ function PlansPage() {
   const handleImportSuccess = (planId: string) => {
     navigate({ to: '/plans/$planId', params: { planId } })
   }
+
+  const hasAnyPlans = plans.length > 0 || sharedPlans.length > 0
 
   return (
     <AppLayout title="Workout Plans">
@@ -74,7 +83,7 @@ function PlansPage() {
               </div>
             ))}
           </div>
-        ) : plans.length === 0 ? (
+        ) : !hasAnyPlans ? (
           <div className="flex-1 flex items-center justify-center px-4">
             <EmptyState
               icon={<ClipboardList className="w-8 h-8" />}
@@ -91,27 +100,63 @@ function PlansPage() {
             />
           </div>
         ) : (
-          <div className="p-4 space-y-3">
-            {plans.map((plan, index) => (
-              <div
-                key={plan.id}
-                className="animate-fade-in"
-                style={{
-                  animationDelay: `${index * 50}ms`,
-                  animationFillMode: 'backwards',
-                }}
-              >
-                <PlanCard
-                  plan={plan}
-                  onPress={() => handlePlanPress(plan.id)}
-                />
+          <div className="p-4 space-y-6">
+            {/* My Plans */}
+            {plans.length > 0 && (
+              <div className="space-y-3">
+                {sharedPlans.length > 0 && (
+                  <h2 className="text-sm font-medium text-zinc-400 px-1">
+                    My Plans
+                  </h2>
+                )}
+                {plans.map((plan, index) => (
+                  <div
+                    key={plan.id}
+                    className="animate-fade-in"
+                    style={{
+                      animationDelay: `${index * 50}ms`,
+                      animationFillMode: 'backwards',
+                    }}
+                  >
+                    <PlanCard
+                      plan={plan}
+                      onPress={() => handlePlanPress(plan.id)}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* Shared Plans */}
+            {sharedPlans.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-sm font-medium text-zinc-400 px-1">
+                  Shared with Me
+                </h2>
+                {sharedPlans.map((plan, index) => (
+                  <div
+                    key={plan.id}
+                    className="animate-fade-in"
+                    style={{
+                      animationDelay: `${(plans.length + index) * 50}ms`,
+                      animationFillMode: 'backwards',
+                    }}
+                  >
+                    <PlanCard
+                      plan={plan}
+                      ownerName={plan.ownerName}
+                      role={plan.role}
+                      onPress={() => handlePlanPress(plan.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* FABs for creating/importing plans */}
-        {plans.length > 0 && (
+        {hasAnyPlans && (
           <div className="fixed bottom-24 right-4 flex flex-col gap-3">
             <button
               onClick={() => setShowImportModal(true)}

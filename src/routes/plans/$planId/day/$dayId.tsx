@@ -29,6 +29,7 @@ import {
   updatePlanExercise,
 } from '@/lib/plans.server'
 import { useAuth } from '@/context/AuthContext'
+import type { PlanRole } from '@/lib/plan-auth'
 
 export const Route = createFileRoute('/plans/$planId/day/$dayId')({
   component: DayDetailPage,
@@ -62,6 +63,10 @@ function DayDetailPage() {
   const router = useRouter()
 
   const [planDay, setPlanDay] = useState<PlanDay | null>(null)
+  const [access, setAccess] = useState<{
+    isOwner: boolean
+    role: PlanRole | null
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -78,12 +83,15 @@ function DayDetailPage() {
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const canEdit = access?.role === 'OWNER' || access?.role === 'EDITOR'
+
   const fetchPlanDay = useCallback(async () => {
     if (!user) return
 
     try {
       const result = await getPlanDay({ data: { id: dayId, userId: user.id } })
       setPlanDay(result.planDay)
+      setAccess(result.access)
     } catch (error) {
       console.error('Failed to fetch plan day:', error)
     } finally {
@@ -317,47 +325,51 @@ function DayDetailPage() {
             </h1>
           </div>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 -mr-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-colors"
-              aria-label="Menu"
-            >
-              <MoreVertical className="w-5 h-5" />
-            </button>
+          {canEdit ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 -mr-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-colors"
+                aria-label="Menu"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
 
-            {/* Dropdown menu */}
-            {showMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowMenu(false)}
-                />
-                <div className="absolute right-0 top-full mt-1 w-48 bg-zinc-800 rounded-xl shadow-lg border border-zinc-700 overflow-hidden z-20">
-                  <button
-                    onClick={() => {
-                      setShowMenu(false)
-                      setShowEditModal(true)
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-zinc-700 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Edit Day
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMenu(false)
-                      setShowDeleteConfirm(true)
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-zinc-700 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Day
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+              {/* Dropdown menu */}
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-zinc-800 rounded-xl shadow-lg border border-zinc-700 overflow-hidden z-20">
+                    <button
+                      onClick={() => {
+                        setShowMenu(false)
+                        setShowEditModal(true)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-zinc-700 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Edit Day
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false)
+                        setShowDeleteConfirm(true)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-zinc-700 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Day
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="w-9" />
+          )}
         </div>
       </header>
 
@@ -378,11 +390,19 @@ function DayDetailPage() {
               <EmptyState
                 icon={<Dumbbell className="w-8 h-8" />}
                 title="No exercises yet"
-                description="Add exercises to this day to build your workout."
-                action={{
-                  label: 'Add Exercise',
-                  onClick: () => setShowExercisePicker(true),
-                }}
+                description={
+                  canEdit
+                    ? 'Add exercises to this day to build your workout.'
+                    : 'No exercises have been added to this day yet.'
+                }
+                action={
+                  canEdit
+                    ? {
+                        label: 'Add Exercise',
+                        onClick: () => setShowExercisePicker(true),
+                      }
+                    : undefined
+                }
               />
             </div>
           ) : (
@@ -402,13 +422,29 @@ function DayDetailPage() {
                 >
                   <PlanExerciseCard
                     planExercise={planExercise}
-                    onPress={() => setEditingExercise(planExercise)}
-                    onRemove={() => setExerciseToRemove(planExercise)}
-                    showReorder={planDay.planExercises.length > 1}
+                    onPress={
+                      canEdit
+                        ? () => setEditingExercise(planExercise)
+                        : undefined
+                    }
+                    onRemove={
+                      canEdit
+                        ? () => setExerciseToRemove(planExercise)
+                        : undefined
+                    }
+                    showReorder={canEdit && planDay.planExercises.length > 1}
                     isFirst={index === 0}
                     isLast={index === planDay.planExercises.length - 1}
-                    onMoveUp={() => handleMoveExercise(index, 'up')}
-                    onMoveDown={() => handleMoveExercise(index, 'down')}
+                    onMoveUp={
+                      canEdit
+                        ? () => handleMoveExercise(index, 'up')
+                        : undefined
+                    }
+                    onMoveDown={
+                      canEdit
+                        ? () => handleMoveExercise(index, 'down')
+                        : undefined
+                    }
                   />
                 </div>
               ))}
@@ -417,8 +453,8 @@ function DayDetailPage() {
         </div>
       )}
 
-      {/* Add Exercise Button */}
-      {!planDay.restDay && (
+      {/* Add Exercise Button - only for editors/owners */}
+      {canEdit && !planDay.restDay && (
         <div className="p-4 border-t border-zinc-800 safe-area-pb">
           <button
             onClick={() => setShowExercisePicker(true)}

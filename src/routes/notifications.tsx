@@ -9,6 +9,7 @@ import {
   Trophy,
   UserCheck,
   UserPlus,
+  Users,
 } from 'lucide-react'
 import type { NotificationType } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
@@ -124,6 +125,12 @@ function NotificationsPage() {
             <Award className="w-5 h-5 text-amber-400" />
           </div>
         )
+      case 'PLAN_INVITE':
+        return (
+          <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+            <Users className="w-5 h-5 text-blue-400" />
+          </div>
+        )
       default:
         return (
           <div className="w-9 h-9 rounded-full bg-zinc-700/50 flex items-center justify-center flex-shrink-0">
@@ -151,6 +158,10 @@ function NotificationsPage() {
           : null
       case 'ACHIEVEMENT_EARNED':
         return '/achievements'
+      case 'PLAN_INVITE':
+        return notification.referenceId
+          ? `/plans/${notification.referenceId}`
+          : null
       default:
         return null
     }

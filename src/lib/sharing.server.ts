@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
+import { requirePlanOwnership } from './plan-auth'
 
 // Safe charset for share codes (no 0/O, 1/I/L confusion)
 const SHARE_CODE_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
@@ -38,16 +39,14 @@ export const generateShareCode = createServerFn({ method: 'POST' })
       data,
   )
   .handler(async ({ data }) => {
-    // Verify user owns the plan
-    const plan = await prisma.workoutPlan.findFirst({
-      where: {
-        id: data.workoutPlanId,
-        userId: data.userId,
-      },
+    await requirePlanOwnership(data.workoutPlanId, data.userId)
+
+    const plan = await prisma.workoutPlan.findUnique({
+      where: { id: data.workoutPlanId },
     })
 
     if (!plan) {
-      throw new Error('Plan not found or access denied')
+      throw new Error('Plan not found')
     }
 
     // Generate unique code
