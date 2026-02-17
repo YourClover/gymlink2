@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RecordType, WeightUnit } from '@prisma/client'
 import { calculatePRScore } from './workouts.server'
+import { isDominatedByExistingPR } from './pr-utils'
 import { mockPrisma } from '@/test/setup'
 
 // We test the business logic directly by testing with mocked Prisma
@@ -490,7 +491,7 @@ describe('calculatePRScore', () => {
       expect(result).toEqual({ score: 1000, recordType: RecordType.MAX_VOLUME })
     })
 
-    it('returns MAX_REPS for bodyweight rep exercises', () => {
+    it('returns MAX_REPS for bodyweight rep exercises (non-BODYWEIGHT equipment)', () => {
       const result = calculatePRScore(false, 0, 15, 0)
       expect(result).toEqual({ score: 15, recordType: RecordType.MAX_REPS })
     })
@@ -510,7 +511,7 @@ describe('calculatePRScore', () => {
       expect(result).toEqual({ score: 3000, recordType: RecordType.MAX_VOLUME })
     })
 
-    it('returns MAX_TIME for bodyweight timed exercises', () => {
+    it('returns MAX_TIME for bodyweight timed exercises (non-BODYWEIGHT equipment)', () => {
       const result = calculatePRScore(true, 0, 0, 120)
       expect(result).toEqual({ score: 120, recordType: RecordType.MAX_TIME })
     })
@@ -521,6 +522,59 @@ describe('calculatePRScore', () => {
 
     it('returns null when both weight and time are 0', () => {
       expect(calculatePRScore(true, 0, 0, 0)).toBeNull()
+    })
+  })
+
+  describe('bodyweight equipment (isBodyweight=true)', () => {
+    it('returns MAX_VOLUME with base score for BW rep exercise (weight=0)', () => {
+      // Pull-ups: 0kg added, 10 reps → (60+0)×10 = 600
+      const result = calculatePRScore(false, 0, 10, 0, true)
+      expect(result).toEqual({ score: 600, recordType: RecordType.MAX_VOLUME })
+    })
+
+    it('returns MAX_VOLUME with base+added weight for weighted BW exercise', () => {
+      // Weighted pull-ups: +20kg, 8 reps → (60+20)×8 = 640
+      const result = calculatePRScore(false, 20, 8, 0, true)
+      expect(result).toEqual({ score: 640, recordType: RecordType.MAX_VOLUME })
+    })
+
+    it('returns MAX_VOLUME with base score for BW timed exercise (weight=0)', () => {
+      // Plank: 0kg, 60s → (60+0)×60 = 3600
+      const result = calculatePRScore(true, 0, 0, 60, true)
+      expect(result).toEqual({
+        score: 3600,
+        recordType: RecordType.MAX_VOLUME,
+      })
+    })
+
+    it('returns MAX_VOLUME with base+added weight for weighted BW timed exercise', () => {
+      // Weighted plank: +10kg, 45s → (60+10)×45 = 3150
+      const result = calculatePRScore(true, 10, 0, 45, true)
+      expect(result).toEqual({
+        score: 3150,
+        recordType: RecordType.MAX_VOLUME,
+      })
+    })
+
+    it('returns null for BW exercise with 0 reps', () => {
+      expect(calculatePRScore(false, 0, 0, 0, true)).toBeNull()
+    })
+
+    it('returns null for BW timed exercise with 0 time', () => {
+      expect(calculatePRScore(true, 0, 0, 0, true)).toBeNull()
+    })
+
+    it('BW set can beat weighted set when reps are high enough', () => {
+      // Weighted: +20kg × 8 = (60+20)×8 = 640
+      const weighted = calculatePRScore(false, 20, 8, 0, true)
+      // BW: 0kg × 12 = (60+0)×12 = 720 → beats weighted!
+      const bw = calculatePRScore(false, 0, 12, 0, true)
+      expect(weighted!.score).toBe(640)
+      expect(bw!.score).toBe(720)
+      expect(bw!.score).toBeGreaterThan(weighted!.score)
+      // Both are MAX_VOLUME — they compete on the same scale
+      expect(weighted!.recordType).toBe(RecordType.MAX_VOLUME)
+      expect(bw!.recordType).toBe(RecordType.MAX_VOLUME)
     })
   })
 
@@ -578,5 +632,56 @@ describe('previousRecord preservation', () => {
     }
 
     expect(previousRecord).toBe(1000) // The PR we're beating
+  })
+})
+
+describe('mixed weighted/bodyweight PR scenario', () => {
+  it('BODYWEIGHT equipment: both weighted and unweighted create MAX_VOLUME', () => {
+    // Weighted pull-ups: +20kg × 8 reps → (60+20)×8 = 640
+    const weighted = calculatePRScore(false, 20, 8, 0, true)
+    expect(weighted).toEqual({
+      score: 640,
+      recordType: RecordType.MAX_VOLUME,
+    })
+
+    // Bodyweight pull-ups: 0kg × 10 reps → (60+0)×10 = 600
+    const bodyweight = calculatePRScore(false, 0, 10, 0, true)
+    expect(bodyweight).toEqual({
+      score: 600,
+      recordType: RecordType.MAX_VOLUME,
+    })
+  })
+
+  it('non-BODYWEIGHT equipment: weighted creates MAX_VOLUME, bodyweight creates MAX_REPS', () => {
+    // Machine crunch: 50kg × 20 reps (not bodyweight equipment)
+    const weighted = calculatePRScore(false, 50, 20, 0, false)
+    expect(weighted).toEqual({
+      score: 1000,
+      recordType: RecordType.MAX_VOLUME,
+    })
+
+    // Same exercise no weight: 24 reps
+    const bodyweight = calculatePRScore(false, 0, 24, 0, false)
+    expect(bodyweight).toEqual({
+      score: 24,
+      recordType: RecordType.MAX_REPS,
+    })
+  })
+
+  it('bodyweight MAX_REPS is dominated when MAX_VOLUME exists', () => {
+    // After the weighted set creates MAX_VOLUME, a bodyweight MAX_REPS
+    // should be saved but not celebrated
+    const dominated = isDominatedByExistingPR(RecordType.MAX_REPS, [
+      RecordType.MAX_VOLUME,
+    ])
+    expect(dominated).toBe(true)
+  })
+
+  it('weighted MAX_VOLUME is NOT dominated by existing MAX_REPS', () => {
+    // If bodyweight was logged first, a weighted set should still celebrate
+    const dominated = isDominatedByExistingPR(RecordType.MAX_VOLUME, [
+      RecordType.MAX_REPS,
+    ])
+    expect(dominated).toBe(false)
   })
 })

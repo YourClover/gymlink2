@@ -85,6 +85,8 @@ const formatPRValue = (metadata: ActivityMetadata) => {
       if (metadata.weight && metadata.timeSeconds) {
         return `${metadata.weight}kg × ${formatPRTime(metadata.timeSeconds)}`
       }
+      if (metadata.reps) return `${metadata.reps} reps`
+      if (metadata.timeSeconds) return formatPRTime(metadata.timeSeconds)
       return (metadata.value ?? 0).toLocaleString()
     case 'MAX_TIME':
       return formatPRTime(metadata.value ?? 0)

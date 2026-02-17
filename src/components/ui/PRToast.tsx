@@ -36,6 +36,8 @@ function formatRecordDisplay(
       if (weight && timeSeconds) {
         return `${weight}kg × ${formatTime(timeSeconds)}`
       }
+      if (reps) return `${reps} reps`
+      if (timeSeconds) return formatTime(timeSeconds)
       return newRecord.toLocaleString()
     case 'MAX_TIME':
       return formatTime(newRecord)

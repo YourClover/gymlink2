@@ -3,6 +3,7 @@ import { RecordType, WeightUnit } from '@prisma/client'
 import { prisma } from './db'
 import { checkAchievements } from './achievements.server'
 import { updateChallengeProgress } from './challenges.server'
+import { BODYWEIGHT_BASE_SCORE, isDominatedByExistingPR } from './pr-utils'
 import type { PrismaClient } from '@prisma/client'
 
 type PrismaTransactionClient = Parameters<
@@ -19,7 +20,28 @@ export function calculatePRScore(
   weight: number,
   reps: number,
   timeSeconds: number,
+  isBodyweight = false,
 ): { score: number; recordType: RecordType } | null {
+  if (isBodyweight) {
+    const effectiveWeight = BODYWEIGHT_BASE_SCORE + weight
+    if (isTimed) {
+      if (effectiveWeight > 0 && timeSeconds > 0) {
+        return {
+          score: effectiveWeight * timeSeconds,
+          recordType: RecordType.MAX_VOLUME,
+        }
+      }
+    } else {
+      if (effectiveWeight > 0 && reps > 0) {
+        return {
+          score: effectiveWeight * reps,
+          recordType: RecordType.MAX_VOLUME,
+        }
+      }
+    }
+    return null
+  }
+
   if (isTimed) {
     if (weight > 0 && timeSeconds > 0) {
       return { score: weight * timeSeconds, recordType: RecordType.MAX_VOLUME }
@@ -44,9 +66,11 @@ async function recalculatePR(
 ): Promise<void> {
   const exercise = await tx.exercise.findUnique({
     where: { id: exerciseId },
-    select: { isTimed: true },
+    select: { isTimed: true, equipment: true },
   })
   if (!exercise) return
+
+  const isBodyweight = exercise.equipment === 'BODYWEIGHT'
 
   const sets = await tx.workoutSet.findMany({
     where: {
@@ -66,6 +90,7 @@ async function recalculatePR(
       set.weight ?? 0,
       set.reps ?? 0,
       set.timeSeconds ?? 0,
+      isBodyweight,
     )
     if (!result) continue
 
@@ -438,11 +463,13 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
         const reps = setData.reps ?? 0
         const time = setData.timeSeconds ?? 0
 
+        const isBodyweight = workoutSet.exercise.equipment === 'BODYWEIGHT'
         const scoreResult = calculatePRScore(
           workoutSet.exercise.isTimed,
           weight,
           reps,
           time,
+          isBodyweight,
         )
 
         // Check if this is a new PR
@@ -504,23 +531,23 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
               },
             })
 
-            // Create activity feed item for PR achieved
-            await tx.activityFeedItem.create({
-              data: {
+            // Check if this PR type is dominated by a higher-priority
+            // PR that already exists (e.g., MAX_REPS when MAX_VOLUME exists).
+            // Still save the record (above), but skip celebration.
+            const otherPRs = await tx.personalRecord.findMany({
+              where: {
                 userId,
-                activityType: 'PR_ACHIEVED',
-                referenceId: newPR.id,
-                metadata: {
-                  exerciseName: workoutSet.exercise.name,
-                  recordType,
-                  value: prScore,
-                  weight: weight > 0 ? weight : null,
-                  reps: reps > 0 ? reps : null,
-                  timeSeconds: time > 0 ? time : null,
-                },
+                exerciseId: setData.exerciseId,
+                recordType: { not: recordType },
               },
+              select: { recordType: true },
             })
+            const dominated = isDominatedByExistingPR(
+              recordType,
+              otherPRs.map((p) => p.recordType),
+            )
 
+            // Always celebrate locally (toast/confetti)
             prResult = {
               isNewPR: true,
               newRecord: prScore,
@@ -529,6 +556,25 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
               weight: weight > 0 ? weight : undefined,
               reps: reps > 0 ? reps : undefined,
               timeSeconds: time > 0 ? time : undefined,
+            }
+
+            if (!dominated) {
+              // Create activity feed item for PR achieved
+              await tx.activityFeedItem.create({
+                data: {
+                  userId,
+                  activityType: 'PR_ACHIEVED',
+                  referenceId: newPR.id,
+                  metadata: {
+                    exerciseName: workoutSet.exercise.name,
+                    recordType,
+                    value: prScore,
+                    weight: weight > 0 ? weight : null,
+                    reps: reps > 0 ? reps : null,
+                    timeSeconds: time > 0 ? time : null,
+                  },
+                },
+              })
             }
           }
         }
