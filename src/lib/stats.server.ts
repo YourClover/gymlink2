@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { RecordType } from '@prisma/client'
 import { prisma } from './db'
 import { calculateStreak, getWeekStart } from './date-utils'
+import { PR_PRIORITY } from './pr-utils'
 
 // ============================================
 // OVERVIEW STATS
@@ -471,20 +472,13 @@ export const getUserExercisePRs = createServerFn({ method: 'GET' })
       typeof exercisePRsByType extends Map<string, infer V> ? V : never
     >()
 
-    const priorityOrder = {
-      [RecordType.MAX_VOLUME]: 0,
-      [RecordType.MAX_TIME]: 1,
-      [RecordType.MAX_REPS]: 1,
-      [RecordType.MAX_WEIGHT]: 2,
-    }
-
     for (const exerciseId of exerciseIds) {
       const exercisePRsForType = Array.from(exercisePRsByType.values()).filter(
         (pr) => pr.exerciseId === exerciseId,
       )
 
       exercisePRsForType.sort(
-        (a, b) => priorityOrder[a.recordType] - priorityOrder[b.recordType],
+        (a, b) => PR_PRIORITY[a.recordType] - PR_PRIORITY[b.recordType],
       )
 
       if (exercisePRsForType.length > 0) {

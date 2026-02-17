@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import { calculateMetricValue } from './progression-utils'
 import type { ProgressionMetric } from './progression-utils'
+import { selectDisplayPR } from './pr-utils'
 
 export type ProgressionDataPoint = {
   date: string
@@ -153,8 +154,8 @@ export const getExerciseSummary = createServerFn({ method: 'GET' })
     const firstTrained = sessions[0]?.completedAt ?? null
     const lastTrained = sessions[sessions.length - 1]?.completedAt ?? null
 
-    // Get current PR (MAX_VOLUME as primary, fallback to MAX_WEIGHT or MAX_TIME)
-    const currentPR = await prisma.personalRecord.findFirst({
+    // Get current PR — use shared priority logic to pick the best one
+    const allPRs = await prisma.personalRecord.findMany({
       where: {
         userId: data.userId,
         exerciseId: data.exerciseId,
@@ -168,8 +169,9 @@ export const getExerciseSummary = createServerFn({ method: 'GET' })
           },
         },
       },
-      orderBy: [{ recordType: 'asc' }, { value: 'desc' }],
     })
+
+    const currentPR = selectDisplayPR(allPRs)
 
     return {
       exercise,
