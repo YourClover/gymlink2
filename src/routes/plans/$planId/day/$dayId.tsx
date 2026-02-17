@@ -10,6 +10,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import type { Exercise } from '@prisma/client'
+import type { PlanRole } from '@/lib/plan-auth'
 import AppLayout from '@/components/AppLayout'
 import { Skeleton } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
@@ -29,7 +30,6 @@ import {
   updatePlanExercise,
 } from '@/lib/plans.server'
 import { useAuth } from '@/context/AuthContext'
-import type { PlanRole } from '@/lib/plan-auth'
 
 export const Route = createFileRoute('/plans/$planId/day/$dayId')({
   component: DayDetailPage,

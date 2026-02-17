@@ -3,8 +3,8 @@ import { RecordType } from '@prisma/client'
 import {
   BODYWEIGHT_BASE_SCORE,
   PR_PRIORITY,
-  selectDisplayPR,
   isDominatedByExistingPR,
+  selectDisplayPR,
 } from './pr-utils'
 
 describe('BODYWEIGHT_BASE_SCORE', () => {

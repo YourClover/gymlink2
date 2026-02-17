@@ -31,7 +31,7 @@ type PRRecord = {
  * Priority: MAX_VOLUME > MAX_TIME = MAX_REPS > MAX_WEIGHT.
  * Tiebreak: higher value, then more recent achievedAt.
  */
-export function selectDisplayPR<T extends PRRecord>(prs: T[]): T | null {
+export function selectDisplayPR<T extends PRRecord>(prs: Array<T>): T | null {
   if (prs.length === 0) return null
   if (prs.length === 1) return prs[0]
 
@@ -60,7 +60,7 @@ export function selectDisplayPR<T extends PRRecord>(prs: T[]): T | null {
  */
 export function isDominatedByExistingPR(
   newType: RecordType,
-  existingTypes: RecordType[],
+  existingTypes: Array<RecordType>,
 ): boolean {
   const newPriority = PR_PRIORITY[newType]
   return existingTypes.some((t) => PR_PRIORITY[t] < newPriority)

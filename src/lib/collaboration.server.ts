@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { Prisma } from '@prisma/client'
-import type { PlanCollaboratorRole } from '@prisma/client'
 import { prisma } from './db'
-import { requirePlanOwnership, requirePlanAccess } from './plan-auth'
+import { requirePlanAccess, requirePlanOwnership } from './plan-auth'
+import type { PlanCollaboratorRole } from '@prisma/client'
 
 // Get mutual followers who can be invited to a plan
 export const getInvitableUsers = createServerFn({ method: 'GET' })
@@ -226,11 +226,8 @@ export const updateCollaboratorRole = createServerFn({ method: 'POST' })
 // Remove a collaborator (owner only)
 export const removeCollaborator = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      userId: string
-      planId: string
-      collaboratorUserId: string
-    }) => data,
+    (data: { userId: string; planId: string; collaboratorUserId: string }) =>
+      data,
   )
   .handler(async ({ data }) => {
     await requirePlanOwnership(data.planId, data.userId)

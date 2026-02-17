@@ -466,10 +466,7 @@ export const getPlanDay = createServerFn({ method: 'GET' })
       return { planDay: null, access: null }
     }
 
-    const access = await requirePlanAccess(
-      planDay.workoutPlan.id,
-      data.userId,
-    )
+    const access = await requirePlanAccess(planDay.workoutPlan.id, data.userId)
 
     return {
       planDay,

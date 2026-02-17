@@ -11,8 +11,8 @@ import {
 import type { PlanCollaboratorRole } from '@prisma/client'
 import Modal from '@/components/ui/Modal'
 import {
-  getPlanCollaborators,
   getInvitableUsers,
+  getPlanCollaborators,
   inviteCollaborator,
   removeCollaborator,
   updateCollaboratorRole,
@@ -46,7 +46,9 @@ export default function ManageCollaboratorsModal({
 }: ManageCollaboratorsModalProps) {
   const { user } = useAuth()
   const [owner, setOwner] = useState<{ id: string; name: string } | null>(null)
-  const [collaborators, setCollaborators] = useState<Array<CollaboratorData>>([])
+  const [collaborators, setCollaborators] = useState<Array<CollaboratorData>>(
+    [],
+  )
   const [showInvite, setShowInvite] = useState(false)
   const [invitableUsers, setInvitableUsers] = useState<Array<InvitableUser>>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -334,7 +336,8 @@ function RoleDropdown({
   const [open, setOpen] = useState(false)
 
   const label = role === 'EDITOR' ? 'Editor' : 'Viewer'
-  const otherRole: PlanCollaboratorRole = role === 'EDITOR' ? 'VIEWER' : 'EDITOR'
+  const otherRole: PlanCollaboratorRole =
+    role === 'EDITOR' ? 'VIEWER' : 'EDITOR'
   const otherLabel = otherRole === 'EDITOR' ? 'Editor' : 'Viewer'
 
   return (

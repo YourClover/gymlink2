@@ -13,6 +13,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import type { PlanRole } from '@/lib/plan-auth'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
@@ -30,12 +31,11 @@ import {
   updatePlan,
 } from '@/lib/plans.server'
 import {
-  respondToCollabInvite,
   leaveCollaboration,
+  respondToCollabInvite,
 } from '@/lib/collaboration.server'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuth } from '@/context/AuthContext'
-import type { PlanRole } from '@/lib/plan-auth'
 
 export const Route = createFileRoute('/plans/$planId/')({
   component: PlanDetailPage,
@@ -469,9 +469,7 @@ function PlanDetailPage() {
               <span className="text-zinc-600">
                 {' '}
                 &middot;{' '}
-                {access.role === 'EDITOR'
-                  ? 'You can edit'
-                  : 'View only'}
+                {access.role === 'EDITOR' ? 'You can edit' : 'View only'}
               </span>
             )}
           </p>

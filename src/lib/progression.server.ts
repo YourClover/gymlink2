@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import { calculateMetricValue } from './progression-utils'
-import type { ProgressionMetric } from './progression-utils'
 import { selectDisplayPR } from './pr-utils'
+import type { ProgressionMetric } from './progression-utils'
 
 export type ProgressionDataPoint = {
   date: string

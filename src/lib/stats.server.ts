@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { RecordType } from '@prisma/client'
 import { prisma } from './db'
 import { calculateStreak, getWeekStart } from './date-utils'
 import { PR_PRIORITY } from './pr-utils'
+import type { RecordType } from '@prisma/client'
 
 // ============================================
 // OVERVIEW STATS
