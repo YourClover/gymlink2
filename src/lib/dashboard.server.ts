@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
-import { calculateStreak } from './date-utils'
+import { calculateStreak } from './date-utils.server'
 
 // ============================================
 // DASHBOARD STATS

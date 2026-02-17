@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { Prisma } from '@prisma/client'
 import { prisma } from './db'
-import { calculateStreak } from './date-utils'
+import { calculateStreak } from './date-utils.server'
 
 type LeaderboardMetric = 'volume' | 'workouts' | 'streak' | 'prs'
 type TimeRange = 'week' | 'month' | 'all'

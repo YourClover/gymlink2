@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { Prisma } from '@prisma/client'
 import { prisma } from './db'
-import { requirePlanAccess, requirePlanOwnership } from './plan-auth'
+import { requirePlanAccess, requirePlanOwnership } from './plan-auth.server'
 import type { PlanCollaboratorRole } from '@prisma/client'
 
 // Get mutual followers who can be invited to a plan

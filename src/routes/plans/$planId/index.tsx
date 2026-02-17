@@ -13,7 +13,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import type { PlanRole } from '@/lib/plan-auth'
+import type { PlanRole } from '@/lib/plan-types'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'

@@ -10,7 +10,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import type { Exercise } from '@prisma/client'
-import type { PlanRole } from '@/lib/plan-auth'
+import type { PlanRole } from '@/lib/plan-types'
 import AppLayout from '@/components/AppLayout'
 import { Skeleton } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'

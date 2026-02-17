@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
-import { requirePlanOwnership } from './plan-auth'
+import { requirePlanOwnership } from './plan-auth.server'
 
 // Safe charset for share codes (no 0/O, 1/I/L confusion)
 const SHARE_CODE_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'

@@ -4,7 +4,7 @@ import {
   requirePlanAccess,
   requirePlanEditAccess,
   requirePlanOwnership,
-} from './plan-auth'
+} from './plan-auth.server'
 
 // ============================================
 // WORKOUT PLAN OPERATIONS

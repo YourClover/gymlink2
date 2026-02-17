@@ -1,12 +1,7 @@
 import { prisma } from './db'
+import type { PlanAccess, PlanRole } from './plan-types'
 
-export type PlanRole = 'OWNER' | 'EDITOR' | 'VIEWER'
-
-export type PlanAccess = {
-  hasAccess: boolean
-  isOwner: boolean
-  role: PlanRole | null
-}
+export type { PlanAccess, PlanRole } from './plan-types'
 
 export async function checkPlanAccess(
   planId: string,
