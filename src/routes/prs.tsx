@@ -4,6 +4,7 @@ import { ArrowLeft, LineChart, TrendingUp, Trophy } from 'lucide-react'
 import type { MuscleGroup, RecordType } from '@prisma/client'
 import type { PRSortMode } from '@/components/prs/PRSortSelector'
 import { useAuth } from '@/context/AuthContext'
+import { formatPR } from '@/lib/formatting'
 import { SkeletonPRRow } from '@/components/ui/SocialSkeletons'
 import EmptyState from '@/components/ui/EmptyState'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
@@ -63,35 +64,6 @@ function PRsPage() {
       day: 'numeric',
       year: 'numeric',
     })
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const formatPR = (pr: ExercisePR) => {
-    switch (pr.recordType) {
-      case 'MAX_VOLUME':
-        if (pr.weight && pr.reps) {
-          return `${pr.weight}kg x ${pr.reps} reps`
-        }
-        if (pr.weight && pr.timeSeconds) {
-          return `${pr.weight}kg x ${formatTime(pr.timeSeconds)}`
-        }
-        if (pr.reps) return `${pr.reps} reps`
-        if (pr.timeSeconds) return formatTime(pr.timeSeconds)
-        return `Score: ${pr.value.toLocaleString()}`
-      case 'MAX_TIME':
-        return formatTime(pr.value)
-      case 'MAX_REPS':
-        return `${pr.value} reps`
-      case 'MAX_WEIGHT':
-        return `${pr.value}kg`
-      default:
-        return pr.value.toLocaleString()
-    }
   }
 
   const getImprovement = (pr: ExercisePR): number | null => {

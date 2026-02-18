@@ -35,6 +35,7 @@ import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileAchievementsAdminRouteImport } from './routes/profile/achievements-admin'
 import { Route as PlansNewRouteImport } from './routes/plans/new'
+import { Route as CompareUsernameRouteImport } from './routes/compare/$username'
 import { Route as ChallengesNewRouteImport } from './routes/challenges/new'
 import { Route as ChallengesChallengeIdRouteImport } from './routes/challenges/$challengeId'
 import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/index'
@@ -173,6 +174,11 @@ const PlansNewRoute = PlansNewRouteImport.update({
   path: '/plans/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompareUsernameRoute = CompareUsernameRouteImport.update({
+  id: '/compare/$username',
+  path: '/compare/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChallengesNewRoute = ChallengesNewRouteImport.update({
   id: '/challenges/new',
   path: '/challenges/new',
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/stats': typeof StatsRoute
   '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
   '/challenges/new': typeof ChallengesNewRoute
+  '/compare/$username': typeof CompareUsernameRoute
   '/plans/new': typeof PlansNewRoute
   '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsRoute
   '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
   '/challenges/new': typeof ChallengesNewRoute
+  '/compare/$username': typeof CompareUsernameRoute
   '/plans/new': typeof PlansNewRoute
   '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -289,6 +297,7 @@ export interface FileRoutesById {
   '/stats': typeof StatsRoute
   '/challenges/$challengeId': typeof ChallengesChallengeIdRoute
   '/challenges/new': typeof ChallengesNewRoute
+  '/compare/$username': typeof CompareUsernameRoute
   '/plans/new': typeof PlansNewRoute
   '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -325,6 +334,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/challenges/$challengeId'
     | '/challenges/new'
+    | '/compare/$username'
     | '/plans/new'
     | '/profile/achievements-admin'
     | '/profile/edit'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/challenges/$challengeId'
     | '/challenges/new'
+    | '/compare/$username'
     | '/plans/new'
     | '/profile/achievements-admin'
     | '/profile/edit'
@@ -393,6 +404,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/challenges/$challengeId'
     | '/challenges/new'
+    | '/compare/$username'
     | '/plans/new'
     | '/profile/achievements-admin'
     | '/profile/edit'
@@ -428,6 +440,7 @@ export interface RootRouteChildren {
   StatsRoute: typeof StatsRoute
   ChallengesChallengeIdRoute: typeof ChallengesChallengeIdRoute
   ChallengesNewRoute: typeof ChallengesNewRoute
+  CompareUsernameRoute: typeof CompareUsernameRoute
   PlansNewRoute: typeof PlansNewRoute
   ProfileAchievementsAdminRoute: typeof ProfileAchievementsAdminRoute
   ProfileEditRoute: typeof ProfileEditRoute
@@ -631,6 +644,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlansNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compare/$username': {
+      id: '/compare/$username'
+      path: '/compare/$username'
+      fullPath: '/compare/$username'
+      preLoaderRoute: typeof CompareUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/challenges/new': {
       id: '/challenges/new'
       path: '/challenges/new'
@@ -692,6 +712,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatsRoute: StatsRoute,
   ChallengesChallengeIdRoute: ChallengesChallengeIdRoute,
   ChallengesNewRoute: ChallengesNewRoute,
+  CompareUsernameRoute: CompareUsernameRoute,
   PlansNewRoute: PlansNewRoute,
   ProfileAchievementsAdminRoute: ProfileAchievementsAdminRoute,
   ProfileEditRoute: ProfileEditRoute,

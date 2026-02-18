@@ -7,6 +7,7 @@ import {
   Flame,
   Lock,
   Medal,
+  Scale,
   Trophy,
 } from 'lucide-react'
 import type { AchievementRarity } from '@prisma/client'
@@ -255,14 +256,30 @@ function PublicProfilePage() {
           </div>
         </div>
 
-        {/* Follow Button */}
+        {/* Follow Button + Compare */}
         {!isOwnProfile && user && (
-          <div className="mb-6">
-            <FollowButton
-              userId={profile.userId}
-              currentStatus={followStatus}
-              onStatusChange={handleFollowChange}
-            />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1">
+              <FollowButton
+                userId={profile.userId}
+                currentStatus={followStatus}
+                onStatusChange={handleFollowChange}
+              />
+            </div>
+            {followStatus === 'ACCEPTED' && canView && profile.showStats && (
+              <button
+                onClick={() =>
+                  navigate({
+                    to: '/compare/$username',
+                    params: { username: profile.username },
+                  })
+                }
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 transition-colors"
+              >
+                <Scale className="w-4 h-4" />
+                <span className="text-sm font-medium">Compare</span>
+              </button>
+            )}
           </div>
         )}
 

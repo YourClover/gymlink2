@@ -107,3 +107,35 @@ export function formatWeight(weight: number, unit = 'kg'): string {
 export function parseDecimalInput(value: string): number {
   return parseFloat(value.replace(',', '.')) || 0
 }
+
+/**
+ * Format a personal record for display based on record type
+ */
+export function formatPR(pr: {
+  recordType: string
+  value: number
+  weight?: number | null
+  reps?: number | null
+  timeSeconds?: number | null
+}): string {
+  switch (pr.recordType) {
+    case 'MAX_VOLUME':
+      if (pr.weight && pr.reps) {
+        return `${pr.weight}kg x ${pr.reps} reps`
+      }
+      if (pr.weight && pr.timeSeconds) {
+        return `${pr.weight}kg x ${formatTime(pr.timeSeconds)}`
+      }
+      if (pr.reps) return `${pr.reps} reps`
+      if (pr.timeSeconds) return formatTime(pr.timeSeconds)
+      return `Score: ${pr.value.toLocaleString()}`
+    case 'MAX_TIME':
+      return formatTime(pr.value)
+    case 'MAX_REPS':
+      return `${pr.value} reps`
+    case 'MAX_WEIGHT':
+      return `${pr.value}kg`
+    default:
+      return pr.value.toLocaleString()
+  }
+}
