@@ -41,17 +41,14 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 gymlink
 
 # Copy production node_modules + generated Prisma client from build
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=prod-deps --chown=gymlink:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=gymlink:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy built application and Prisma files (for migrations)
-COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-
-# Set ownership
-RUN chown -R gymlink:nodejs /app
+COPY --from=builder --chown=gymlink:nodejs /app/.output ./.output
+COPY --from=builder --chown=gymlink:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=gymlink:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=gymlink:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 USER gymlink
 
