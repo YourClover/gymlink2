@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, QrCode, Search, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getProfileByCode, searchUsers } from '@/lib/profile.server'
 import AppLayout from '@/components/AppLayout'
+import Avatar from '@/components/ui/Avatar'
 import { FollowButton } from '@/components/social/FollowButton'
 import { SkeletonUserCard } from '@/components/ui/SocialSkeletons'
 import EmptyState from '@/components/ui/EmptyState'
@@ -95,15 +96,6 @@ function UserSearchPage() {
     } finally {
       setIsCheckingCode(false)
     }
-  }
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
   }
 
   return (
@@ -197,17 +189,10 @@ function UserSearchPage() {
                   params={{ username: result.username }}
                   className="flex items-center gap-3 flex-1 min-w-0"
                 >
-                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium flex-shrink-0">
-                    {result.avatarUrl ? (
-                      <img
-                        src={result.avatarUrl}
-                        alt={`${result.user.name}'s profile picture`}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      getInitials(result.user.name)
-                    )}
-                  </div>
+                  <Avatar
+                    name={result.user.name}
+                    avatarUrl={result.avatarUrl}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-white truncate">
                       {result.user.name}

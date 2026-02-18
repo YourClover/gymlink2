@@ -17,6 +17,7 @@ import {
   unfollow,
 } from '@/lib/social.server'
 import AppLayout from '@/components/AppLayout'
+import Avatar from '@/components/ui/Avatar'
 import { SkeletonUserCard } from '@/components/ui/SocialSkeletons'
 import EmptyState from '@/components/ui/EmptyState'
 
@@ -144,15 +145,6 @@ function FollowersPage() {
     }
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
   const renderUserCard = (
     userId: string,
     userName: string,
@@ -176,17 +168,7 @@ function FollowersPage() {
         }}
       >
         <Link to="/u/$username" params={{ username: profile?.username ?? '' }}>
-          <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
-            {profile?.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={`${userName}'s profile picture`}
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              getInitials(userName)
-            )}
-          </div>
+          <Avatar name={userName} avatarUrl={profile?.avatarUrl} />
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -331,17 +313,10 @@ function FollowersPage() {
                     to="/u/$username"
                     params={{ username: req.profile?.username ?? '' }}
                   >
-                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
-                      {req.profile?.avatarUrl ? (
-                        <img
-                          src={req.profile.avatarUrl}
-                          alt={`${req.follower?.name ?? 'User'}'s profile picture`}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        getInitials(req.follower?.name ?? 'U')
-                      )}
-                    </div>
+                    <Avatar
+                      name={req.follower?.name ?? 'U'}
+                      avatarUrl={req.profile?.avatarUrl}
+                    />
                   </Link>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-white truncate">

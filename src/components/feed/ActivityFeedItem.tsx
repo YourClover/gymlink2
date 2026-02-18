@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Dumbbell, Medal, PartyPopper, Target, Trophy } from 'lucide-react'
 import type { ActivityType } from '@prisma/client'
+import Avatar from '@/components/ui/Avatar'
 
 interface ActivityMetadata {
   workoutName?: string
@@ -99,15 +100,6 @@ const formatPRValue = (metadata: ActivityMetadata) => {
   }
 }
 
-const getInitials = (name: string) => {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
 const accentBorder: Record<string, string> = {
   WORKOUT_COMPLETED: 'border-l-green-500',
   PR_ACHIEVED: 'border-l-yellow-500',
@@ -117,8 +109,6 @@ const accentBorder: Record<string, string> = {
 }
 
 function ActivityFeedItemComponent({ activity, style }: ActivityFeedItemProps) {
-  const initials = getInitials(activity.user.name)
-
   const renderContent = (): React.ReactNode => {
     const metadata = activity.metadata
 
@@ -241,17 +231,11 @@ function ActivityFeedItemComponent({ activity, style }: ActivityFeedItemProps) {
           to="/u/$username"
           params={{ username: activity.profile?.username ?? '' }}
         >
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-            {activity.profile?.avatarUrl ? (
-              <img
-                src={activity.profile.avatarUrl}
-                alt={`${activity.user.name}'s profile picture`}
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              initials
-            )}
-          </div>
+          <Avatar
+            name={activity.user.name}
+            avatarUrl={activity.profile?.avatarUrl}
+            size="sm"
+          />
         </Link>
         <div className="flex-1 min-w-0">
           <Link

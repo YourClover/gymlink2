@@ -7,6 +7,7 @@ import {
   getGlobalLeaderboard,
 } from '@/lib/leaderboards.server'
 import AppLayout from '@/components/AppLayout'
+import Avatar from '@/components/ui/Avatar'
 import { SkeletonLeaderboardRow } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
 
@@ -129,15 +130,6 @@ function LeaderboardsPage() {
     }
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
   const podiumStyles: Record<number, string> = {
     1: 'border-yellow-500/30 bg-yellow-500/5',
     2: 'border-zinc-400/30 bg-zinc-400/5',
@@ -249,17 +241,11 @@ function LeaderboardsPage() {
                     >
                       {getRankBadge(entry.rank)}
 
-                      <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
-                        {entry.profile?.avatarUrl ? (
-                          <img
-                            src={entry.profile.avatarUrl}
-                            alt={`${entry.user?.name ?? 'User'}'s profile picture`}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          getInitials(entry.user?.name ?? 'U')
-                        )}
-                      </div>
+                      <Avatar
+                        name={entry.user?.name ?? 'U'}
+                        avatarUrl={entry.profile?.avatarUrl}
+                        size="lg"
+                      />
 
                       <div className="flex-1 min-w-0">
                         <p
@@ -309,17 +295,11 @@ function LeaderboardsPage() {
                     >
                       {getRankBadge(entry.rank)}
 
-                      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                        {entry.profile?.avatarUrl ? (
-                          <img
-                            src={entry.profile.avatarUrl}
-                            alt={`${entry.user?.name ?? 'User'}'s profile picture`}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          getInitials(entry.user?.name ?? 'U')
-                        )}
-                      </div>
+                      <Avatar
+                        name={entry.user?.name ?? 'U'}
+                        avatarUrl={entry.profile?.avatarUrl}
+                        size="sm"
+                      />
 
                       <div className="flex-1 min-w-0">
                         <p

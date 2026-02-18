@@ -22,6 +22,7 @@ import {
 import type { AchievementRarity } from '@prisma/client'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
+import Avatar from '@/components/ui/Avatar'
 import { AchievementBadge } from '@/components/achievements'
 import { getUserAchievements } from '@/lib/achievements.server'
 import { getProfileStats, getUserProfile } from '@/lib/profile.server'
@@ -45,6 +46,7 @@ interface ProfileData {
   username: string
   profileCode: string
   bio: string | null
+  avatarUrl: string | null
   isPrivate: boolean
   user: { createdAt: Date | string }
 }
@@ -119,6 +121,7 @@ function ProfilePage() {
             username: profileResult.profile.username,
             profileCode: profileResult.profile.profileCode,
             bio: profileResult.profile.bio,
+            avatarUrl: profileResult.profile.avatarUrl,
             isPrivate: profileResult.profile.isPrivate,
             user: { createdAt: profileResult.profile.user.createdAt },
           })
@@ -172,9 +175,12 @@ function ProfilePage() {
           style={{ animationFillMode: 'backwards' }}
         >
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
-            </div>
+            <Avatar
+              name={user?.name ?? ''}
+              avatarUrl={profile?.avatarUrl}
+              size="xl"
+              variant="gradient"
+            />
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold text-white truncate">
                 {user?.name}

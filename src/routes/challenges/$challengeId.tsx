@@ -20,6 +20,7 @@ import {
   leaveChallenge,
 } from '@/lib/challenges.server'
 import AppLayout from '@/components/AppLayout'
+import Avatar from '@/components/ui/Avatar'
 import EmptyState from '@/components/ui/EmptyState'
 import {
   Skeleton,
@@ -222,15 +223,6 @@ function ChallengeDetailPage() {
       default:
         return 'bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-700/50 transition-all'
     }
-  }
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
   }
 
   if (isLoading) {
@@ -496,17 +488,11 @@ function ChallengeDetailPage() {
                   >
                     {getRankBadge(participant.rank)}
 
-                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                      {participant.profile?.avatarUrl ? (
-                        <img
-                          src={participant.profile.avatarUrl}
-                          alt={`${participant.user.name}'s profile picture`}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        getInitials(participant.user.name)
-                      )}
-                    </div>
+                    <Avatar
+                      name={participant.user.name}
+                      avatarUrl={participant.profile?.avatarUrl}
+                      size="sm"
+                    />
 
                     <div className="flex-1 min-w-0">
                       <p

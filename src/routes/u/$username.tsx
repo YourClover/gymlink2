@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext'
 import { getProfileByUsername, getProfileStats } from '@/lib/profile.server'
 import { getUserAchievements } from '@/lib/achievements.server'
 import AppLayout from '@/components/AppLayout'
+import Avatar from '@/components/ui/Avatar'
 import { AchievementBadge } from '@/components/achievements'
 import { FollowButton } from '@/components/social/FollowButton'
 import {
@@ -183,13 +184,6 @@ function PublicProfilePage() {
     )
   }
 
-  const initials = profile.user.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-
   return (
     <AppLayout showNav={isOwnProfile}>
       <div className="p-4">
@@ -211,17 +205,12 @@ function PublicProfilePage() {
           className="flex items-start gap-4 mb-6 animate-fade-in"
           style={{ animationFillMode: 'backwards' }}
         >
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-2xl font-bold text-white flex-shrink-0">
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={`${profile.user.name}'s profile picture`}
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              initials
-            )}
-          </div>
+          <Avatar
+            name={profile.user.name}
+            avatarUrl={profile.avatarUrl}
+            size="2xl"
+            variant="gradient"
+          />
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-white truncate">
               {profile.user.name}

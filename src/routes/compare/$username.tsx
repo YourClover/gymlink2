@@ -11,9 +11,9 @@ import {
   Zap,
 } from 'lucide-react'
 import type { MuscleGroup } from '@prisma/client'
-import type {ComparisonData} from '@/lib/compare.server';
+import type { ComparisonData } from '@/lib/compare.server'
 import { useAuth } from '@/context/AuthContext'
-import {  getComparisonData } from '@/lib/compare.server'
+import { getComparisonData } from '@/lib/compare.server'
 import CompareHeader from '@/components/compare/CompareHeader'
 import CompareStatRow from '@/components/compare/CompareStatRow'
 import ComparePRCard from '@/components/compare/ComparePRCard'
