@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useRef, useMemo, useState } from 'react'
 
 type Props = {
   dayMap: Record<string, number>
@@ -26,6 +26,7 @@ const intensityClasses = [
 ]
 
 export default function WeeklyHeatmap({ dayMap }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const [tooltip, setTooltip] = useState<{
     date: string
     count: number
@@ -72,7 +73,7 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
   }, [dayMap])
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       {/* Month labels */}
       <div
         className="grid gap-[3px] ml-6 mb-1"
@@ -81,7 +82,7 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
         {Array.from({ length: 16 }, (_, i) => {
           const month = monthLabels.find((m) => m.col === i)
           return (
-            <div key={i} className="text-[10px] text-zinc-500 truncate">
+            <div key={i} className="text-[11px] text-zinc-500 truncate">
               {month?.label ?? ''}
             </div>
           )
@@ -94,7 +95,7 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
           {dayLabels.map((label, i) => (
             <div
               key={i}
-              className="w-5 h-[14px] text-[10px] text-zinc-500 flex items-center justify-end pr-0.5"
+              className="w-5 h-[16px] text-[10px] text-zinc-500 flex items-center justify-end pr-0.5"
             >
               {label}
             </div>
@@ -118,16 +119,26 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
               return (
                 <div
                   key={`${weekIdx}-${dayIdx}`}
-                  className={`h-[14px] rounded-sm transition-colors ${
+                  className={`h-[16px] rounded-sm transition-colors ${
                     isFuture ? 'bg-zinc-800/30' : intensityClasses[intensity]
                   } ${isToday ? 'ring-1 ring-blue-400' : ''}`}
                   onMouseEnter={(e) => {
                     if (!isFuture) {
                       const rect = e.currentTarget.getBoundingClientRect()
+                      const container =
+                        containerRef.current?.getBoundingClientRect()
+                      let x = rect.left + rect.width / 2
+                      if (container) {
+                        const tooltipHalf = 60
+                        x = Math.max(
+                          container.left + tooltipHalf,
+                          Math.min(x, container.right - tooltipHalf),
+                        )
+                      }
                       setTooltip({
                         date: cell.date,
                         count: cell.count,
-                        x: rect.left + rect.width / 2,
+                        x,
                         y: rect.top,
                       })
                     }

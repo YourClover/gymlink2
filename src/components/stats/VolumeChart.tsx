@@ -98,7 +98,7 @@ export default function VolumeChart({ data }: Props) {
         margin={{
           top: 10,
           right: hasWorkoutVariance ? 40 : 10,
-          left: 0,
+          left: 10,
           bottom: 0,
         }}
       >
@@ -160,7 +160,7 @@ export default function VolumeChart({ data }: Props) {
           strokeWidth={1}
           label={{
             value: 'avg',
-            position: 'left',
+            position: 'insideLeft',
             fill: chartColors.avg,
             fontSize: 11,
           }}

@@ -158,7 +158,7 @@ export default function RpeChart({ data }: Props) {
               fontSize={11}
               tickLine={false}
               axisLine={false}
-              width={30}
+              width={35}
               tickFormatter={(v: number) => `${v}`}
             />
             <Tooltip content={<DistTooltip />} cursor={false} />
@@ -180,7 +180,7 @@ export default function RpeChart({ data }: Props) {
           <ResponsiveContainer width="100%" height={160}>
             <AreaChart
               data={data.trend}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              margin={{ top: 10, right: 16, left: 5, bottom: 0 }}
             >
               <defs>
                 <linearGradient id="rpeGradient" x1="0" y1="0" x2="0" y2="1">
@@ -231,7 +231,7 @@ export default function RpeChart({ data }: Props) {
                 fillOpacity={0.1}
                 label={{
                   value: 'Sweet spot',
-                  position: 'right',
+                  position: 'insideRight',
                   fill: chartColors.zone,
                   fontSize: 10,
                 }}

@@ -69,11 +69,14 @@ export default function MuscleRadarChart({ data }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="70%">
+      <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="65%">
         <PolarGrid stroke="#3f3f46" />
         <PolarAngleAxis
           dataKey="label"
-          tick={{ fill: '#a1a1aa', fontSize: 11 }}
+          tick={{ fill: '#a1a1aa', fontSize: 10 }}
+          tickFormatter={(v: string) =>
+            v.length > 8 ? v.slice(0, 8) + '.' : v
+          }
         />
         <Tooltip content={<CustomTooltip />} cursor={false} />
         <Radar

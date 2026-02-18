@@ -178,9 +178,9 @@ export default function MuscleDonutChart({ data }: Props) {
           dataKey="count"
           nameKey="muscle"
           cx="50%"
-          cy="45%"
-          innerRadius={60}
-          outerRadius={90}
+          cy="50%"
+          innerRadius="38%"
+          outerRadius="55%"
           paddingAngle={2}
           label={renderLabel}
           labelLine={false}
@@ -200,7 +200,7 @@ export default function MuscleDonutChart({ data }: Props) {
         {/* Center text showing total sets */}
         <text
           x="50%"
-          y="42%"
+          y="47%"
           textAnchor="middle"
           dominantBaseline="central"
           fill="white"
@@ -211,7 +211,7 @@ export default function MuscleDonutChart({ data }: Props) {
         </text>
         <text
           x="50%"
-          y="50%"
+          y="55%"
           textAnchor="middle"
           dominantBaseline="central"
           fill="#a1a1aa"
