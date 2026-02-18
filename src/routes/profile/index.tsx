@@ -9,12 +9,10 @@ import {
   Edit,
   Flame,
   History,
-  LogOut,
   Mail,
   Medal,
   Settings,
   Share2,
-  Shield,
   Trophy,
   User,
   Users,
@@ -65,7 +63,7 @@ interface FollowCountsData {
 }
 
 function ProfilePage() {
-  const { user, logout, isLoading } = useAuth()
+  const { user } = useAuth()
   const [recentAchievements, setRecentAchievements] = useState<
     Array<RecentAchievement>
   >([])
@@ -430,70 +428,22 @@ function ProfilePage() {
           </div>
         </StatsSection>
 
-        {/* Settings Section */}
-        <StatsSection
-          icon={<Settings />}
-          title="Settings"
-          style={{
-            animationDelay: '250ms',
-            animationFillMode: 'backwards',
-          }}
+        {/* Settings */}
+        <div
+          className="animate-fade-in"
+          style={{ animationDelay: '250ms', animationFillMode: 'backwards' }}
         >
-          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 divide-y divide-zinc-700/50 animate-fade-in">
-            <Link
-              to="/exercises"
-              className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Dumbbell className="w-5 h-5 text-zinc-400" />
-                <span className="text-white">Exercise Library</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-zinc-500" />
-            </Link>
-            <div className="w-full flex items-center justify-between p-4 opacity-50 cursor-not-allowed">
-              <div className="flex items-center gap-3">
-                <Settings className="w-5 h-5 text-zinc-400" />
-                <span className="text-white">Preferences</span>
-              </div>
-              <span className="text-xs text-zinc-500">Coming soon</span>
+          <Link
+            to="/profile/settings"
+            className="w-full flex items-center justify-between p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-700/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5 text-zinc-400" />
+              <span className="text-white">Settings</span>
             </div>
-            {user?.isAdmin && (
-              <Link
-                to="/profile/achievements-admin"
-                className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-amber-400" />
-                  <span className="text-white">Manage Achievements</span>
-                </div>
-                <ChevronRight className="w-5 h-5 text-zinc-500" />
-              </Link>
-            )}
-          </div>
-        </StatsSection>
-
-        {/* Account Section */}
-        <StatsSection
-          icon={<User />}
-          title="Account"
-          style={{
-            animationDelay: '300ms',
-            animationFillMode: 'backwards',
-          }}
-        >
-          <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 animate-fade-in">
-            <button
-              onClick={logout}
-              disabled={isLoading}
-              className="w-full flex items-center justify-between p-4 hover:bg-zinc-700/30 transition-colors text-red-400 disabled:opacity-50"
-            >
-              <div className="flex items-center gap-3">
-                <LogOut className="w-5 h-5" />
-                <span>{isLoading ? 'Signing out...' : 'Sign Out'}</span>
-              </div>
-            </button>
-          </div>
-        </StatsSection>
+            <ChevronRight className="w-5 h-5 text-zinc-500" />
+          </Link>
+        </div>
 
         {/* App Info */}
         <div className="text-center text-sm text-zinc-500 pt-4">

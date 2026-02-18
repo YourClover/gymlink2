@@ -15,9 +15,6 @@ export const Route = createFileRoute('/profile/edit')({
 interface ProfileData {
   username: string
   bio: string | null
-  isPrivate: boolean
-  showAchievements: boolean
-  showStats: boolean
   profileCode: string
 }
 
@@ -26,9 +23,6 @@ function ProfileEditPage() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [bio, setBio] = useState('')
-  const [isPrivate, setIsPrivate] = useState(true)
-  const [showAchievements, setShowAchievements] = useState(true)
-  const [showStats, setShowStats] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -39,15 +33,9 @@ function ProfileEditPage() {
         setProfile({
           username: result.profile.username,
           bio: result.profile.bio,
-          isPrivate: result.profile.isPrivate,
-          showAchievements: result.profile.showAchievements,
-          showStats: result.profile.showStats,
           profileCode: result.profile.profileCode,
         })
         setBio(result.profile.bio ?? '')
-        setIsPrivate(result.profile.isPrivate)
-        setShowAchievements(result.profile.showAchievements)
-        setShowStats(result.profile.showStats)
       }
       setIsLoading(false)
     })
@@ -58,7 +46,7 @@ function ProfileEditPage() {
     setIsSaving(true)
     try {
       await updateUserProfile({
-        data: { userId: user.id, bio, isPrivate, showAchievements, showStats },
+        data: { userId: user.id, bio },
       })
       navigate({ to: '/profile' })
     } finally {
@@ -78,12 +66,6 @@ function ProfileEditPage() {
           <SkeletonFormField />
           <SkeletonFormField />
           <SkeletonFormField />
-          <div className="space-y-4">
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-16 w-full rounded-lg" />
-            <Skeleton className="h-16 w-full rounded-lg" />
-            <Skeleton className="h-16 w-full rounded-lg" />
-          </div>
         </div>
       </AppLayout>
     )
@@ -95,7 +77,7 @@ function ProfileEditPage() {
         <EmptyState
           icon={<UserCircle className="w-8 h-8" />}
           title="Set up your profile first"
-          description="Create your profile to customize your settings and privacy."
+          description="Create your profile to start editing it."
           action={{
             label: 'Set Up Profile',
             onClick: () => navigate({ to: '/profile/setup' }),
@@ -176,59 +158,6 @@ function ProfileEditPage() {
             placeholder="Tell others about yourself..."
           />
           <p className="text-xs text-zinc-500 mt-1">{bio.length}/160</p>
-        </div>
-
-        {/* Privacy Settings */}
-        <div
-          className="space-y-4 animate-fade-in"
-          style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}
-        >
-          <h2 className="text-lg font-semibold text-white">Privacy</h2>
-
-          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer border border-zinc-700/50">
-            <div>
-              <p className="text-white font-medium">Private Profile</p>
-              <p className="text-sm text-zinc-500">
-                Only followers can see your activity
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={isPrivate}
-              onChange={(e) => setIsPrivate(e.target.checked)}
-              className="w-5 h-5 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-zinc-900"
-            />
-          </label>
-
-          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer border border-zinc-700/50">
-            <div>
-              <p className="text-white font-medium">Show Achievements</p>
-              <p className="text-sm text-zinc-500">
-                Display earned badges on your profile
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={showAchievements}
-              onChange={(e) => setShowAchievements(e.target.checked)}
-              className="w-5 h-5 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-zinc-900"
-            />
-          </label>
-
-          <label className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg cursor-pointer border border-zinc-700/50">
-            <div>
-              <p className="text-white font-medium">Show Stats</p>
-              <p className="text-sm text-zinc-500">
-                Display workout statistics on your profile
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={showStats}
-              onChange={(e) => setShowStats(e.target.checked)}
-              className="w-5 h-5 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-zinc-900"
-            />
-          </label>
         </div>
       </div>
     </AppLayout>
