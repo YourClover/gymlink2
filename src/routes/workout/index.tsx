@@ -137,7 +137,7 @@ function WorkoutPage() {
     try {
       if (!user) return
       const result = await getPlan({ data: { id: planId, userId: user.id } })
-      if (result.plan) {
+      if (result.plan && 'planDays' in result.plan) {
         setPlans((prev) =>
           prev.map((p) =>
             p.id === planId ? { ...p, planDays: result.plan!.planDays } : p,

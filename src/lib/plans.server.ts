@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import {
+  checkPlanAccess,
   requirePlanAccess,
   requirePlanEditAccess,
   requirePlanOwnership,
@@ -57,8 +58,53 @@ export const getPlans = createServerFn({ method: 'GET' })
 export const getPlan = createServerFn({ method: 'GET' })
   .inputValidator((data: { id: string; userId: string }) => data)
   .handler(async ({ data }) => {
-    const access = await requirePlanAccess(data.id, data.userId)
+    const access = await checkPlanAccess(data.id, data.userId)
 
+    // No access — check for pending invite before rejecting
+    if (!access.hasAccess) {
+      const invite = await prisma.planCollaborator.findUnique({
+        where: {
+          workoutPlanId_userId: {
+            workoutPlanId: data.id,
+            userId: data.userId,
+          },
+        },
+        select: { inviteStatus: true },
+      })
+
+      if (invite?.inviteStatus === 'PENDING') {
+        // Return minimal plan info for the invite banner
+        const minimalPlan = await prisma.workoutPlan.findUnique({
+          where: { id: data.id },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            user: { select: { id: true, name: true } },
+            _count: { select: { planDays: true } },
+          },
+        })
+
+        return {
+          plan: null,
+          access: { isOwner: false as const, role: null },
+          pendingInvite: true as const,
+          inviteInfo: minimalPlan
+            ? {
+                id: minimalPlan.id,
+                name: minimalPlan.name,
+                description: minimalPlan.description,
+                ownerName: minimalPlan.user.name,
+                dayCount: minimalPlan._count.planDays,
+              }
+            : null,
+        }
+      }
+
+      throw new Error('Plan not found')
+    }
+
+    // Has access (owner or accepted collaborator) — fetch full plan
     const plan = await prisma.workoutPlan.findUnique({
       where: { id: data.id },
       include: {
@@ -85,30 +131,14 @@ export const getPlan = createServerFn({ method: 'GET' })
       },
     })
 
-    // Check for pending invite
-    let pendingInvite = false
-    if (!access.isOwner) {
-      const invite = await prisma.planCollaborator.findUnique({
-        where: {
-          workoutPlanId_userId: {
-            workoutPlanId: data.id,
-            userId: data.userId,
-          },
-        },
-        select: { inviteStatus: true },
-      })
-      if (invite?.inviteStatus === 'PENDING') {
-        pendingInvite = true
-      }
-    }
-
     return {
       plan,
       access: {
         isOwner: access.isOwner,
         role: access.role,
       },
-      pendingInvite,
+      pendingInvite: false as const,
+      inviteInfo: null,
     }
   })
 

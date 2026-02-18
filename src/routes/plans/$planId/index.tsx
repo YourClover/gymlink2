@@ -76,6 +76,13 @@ function PlanDetailPage() {
     role: PlanRole | null
   } | null>(null)
   const [pendingInvite, setPendingInvite] = useState(false)
+  const [inviteInfo, setInviteInfo] = useState<{
+    id: string
+    name: string
+    description: string | null
+    ownerName: string
+    dayCount: number
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -94,9 +101,13 @@ function PlanDetailPage() {
 
     try {
       const result = await getPlan({ data: { id: planId, userId: user.id } })
-      setPlan(result.plan)
-      setAccess(result.access)
-      setPendingInvite(result.pendingInvite)
+      if (result.pendingInvite) {
+        setPendingInvite(true)
+        setInviteInfo(result.inviteInfo)
+      } else {
+        setPlan(result.plan)
+        setAccess(result.access)
+      }
     } catch (error) {
       console.error('Failed to fetch plan:', error)
     } finally {
@@ -279,7 +290,7 @@ function PlanDetailPage() {
   }
 
   // Pending invite banner
-  if (pendingInvite) {
+  if (pendingInvite && inviteInfo) {
     return (
       <AppLayout showNav={false}>
         <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 safe-area-pt">
@@ -306,18 +317,20 @@ function PlanDetailPage() {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-white mb-1">
-              {plan.name}
+              {inviteInfo.name}
             </h2>
             <p className="text-zinc-400">
-              {plan.user.name} invited you to collaborate on this plan
+              {inviteInfo.ownerName} invited you to collaborate on this plan
             </p>
-            {plan.description && (
-              <p className="text-sm text-zinc-500 mt-2">{plan.description}</p>
+            {inviteInfo.description && (
+              <p className="text-sm text-zinc-500 mt-2">
+                {inviteInfo.description}
+              </p>
             )}
           </div>
           <p className="text-sm text-zinc-500">
-            {plan.planDays.length} day
-            {plan.planDays.length !== 1 ? 's' : ''}
+            {inviteInfo.dayCount} day
+            {inviteInfo.dayCount !== 1 ? 's' : ''}
           </p>
           <div className="flex gap-3 w-full max-w-xs">
             <button
