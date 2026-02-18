@@ -271,25 +271,7 @@ function PlanDetailPage() {
     )
   }
 
-  if (!plan) {
-    return (
-      <AppLayout showNav={false}>
-        <div className="p-4">
-          <EmptyState
-            icon={<Calendar className="w-8 h-8" />}
-            title="Plan not found"
-            description="This workout plan doesn't exist or you don't have access to it."
-            action={{
-              label: 'Go to Plans',
-              onClick: () => navigate({ to: '/plans' }),
-            }}
-          />
-        </div>
-      </AppLayout>
-    )
-  }
-
-  // Pending invite banner
+  // Pending invite banner (must be checked before !plan since plan is null for invites)
   if (pendingInvite && inviteInfo) {
     return (
       <AppLayout showNav={false}>
@@ -350,6 +332,24 @@ function PlanDetailPage() {
               Accept
             </button>
           </div>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  if (!plan) {
+    return (
+      <AppLayout showNav={false}>
+        <div className="p-4">
+          <EmptyState
+            icon={<Calendar className="w-8 h-8" />}
+            title="Plan not found"
+            description="This workout plan doesn't exist or you don't have access to it."
+            action={{
+              label: 'Go to Plans',
+              onClick: () => navigate({ to: '/plans' }),
+            }}
+          />
         </div>
       </AppLayout>
     )
