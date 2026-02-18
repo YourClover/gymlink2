@@ -32,6 +32,7 @@ import { Route as UsersSearchRouteImport } from './routes/users/search'
 import { Route as UUsernameRouteImport } from './routes/u/$username'
 import { Route as ProgressExerciseIdRouteImport } from './routes/progress.$exerciseId'
 import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
+import { Route as ProfileSettingsRouteImport } from './routes/profile/settings'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileAchievementsAdminRouteImport } from './routes/profile/achievements-admin'
 import { Route as PlansNewRouteImport } from './routes/plans/new'
@@ -158,6 +159,11 @@ const ProfileSetupRoute = ProfileSetupRouteImport.update({
   path: '/profile/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileSettingsRoute = ProfileSettingsRouteImport.update({
+  id: '/profile/settings',
+  path: '/profile/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileEditRoute = ProfileEditRouteImport.update({
   id: '/profile/edit',
   path: '/profile/edit',
@@ -230,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/plans/new': typeof PlansNewRoute
   '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/settings': typeof ProfileSettingsRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/progress/$exerciseId': typeof ProgressExerciseIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByTo {
   '/plans/new': typeof PlansNewRoute
   '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/settings': typeof ProfileSettingsRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/progress/$exerciseId': typeof ProgressExerciseIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/plans/new': typeof PlansNewRoute
   '/profile/achievements-admin': typeof ProfileAchievementsAdminRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/settings': typeof ProfileSettingsRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/progress/$exerciseId': typeof ProgressExerciseIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/plans/new'
     | '/profile/achievements-admin'
     | '/profile/edit'
+    | '/profile/settings'
     | '/profile/setup'
     | '/progress/$exerciseId'
     | '/u/$username'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/plans/new'
     | '/profile/achievements-admin'
     | '/profile/edit'
+    | '/profile/settings'
     | '/profile/setup'
     | '/progress/$exerciseId'
     | '/u/$username'
@@ -408,6 +419,7 @@ export interface FileRouteTypes {
     | '/plans/new'
     | '/profile/achievements-admin'
     | '/profile/edit'
+    | '/profile/settings'
     | '/profile/setup'
     | '/progress/$exerciseId'
     | '/u/$username'
@@ -444,6 +456,7 @@ export interface RootRouteChildren {
   PlansNewRoute: typeof PlansNewRoute
   ProfileAchievementsAdminRoute: typeof ProfileAchievementsAdminRoute
   ProfileEditRoute: typeof ProfileEditRoute
+  ProfileSettingsRoute: typeof ProfileSettingsRoute
   ProfileSetupRoute: typeof ProfileSetupRoute
   ProgressExerciseIdRoute: typeof ProgressExerciseIdRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -623,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/settings': {
+      id: '/profile/settings'
+      path: '/profile/settings'
+      fullPath: '/profile/settings'
+      preLoaderRoute: typeof ProfileSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile/edit': {
       id: '/profile/edit'
       path: '/profile/edit'
@@ -716,6 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlansNewRoute: PlansNewRoute,
   ProfileAchievementsAdminRoute: ProfileAchievementsAdminRoute,
   ProfileEditRoute: ProfileEditRoute,
+  ProfileSettingsRoute: ProfileSettingsRoute,
   ProfileSetupRoute: ProfileSetupRoute,
   ProgressExerciseIdRoute: ProgressExerciseIdRoute,
   UUsernameRoute: UUsernameRoute,

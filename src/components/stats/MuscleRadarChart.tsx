@@ -6,6 +6,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
 
 type MuscleGroupData = {
   muscle: string
@@ -54,6 +55,8 @@ function CustomTooltip({
 }
 
 export default function MuscleRadarChart({ data }: Props) {
+  const { compact } = useChartDimensions()
+
   if (data.length < 3) {
     return (
       <div className="h-[260px] flex items-center justify-center text-zinc-500 text-sm">
@@ -62,20 +65,27 @@ export default function MuscleRadarChart({ data }: Props) {
     )
   }
 
+  const truncateLen = compact ? 6 : 8
+
   const chartData = data.map((d) => ({
     ...d,
     label: formatMuscleName(d.muscle),
   }))
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="65%">
+    <ResponsiveContainer width="100%" height={compact ? 200 : 260}>
+      <RadarChart
+        data={chartData}
+        cx="50%"
+        cy="50%"
+        outerRadius={compact ? '80%' : '65%'}
+      >
         <PolarGrid stroke="#3f3f46" />
         <PolarAngleAxis
           dataKey="label"
-          tick={{ fill: '#a1a1aa', fontSize: 10 }}
+          tick={{ fill: '#a1a1aa', fontSize: compact ? 10 : 10 }}
           tickFormatter={(v: string) =>
-            v.length > 8 ? v.slice(0, 8) + '.' : v
+            v.length > truncateLen ? v.slice(0, truncateLen) + '.' : v
           }
         />
         <Tooltip content={<CustomTooltip />} cursor={false} />

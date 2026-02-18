@@ -44,12 +44,12 @@ type Props = {
 export default function DurationStats({ data }: Props) {
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
           <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center mb-2">
             <Clock className="w-4 h-4 text-purple-400" />
           </div>
-          <p className="text-lg font-bold text-white">
+          <p className="text-base sm:text-lg font-bold text-white">
             {formatDuration(data.avgDurationSeconds)}
           </p>
           <p className="text-xs text-zinc-400">Avg Duration</p>
@@ -58,7 +58,7 @@ export default function DurationStats({ data }: Props) {
           <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center mb-2">
             <Timer className="w-4 h-4 text-red-400" />
           </div>
-          <p className="text-lg font-bold text-white">
+          <p className="text-base sm:text-lg font-bold text-white">
             {formatDuration(data.maxDurationSeconds)}
           </p>
           <p className="text-xs text-zinc-400">Longest</p>
@@ -67,7 +67,7 @@ export default function DurationStats({ data }: Props) {
           <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center mb-2">
             <TrendingUp className="w-4 h-4 text-blue-400" />
           </div>
-          <p className="text-lg font-bold text-white">{data.sessionCount}</p>
+          <p className="text-base sm:text-lg font-bold text-white">{data.sessionCount}</p>
           <p className="text-xs text-zinc-400">Sessions</p>
         </div>
       </div>

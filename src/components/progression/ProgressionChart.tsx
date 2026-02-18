@@ -10,6 +10,7 @@ import {
 import type { ProgressionDataPoint } from '@/lib/progression.server'
 import type { ProgressionMetric } from '@/lib/progression-utils'
 import { formatMetricValue } from '@/lib/progression-utils'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
 
 type Props = {
   data: Array<ProgressionDataPoint>
@@ -70,6 +71,8 @@ function CustomTooltip({ active, payload, metric }: CustomTooltipProps) {
 }
 
 export default function ProgressionChart({ data, metric }: Props) {
+  const { compact } = useChartDimensions()
+
   if (data.length === 0) {
     return (
       <div className="h-[250px] flex items-center justify-center text-zinc-500">
@@ -87,7 +90,7 @@ export default function ProgressionChart({ data, metric }: Props) {
   const yMax = Math.ceil(maxValue + padding)
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
+    <ResponsiveContainer width="100%" height={compact ? 210 : 250}>
       <LineChart
         data={data}
         margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -101,19 +104,19 @@ export default function ProgressionChart({ data, metric }: Props) {
           dataKey="date"
           tickFormatter={formatDateShort}
           stroke={chartColors.text}
-          fontSize={12}
+          fontSize={compact ? 10 : 12}
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
-          minTickGap={40}
+          minTickGap={compact ? 30 : 40}
         />
         <YAxis
           domain={[yMin, yMax]}
           stroke={chartColors.text}
-          fontSize={12}
+          fontSize={compact ? 10 : 12}
           tickLine={false}
           axisLine={false}
-          width={45}
+          width={compact ? 32 : 45}
           tickFormatter={(value: number) => {
             if (value >= 1000) return `${(value / 1000).toFixed(1)}k`
             return value.toString()
@@ -125,12 +128,16 @@ export default function ProgressionChart({ data, metric }: Props) {
           dataKey="value"
           stroke={chartColors.line}
           strokeWidth={2}
-          dot={{
-            fill: chartColors.dot,
-            stroke: chartColors.dotStroke,
-            strokeWidth: 2,
-            r: 4,
-          }}
+          dot={
+            compact
+              ? false
+              : {
+                  fill: chartColors.dot,
+                  stroke: chartColors.dotStroke,
+                  strokeWidth: 2,
+                  r: 4,
+                }
+          }
           activeDot={{
             fill: chartColors.line,
             stroke: chartColors.dotStroke,

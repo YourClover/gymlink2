@@ -8,6 +8,7 @@ import {
   Sector,
   Tooltip,
 } from 'recharts'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
 
 type MuscleGroupData = {
   muscle: string
@@ -104,41 +105,6 @@ function CustomLegend({
 
 const RADIAN = Math.PI / 180
 
-function renderLabel({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  percentage,
-}: {
-  cx: number
-  cy: number
-  midAngle: number
-  innerRadius: number
-  outerRadius: number
-  percentage: number
-}) {
-  if (percentage < 5) return null
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-  const x = cx + radius * Math.cos(-midAngle * RADIAN)
-  const y = cy + radius * Math.sin(-midAngle * RADIAN)
-
-  return (
-    <text
-      x={x}
-      y={y}
-      fill="white"
-      textAnchor="middle"
-      dominantBaseline="central"
-      fontSize={12}
-      fontWeight={600}
-    >
-      {percentage}%
-    </text>
-  )
-}
-
 function renderActiveShape(props: any) {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props
 
@@ -159,6 +125,7 @@ function renderActiveShape(props: any) {
 
 export default function MuscleDonutChart({ data }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
+  const { compact } = useChartDimensions()
 
   if (data.length === 0) {
     return (
@@ -169,18 +136,56 @@ export default function MuscleDonutChart({ data }: Props) {
   }
 
   const totalSets = data.reduce((sum, d) => sum + d.count, 0)
+  const labelThreshold = compact ? 8 : 5
+  const labelFontSize = compact ? 10 : 12
+  const centerFontSize = compact ? 18 : 22
+
+  function renderLabel({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percentage,
+  }: {
+    cx: number
+    cy: number
+    midAngle: number
+    innerRadius: number
+    outerRadius: number
+    percentage: number
+  }) {
+    if (percentage < labelThreshold) return null
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={labelFontSize}
+        fontWeight={600}
+      >
+        {percentage}%
+      </text>
+    )
+  }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={compact ? 250 : 280}>
       <PieChart>
         <Pie
           data={data}
           dataKey="count"
           nameKey="muscle"
           cx="50%"
-          cy="50%"
-          innerRadius="38%"
-          outerRadius="55%"
+          cy="45%"
+          innerRadius={compact ? '40%' : '38%'}
+          outerRadius={compact ? '68%' : '55%'}
           paddingAngle={2}
           label={renderLabel}
           labelLine={false}
@@ -200,18 +205,18 @@ export default function MuscleDonutChart({ data }: Props) {
         {/* Center text showing total sets */}
         <text
           x="50%"
-          y="47%"
+          y="42%"
           textAnchor="middle"
           dominantBaseline="central"
           fill="white"
-          fontSize={22}
+          fontSize={centerFontSize}
           fontWeight={700}
         >
           {totalSets}
         </text>
         <text
           x="50%"
-          y="55%"
+          y="50%"
           textAnchor="middle"
           dominantBaseline="central"
           fill="#a1a1aa"

@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
 
 type RpeData = {
   avgRpe: number
@@ -107,6 +108,8 @@ function TrendTooltip({
 }
 
 export default function RpeChart({ data }: Props) {
+  const { compact } = useChartDimensions()
+
   // Build distribution bars (1-10)
   const distData = Array.from({ length: 10 }, (_, i) => ({
     rpe: i + 1,
@@ -133,7 +136,7 @@ export default function RpeChart({ data }: Props) {
         <p className="text-xs font-medium text-zinc-400 mb-2">
           RPE Distribution
         </p>
-        <ResponsiveContainer width="100%" height={160}>
+        <ResponsiveContainer width="100%" height={compact ? 140 : 160}>
           <BarChart
             data={distData}
             layout="vertical"
@@ -147,7 +150,7 @@ export default function RpeChart({ data }: Props) {
             <XAxis
               type="number"
               stroke={chartColors.text}
-              fontSize={11}
+              fontSize={compact ? 10 : 11}
               tickLine={false}
               axisLine={false}
             />
@@ -155,10 +158,10 @@ export default function RpeChart({ data }: Props) {
               type="category"
               dataKey="rpe"
               stroke={chartColors.text}
-              fontSize={11}
+              fontSize={compact ? 10 : 11}
               tickLine={false}
               axisLine={false}
-              width={35}
+              width={compact ? 25 : 35}
               tickFormatter={(v: number) => `${v}`}
             />
             <Tooltip content={<DistTooltip />} cursor={false} />
@@ -177,10 +180,15 @@ export default function RpeChart({ data }: Props) {
           <p className="text-xs font-medium text-zinc-400 mb-2">
             RPE Trend (per session)
           </p>
-          <ResponsiveContainer width="100%" height={160}>
+          <ResponsiveContainer width="100%" height={compact ? 140 : 160}>
             <AreaChart
               data={data.trend}
-              margin={{ top: 10, right: 16, left: 5, bottom: 0 }}
+              margin={{
+                top: 10,
+                right: compact ? 10 : 16,
+                left: compact ? 0 : 5,
+                bottom: 0,
+              }}
             >
               <defs>
                 <linearGradient id="rpeGradient" x1="0" y1="0" x2="0" y2="1">
@@ -204,7 +212,7 @@ export default function RpeChart({ data }: Props) {
               <XAxis
                 dataKey="date"
                 stroke={chartColors.text}
-                fontSize={11}
+                fontSize={compact ? 10 : 11}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v: string) =>
@@ -214,14 +222,14 @@ export default function RpeChart({ data }: Props) {
                   })
                 }
                 interval="preserveStartEnd"
-                minTickGap={40}
+                minTickGap={compact ? 30 : 40}
               />
               <YAxis
                 stroke={chartColors.text}
-                fontSize={11}
+                fontSize={compact ? 10 : 11}
                 tickLine={false}
                 axisLine={false}
-                width={30}
+                width={compact ? 22 : 30}
                 domain={[1, 10]}
               />
               <ReferenceArea
@@ -229,12 +237,16 @@ export default function RpeChart({ data }: Props) {
                 y2={8}
                 fill={chartColors.zone}
                 fillOpacity={0.1}
-                label={{
-                  value: 'Sweet spot',
-                  position: 'insideRight',
-                  fill: chartColors.zone,
-                  fontSize: 10,
-                }}
+                label={
+                  compact
+                    ? undefined
+                    : {
+                        value: 'Sweet spot',
+                        position: 'insideRight',
+                        fill: chartColors.zone,
+                        fontSize: 10,
+                      }
+                }
               />
               <Tooltip content={<TrendTooltip />} cursor={false} />
               <Area

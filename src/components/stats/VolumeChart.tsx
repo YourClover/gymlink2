@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
 
 type WeekData = {
   weekStart: string
@@ -75,6 +76,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export default function VolumeChart({ data }: Props) {
+  const { compact } = useChartDimensions()
   const hasVolume = data.some((w) => w.volume > 0)
 
   if (!hasVolume) {
@@ -92,13 +94,13 @@ export default function VolumeChart({ data }: Props) {
   const hasWorkoutVariance = new Set(data.map((w) => w.workouts)).size > 1
 
   return (
-    <ResponsiveContainer width="100%" height={240}>
+    <ResponsiveContainer width="100%" height={compact ? 200 : 240}>
       <ComposedChart
         data={data}
         margin={{
           top: 10,
-          right: hasWorkoutVariance ? 40 : 10,
-          left: 10,
+          right: hasWorkoutVariance ? (compact ? 10 : 40) : 10,
+          left: compact ? 0 : 10,
           bottom: 0,
         }}
       >
@@ -121,21 +123,24 @@ export default function VolumeChart({ data }: Props) {
           dataKey="weekStart"
           tickFormatter={formatDateShort}
           stroke={chartColors.text}
-          fontSize={12}
+          fontSize={compact ? 10 : 12}
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
-          minTickGap={40}
+          minTickGap={compact ? 30 : 40}
         />
         <YAxis
           yAxisId="volume"
           stroke={chartColors.text}
-          fontSize={12}
+          fontSize={compact ? 10 : 12}
           tickLine={false}
           axisLine={false}
-          width={45}
+          width={compact ? 32 : 45}
           tickFormatter={(value: number) => {
-            if (value >= 1000) return `${(value / 1000).toFixed(1)}k`
+            if (value >= 1000) {
+              if (compact) return `${Math.round(value / 1000)}k`
+              return `${(value / 1000).toFixed(1)}k`
+            }
             return value.toString()
           }}
         />
@@ -144,10 +149,10 @@ export default function VolumeChart({ data }: Props) {
             yAxisId="workouts"
             orientation="right"
             stroke={chartColors.line}
-            fontSize={11}
+            fontSize={compact ? 10 : 11}
             tickLine={false}
             axisLine={false}
-            width={30}
+            width={compact ? 14 : 30}
             allowDecimals={false}
           />
         )}
@@ -177,7 +182,7 @@ export default function VolumeChart({ data }: Props) {
           dataKey="volume"
           fill={chartColors.bar}
           radius={[4, 4, 0, 0]}
-          maxBarSize={40}
+          maxBarSize={compact ? 24 : 40}
         />
         {hasWorkoutVariance && (
           <Line

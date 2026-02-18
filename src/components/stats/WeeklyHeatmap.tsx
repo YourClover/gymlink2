@@ -82,7 +82,7 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
         {Array.from({ length: 16 }, (_, i) => {
           const month = monthLabels.find((m) => m.col === i)
           return (
-            <div key={i} className="text-[11px] text-zinc-500 truncate">
+            <div key={i} className="text-[11px] text-zinc-500 whitespace-nowrap">
               {month?.label ?? ''}
             </div>
           )
@@ -104,7 +104,7 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
 
         {/* Grid */}
         <div
-          className="grid gap-[3px] flex-1 overflow-x-auto"
+          className="grid gap-[3px] flex-1"
           style={{ gridTemplateColumns: `repeat(16, minmax(0, 1fr))` }}
         >
           {/* Transpose: iterate by day-of-week first, then week */}
