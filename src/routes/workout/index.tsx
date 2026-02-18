@@ -8,7 +8,6 @@ import { useEffect, useState } from 'react'
 import {
   ChevronDown,
   ChevronRight,
-  Clock,
   Download,
   Dumbbell,
   Moon,
@@ -17,6 +16,7 @@ import {
   Settings,
   Zap,
 } from 'lucide-react'
+import type { RecentWorkout } from '@/components/workout/RecentWorkoutsList'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -29,11 +29,8 @@ import {
   getRecentWorkouts,
   startWorkoutSession,
 } from '@/lib/workouts.server'
-import {
-  formatDuration,
-  formatElapsedTime,
-  formatRelativeDate,
-} from '@/lib/formatting'
+import { formatElapsedTime } from '@/lib/formatting'
+import RecentWorkoutsList from '@/components/workout/RecentWorkoutsList'
 
 export const Route = createFileRoute('/workout/')({
   component: WorkoutPage,
@@ -44,15 +41,6 @@ type ActiveSession = {
   startedAt: Date
   workoutPlan?: { name: string } | null
   planDay?: { name: string } | null
-}
-
-type RecentWorkout = {
-  id: string
-  completedAt: Date | null
-  durationSeconds: number | null
-  workoutPlan?: { name: string } | null
-  planDay?: { name: string } | null
-  _count: { workoutSets: number }
 }
 
 type Plan = {
@@ -100,7 +88,7 @@ function WorkoutPage() {
       try {
         const [sessionResult, recentResult, plansResult] = await Promise.all([
           getActiveSession({ data: { userId: user.id } }),
-          getRecentWorkouts({ data: { userId: user.id, limit: 5 } }),
+          getRecentWorkouts({ data: { userId: user.id, limit: 3 } }),
           getPlans({ data: { userId: user.id } }),
         ])
 
@@ -432,64 +420,7 @@ function WorkoutPage() {
             </div>
 
             {/* Recent Workouts */}
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-white">
-                Recent Workouts
-              </h2>
-              {recentWorkouts.length === 0 ? (
-                <EmptyState
-                  icon={<Clock className="w-8 h-8" />}
-                  title="No recent workouts"
-                  description="Your recent workouts will appear here after you complete them."
-                />
-              ) : (
-                <div className="space-y-2">
-                  {recentWorkouts.map((workout, index) => (
-                    <button
-                      key={workout.id}
-                      onClick={() =>
-                        navigate({
-                          to: '/workout/summary/$sessionId',
-                          params: { sessionId: workout.id },
-                        })
-                      }
-                      className="w-full p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-800/70 transition-colors text-left animate-fade-in"
-                      style={{
-                        animationDelay: `${index * 50}ms`,
-                        animationFillMode: 'backwards',
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-zinc-700/50">
-                          <Dumbbell className="w-5 h-5 text-zinc-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-white truncate">
-                            {workout.planDay?.name ||
-                              workout.workoutPlan?.name ||
-                              'Quick Workout'}
-                          </h4>
-                          <div className="flex items-center gap-3 text-sm text-zinc-500">
-                            <span>
-                              {workout.completedAt &&
-                                formatRelativeDate(workout.completedAt)}
-                            </span>
-                            {workout.durationSeconds && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" />
-                                {formatDuration(workout.durationSeconds)}
-                              </span>
-                            )}
-                            <span>{workout._count.workoutSets} sets</span>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-zinc-600" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <RecentWorkoutsList workouts={recentWorkouts} />
           </>
         )}
       </div>

@@ -1,5 +1,4 @@
 import {
-  Link,
   createFileRoute,
   useLocation,
   useNavigate,
@@ -8,18 +7,18 @@ import { useEffect, useState } from 'react'
 import {
   Calendar,
   ChevronRight,
-  Clock,
   Dumbbell,
   Play,
   TrendingUp,
   Trophy,
 } from 'lucide-react'
 import type { MuscleGroup } from '@prisma/client'
+import type { RecentWorkout } from '@/components/workout/RecentWorkoutsList'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import { SkeletonCard, SkeletonStatsCard } from '@/components/ui/Skeleton'
-import EmptyState from '@/components/ui/EmptyState'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
+import RecentWorkoutsList from '@/components/workout/RecentWorkoutsList'
 import {
   getActiveSession,
   getRecentWorkouts,
@@ -29,12 +28,7 @@ import {
   getDashboardStats,
   getNextWorkoutSuggestion,
 } from '@/lib/dashboard.server'
-import {
-  formatDuration,
-  formatElapsedTime,
-  formatRelativeDate,
-  formatVolume,
-} from '@/lib/formatting'
+import { formatElapsedTime, formatVolume } from '@/lib/formatting'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardPage,
@@ -62,15 +56,6 @@ type WorkoutSuggestion = {
   dayOrder: number
   exerciseCount: number
   exercises: Array<{ id: string; name: string; muscleGroup: MuscleGroup }>
-}
-
-type RecentWorkout = {
-  id: string
-  completedAt: Date | null
-  durationSeconds: number | null
-  workoutPlan?: { name: string } | null
-  planDay?: { name: string } | null
-  _count: { workoutSets: number }
 }
 
 function DashboardPage() {
@@ -324,82 +309,16 @@ function DashboardPage() {
 
             {/* Recent Workouts */}
             <div
-              className="space-y-3 animate-fade-in"
+              className="animate-fade-in"
               style={{
                 animationDelay: '200ms',
                 animationFillMode: 'backwards',
               }}
             >
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">
-                  Recent Workouts
-                </h2>
-                {recentWorkouts.length > 0 && (
-                  <Link
-                    to="/history"
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    View all &rarr;
-                  </Link>
-                )}
-              </div>
-              {recentWorkouts.length === 0 ? (
-                <EmptyState
-                  icon={<Dumbbell className="w-8 h-8" />}
-                  title="No workouts yet"
-                  description="Start your first workout to track your progress."
-                  action={{
-                    label: 'Start Workout',
-                    onClick: () => navigate({ to: '/workout' }),
-                  }}
-                />
-              ) : (
-                <div className="space-y-2">
-                  {recentWorkouts.map((workout, index) => (
-                    <button
-                      key={workout.id}
-                      onClick={() =>
-                        navigate({
-                          to: '/workout/summary/$sessionId',
-                          params: { sessionId: workout.id },
-                        })
-                      }
-                      className="w-full p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-800/70 transition-colors text-left animate-fade-in"
-                      style={{
-                        animationDelay: `${300 + index * 50}ms`,
-                        animationFillMode: 'backwards',
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-zinc-700/50">
-                          <Dumbbell className="w-5 h-5 text-zinc-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-white truncate">
-                            {workout.planDay?.name ||
-                              workout.workoutPlan?.name ||
-                              'Quick Workout'}
-                          </h4>
-                          <div className="flex items-center gap-3 text-sm text-zinc-500">
-                            <span>
-                              {workout.completedAt &&
-                                formatRelativeDate(workout.completedAt)}
-                            </span>
-                            {workout.durationSeconds && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" />
-                                {formatDuration(workout.durationSeconds)}
-                              </span>
-                            )}
-                            <span>{workout._count.workoutSets} sets</span>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-zinc-600" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <RecentWorkoutsList
+                workouts={recentWorkouts}
+                animationDelayOffset={300}
+              />
             </div>
           </>
         )}
