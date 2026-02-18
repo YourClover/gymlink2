@@ -55,6 +55,9 @@ export default function ManageCollaboratorsModal({
   const [loading, setLoading] = useState(true)
   const [searchLoading, setSearchLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [selectedRoles, setSelectedRoles] = useState<
+    Record<string, PlanCollaboratorRole>
+  >({})
 
   const loadCollaborators = useCallback(async () => {
     if (!user) return
@@ -212,8 +215,20 @@ export default function ManageCollaboratorsModal({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <RoleDropdown
+                      role={selectedRoles[u.id] ?? 'EDITOR'}
+                      onChange={(role) =>
+                        setSelectedRoles((prev) => ({
+                          ...prev,
+                          [u.id]: role,
+                        }))
+                      }
+                      disabled={actionLoading === u.id}
+                    />
                     <button
-                      onClick={() => handleInvite(u.id, 'EDITOR')}
+                      onClick={() =>
+                        handleInvite(u.id, selectedRoles[u.id] ?? 'EDITOR')
+                      }
                       disabled={actionLoading === u.id}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-400 bg-blue-500/10 rounded-lg hover:bg-blue-500/20 disabled:opacity-50"
                     >

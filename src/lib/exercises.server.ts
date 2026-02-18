@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
-import type { Equipment, ExerciseType, MuscleGroup  } from '@prisma/client'
+import type { Equipment, ExerciseType, MuscleGroup } from '@prisma/client'
 
 // Get exercises with optional filtering
 export const getExercises = createServerFn({ method: 'GET' })

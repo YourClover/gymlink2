@@ -3,7 +3,7 @@ import { prisma } from './db'
 import { checkAchievements } from './achievements.server'
 import { updateChallengeProgress } from './challenges.server'
 import { BODYWEIGHT_BASE_SCORE, isDominatedByExistingPR } from './pr-utils'
-import type { PrismaClient, RecordType, WeightUnit  } from '@prisma/client'
+import type { PrismaClient, RecordType, WeightUnit } from '@prisma/client'
 
 type PrismaTransactionClient = Parameters<
   Parameters<PrismaClient['$transaction']>[0]
