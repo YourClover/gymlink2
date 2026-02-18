@@ -9,6 +9,13 @@ type PrismaTransactionClient = Parameters<
   Parameters<PrismaClient['$transaction']>[0]
 >[0]
 
+const LBS_TO_KG = 0.45359237
+
+export function normalizeToKg(weight: number, unit: WeightUnit): number {
+  if (unit === 'LBS') return weight * LBS_TO_KG
+  return weight
+}
+
 // ============================================
 // PR HELPERS (internal, not server functions)
 // ============================================
@@ -89,7 +96,7 @@ async function recalculatePR(
   for (const set of sets) {
     const result = calculatePRScore(
       exercise.isTimed,
-      set.weight ?? 0,
+      normalizeToKg(set.weight ?? 0, set.weightUnit),
       set.reps ?? 0,
       set.timeSeconds ?? 0,
       isBodyweight,
@@ -147,13 +154,25 @@ async function recalculatePR(
         update: {
           value: best.score,
           workoutSetId: best.setId,
-          // Preserve achievedAt and previousRecord — this is a recalculation, not a new PR
+          // Handle previousRecord based on score change direction
+          ...(existingPR && best.score < existingPR.value
+            ? // Regression: PR-holding set deleted, next-best is lower — clear stale previousRecord
+              { previousRecord: null }
+            : existingPR && best.score > existingPR.value
+              ? // Improvement via recalc: treat as new PR
+                { previousRecord: existingPR.value, achievedAt: new Date() }
+              : // Same score, different set: no change to previousRecord/achievedAt
+                {}),
         },
       })
     } else if (existingPR) {
       // No qualifying sets for this record type anymore
       await tx.personalRecord.delete({
         where: { id: existingPR.id },
+      })
+      // Clean up orphaned activity feed entry
+      await tx.activityFeedItem.deleteMany({
+        where: { activityType: 'PR_ACHIEVED', referenceId: existingPR.id },
       })
     }
   }
@@ -364,6 +383,13 @@ export const discardWorkoutSession = createServerFn({ method: 'POST' })
         distinct: ['exerciseId'],
       })
 
+      // Collect PR IDs linked to this session's sets before cascade delete
+      const linkedPRs = await tx.personalRecord.findMany({
+        where: { workoutSet: { workoutSessionId: data.sessionId } },
+        select: { id: true },
+      })
+      const oldPRIds = linkedPRs.map((pr) => pr.id)
+
       // Delete session (cascade deletes sets and their PRs)
       await tx.workoutSession.delete({
         where: { id: data.sessionId },
@@ -372,6 +398,13 @@ export const discardWorkoutSession = createServerFn({ method: 'POST' })
       // Recalculate PRs for all affected exercises
       for (const { exerciseId } of affectedExercises) {
         await recalculatePR(tx, data.userId, exerciseId)
+      }
+
+      // Clean up orphaned activity feed entries for deleted PRs
+      if (oldPRIds.length > 0) {
+        await tx.activityFeedItem.deleteMany({
+          where: { activityType: 'PR_ACHIEVED', referenceId: { in: oldPRIds } },
+        })
       }
     })
 
@@ -462,12 +495,17 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
         previousRecord?: number
         recordType?: RecordType
         weight?: number
+        weightUnit?: WeightUnit
         reps?: number
         timeSeconds?: number
       } = { isNewPR: false }
 
       if (!setData.isWarmup && !setData.isDropset) {
-        const weight = setData.weight ?? 0
+        const rawWeight = setData.weight ?? 0
+        const weight = normalizeToKg(
+          rawWeight,
+          setData.weightUnit ?? ('KG' as WeightUnit),
+        )
         const reps = setData.reps ?? 0
         const time = setData.timeSeconds ?? 0
 
@@ -561,7 +599,8 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
               newRecord: prScore,
               previousRecord: previousRecord ?? undefined,
               recordType,
-              weight: weight > 0 ? weight : undefined,
+              weight: rawWeight > 0 ? rawWeight : undefined,
+              weightUnit: setData.weightUnit ?? ('KG' as WeightUnit),
               reps: reps > 0 ? reps : undefined,
               timeSeconds: time > 0 ? time : undefined,
             }
@@ -577,7 +616,8 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
                     exerciseName: workoutSet.exercise.name,
                     recordType,
                     value: prScore,
-                    weight: weight > 0 ? weight : null,
+                    weight: rawWeight > 0 ? rawWeight : null,
+                    weightUnit: setData.weightUnit ?? 'KG',
                     reps: reps > 0 ? reps : null,
                     timeSeconds: time > 0 ? time : null,
                   },
@@ -660,12 +700,26 @@ export const deleteWorkoutSet = createServerFn({ method: 'POST' })
     }
 
     await prisma.$transaction(async (tx) => {
+      // Collect PR IDs linked to this set before deleting
+      const linkedPRs = await tx.personalRecord.findMany({
+        where: { workoutSetId: data.id },
+        select: { id: true },
+      })
+      const oldPRIds = linkedPRs.map((pr) => pr.id)
+
       await tx.workoutSet.delete({
         where: { id: data.id },
       })
 
       // Recalculate PRs since the deleted set may have held a PR
       await recalculatePR(tx, data.userId, existing.exerciseId)
+
+      // Clean up orphaned activity feed entries for deleted PRs
+      if (oldPRIds.length > 0) {
+        await tx.activityFeedItem.deleteMany({
+          where: { activityType: 'PR_ACHIEVED', referenceId: { in: oldPRIds } },
+        })
+      }
     })
 
     return { success: true }

@@ -128,7 +128,7 @@ export function formatPR(pr: {
       }
       if (pr.reps) return `${pr.reps} reps`
       if (pr.timeSeconds) return formatTime(pr.timeSeconds)
-      return `Score: ${pr.value.toLocaleString()}`
+      return `${pr.value.toLocaleString()} vol`
     case 'MAX_TIME':
       return formatTime(pr.value)
     case 'MAX_REPS':

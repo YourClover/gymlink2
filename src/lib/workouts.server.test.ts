@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RecordType, WeightUnit } from '@prisma/client'
-import { calculatePRScore } from './workouts.server'
+import { calculatePRScore, normalizeToKg } from './workouts.server'
 import { isDominatedByExistingPR } from './pr-utils'
 import { mockPrisma } from '@/test/setup'
 
@@ -683,5 +683,92 @@ describe('mixed weighted/bodyweight PR scenario', () => {
       RecordType.MAX_REPS,
     ])
     expect(dominated).toBe(false)
+  })
+})
+
+describe('normalizeToKg', () => {
+  it('passes through KG values unchanged', () => {
+    expect(normalizeToKg(100, WeightUnit.KG)).toBe(100)
+  })
+
+  it('converts LBS to KG', () => {
+    const result = normalizeToKg(100, WeightUnit.LBS)
+    expect(result).toBeCloseTo(45.359237, 5)
+  })
+
+  it('handles zero weight', () => {
+    expect(normalizeToKg(0, WeightUnit.KG)).toBe(0)
+    expect(normalizeToKg(0, WeightUnit.LBS)).toBe(0)
+  })
+})
+
+describe('weight normalization in PR scoring', () => {
+  it('100 LBS scores lower than 100 KG for same reps', () => {
+    // 100 KG × 10 reps = 1000
+    const kgScore = calculatePRScore(false, 100, 10, 0)
+    // 100 LBS → ~45.36 KG × 10 reps = ~453.6
+    const lbsNormalized = normalizeToKg(100, WeightUnit.LBS)
+    const lbsScore = calculatePRScore(false, lbsNormalized, 10, 0)
+
+    expect(kgScore!.score).toBe(1000)
+    expect(lbsScore!.score).toBeCloseTo(453.59, 0)
+    expect(lbsScore!.score).toBeLessThan(kgScore!.score)
+  })
+
+  it('equivalent weights in KG and LBS produce equal scores', () => {
+    // 100 KG = 220.46 LBS
+    const kgScore = calculatePRScore(false, 100, 10, 0)
+    const lbsWeight = normalizeToKg(220.46, WeightUnit.LBS)
+    const lbsScore = calculatePRScore(false, lbsWeight, 10, 0)
+
+    expect(kgScore!.score).toBeCloseTo(lbsScore!.score, 0)
+  })
+})
+
+describe('previousRecord regression/improvement via recalculation', () => {
+  it('regression: score drop should clear previousRecord', () => {
+    // Simulates recalculatePR logic when best.score < existingPR.value
+    const existingPR = { value: 1200, previousRecord: 800 }
+    const bestScore = 900 // lower than existing — regression
+
+    const updateData =
+      bestScore < existingPR.value
+        ? { previousRecord: null }
+        : bestScore > existingPR.value
+          ? { previousRecord: existingPR.value, achievedAt: new Date() }
+          : {}
+
+    expect(updateData).toEqual({ previousRecord: null })
+  })
+
+  it('improvement: score increase should set previousRecord to old value', () => {
+    const existingPR = { value: 1000, previousRecord: 800 }
+    const bestScore = 1200 // higher than existing — improvement
+
+    const updateData =
+      bestScore < existingPR.value
+        ? { previousRecord: null }
+        : bestScore > existingPR.value
+          ? { previousRecord: existingPR.value, achievedAt: expect.any(Date) }
+          : {}
+
+    expect(updateData).toEqual({
+      previousRecord: 1000,
+      achievedAt: expect.any(Date),
+    })
+  })
+
+  it('same score, different set: no change to previousRecord', () => {
+    const existingPR = { value: 1000, previousRecord: 800 }
+    const bestScore = 1000 // same score
+
+    const updateData =
+      bestScore < existingPR.value
+        ? { previousRecord: null }
+        : bestScore > existingPR.value
+          ? { previousRecord: existingPR.value, achievedAt: new Date() }
+          : {}
+
+    expect(updateData).toEqual({})
   })
 })

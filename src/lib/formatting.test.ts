@@ -3,6 +3,7 @@ import {
   formatDuration,
   formatElapsedTime,
   formatFullDate,
+  formatPR,
   formatRelativeDate,
   formatTime,
   formatVolume,
@@ -159,6 +160,43 @@ describe('formatting utilities', () => {
 
     it('formats weight with custom unit', () => {
       expect(formatWeight(225, 'lbs')).toBe('225 lbs')
+    })
+  })
+
+  describe('formatPR', () => {
+    it('formats MAX_VOLUME with weight and reps', () => {
+      expect(
+        formatPR({ recordType: 'MAX_VOLUME', value: 1000, weight: 100, reps: 10 }),
+      ).toBe('100kg x 10 reps')
+    })
+
+    it('formats MAX_VOLUME with weight and time', () => {
+      expect(
+        formatPR({
+          recordType: 'MAX_VOLUME',
+          value: 3000,
+          weight: 50,
+          timeSeconds: 60,
+        }),
+      ).toBe('50kg x 1:00')
+    })
+
+    it('formats MAX_VOLUME fallback with "vol" suffix', () => {
+      expect(
+        formatPR({ recordType: 'MAX_VOLUME', value: 1500 }),
+      ).toBe('1,500 vol')
+    })
+
+    it('formats MAX_TIME', () => {
+      expect(formatPR({ recordType: 'MAX_TIME', value: 90 })).toBe('1:30')
+    })
+
+    it('formats MAX_REPS', () => {
+      expect(formatPR({ recordType: 'MAX_REPS', value: 15 })).toBe('15 reps')
+    })
+
+    it('formats MAX_WEIGHT', () => {
+      expect(formatPR({ recordType: 'MAX_WEIGHT', value: 120 })).toBe('120kg')
     })
   })
 })
