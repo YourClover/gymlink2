@@ -227,7 +227,7 @@ export const startWorkoutSession = createServerFn({ method: 'POST' })
       data,
   )
   .handler(async ({ data }) => {
-    // If plan/day provided, verify ownership
+    // If plan/day provided, verify access (owner or accepted collaborator)
     if (data.planDayId) {
       const planDay = await prisma.planDay.findFirst({
         where: { id: data.planDayId },
@@ -236,8 +236,25 @@ export const startWorkoutSession = createServerFn({ method: 'POST' })
         },
       })
 
-      if (!planDay || planDay.workoutPlan.userId !== data.userId) {
+      if (!planDay) {
         throw new Error('Plan day not found')
+      }
+
+      // Allow if owner or accepted collaborator
+      if (planDay.workoutPlan.userId !== data.userId) {
+        const collaborator = await prisma.planCollaborator.findUnique({
+          where: {
+            workoutPlanId_userId: {
+              workoutPlanId: planDay.workoutPlan.id,
+              userId: data.userId,
+            },
+          },
+          select: { inviteStatus: true },
+        })
+
+        if (!collaborator || collaborator.inviteStatus !== 'ACCEPTED') {
+          throw new Error('Plan day not found')
+        }
       }
 
       // Use the plan ID from the day

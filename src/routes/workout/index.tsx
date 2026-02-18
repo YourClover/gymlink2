@@ -48,6 +48,7 @@ type Plan = {
   name: string
   description: string | null
   _count: { planDays: number }
+  ownerName?: string
 }
 
 type PlanDay = {
@@ -94,7 +95,7 @@ function WorkoutPage() {
 
         setActiveSession(sessionResult.session)
         setRecentWorkouts(recentResult.workouts)
-        setPlans(plansResult.plans)
+        setPlans([...plansResult.plans, ...plansResult.sharedPlans])
       } catch (error) {
         console.error('Failed to fetch workout data:', error)
       } finally {
@@ -327,6 +328,12 @@ function WorkoutPage() {
                             <p className="text-sm text-zinc-500">
                               {plan._count.planDays} day
                               {plan._count.planDays !== 1 ? 's' : ''}
+                              {plan.ownerName && (
+                                <span>
+                                  {' '}
+                                  &middot; by {plan.ownerName}
+                                </span>
+                              )}
                             </p>
                           </div>
                         </button>
