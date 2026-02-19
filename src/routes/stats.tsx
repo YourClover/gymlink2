@@ -190,7 +190,13 @@ function StatsPage() {
         setMuscleGroups(exerciseRes.muscleGroups)
         setDurationData(durationRes)
         setMoodData(moodRes)
-        setConsistency(consistencyRes.dayMap)
+        const dayMap: Record<string, number> = {}
+        for (const iso of consistencyRes.completedDates) {
+          const d = new Date(iso)
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          dayMap[key] = (dayMap[key] ?? 0) + 1
+        }
+        setConsistency(dayMap)
         setRpeData(rpeRes)
         setPrTimeline(prTimelineRes.timeline)
 

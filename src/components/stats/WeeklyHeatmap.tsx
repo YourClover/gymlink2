@@ -14,7 +14,10 @@ function getMonday(date: Date): Date {
 }
 
 function formatDateStr(date: Date): string {
-  return date.toISOString().split('T')[0]
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 const dayLabels = ['M', '', 'W', '', 'F', '', 'S']
@@ -112,7 +115,7 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
             weeks.map((week, weekIdx) => {
               const cell = week[dayIdx]
               const intensity = Math.min(cell.count, 3)
-              const dateObj = new Date(cell.date)
+              const dateObj = new Date(cell.date + 'T00:00:00')
               const isToday = formatDateStr(new Date()) === cell.date
               const isFuture = dateObj > new Date()
 
@@ -164,7 +167,7 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
           }}
         >
           <span className="text-zinc-400">
-            {new Date(tooltip.date).toLocaleDateString('en-US', {
+            {new Date(tooltip.date + 'T00:00:00').toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
             })}

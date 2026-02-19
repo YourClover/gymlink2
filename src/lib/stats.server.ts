@@ -546,15 +546,11 @@ export const getWorkoutConsistency = createServerFn({ method: 'GET' })
       select: { completedAt: true },
     })
 
-    const dayMap: Record<string, number> = {}
-    for (const session of sessions) {
-      if (session.completedAt) {
-        const dateKey = session.completedAt.toISOString().split('T')[0]
-        dayMap[dateKey] = (dayMap[dateKey] ?? 0) + 1
-      }
-    }
+    const completedDates = sessions
+      .filter((s) => s.completedAt)
+      .map((s) => s.completedAt!.toISOString())
 
-    return { dayMap }
+    return { completedDates }
   })
 
 // ============================================
