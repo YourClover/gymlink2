@@ -36,6 +36,10 @@ export const Route = createRootRoute({
         content: 'black-translucent',
       },
       {
+        name: 'robots',
+        content: 'noindex, nofollow',
+      },
+      {
         title: 'GymLink - Track Your Fitness Journey',
       },
     ],
