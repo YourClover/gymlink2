@@ -205,7 +205,7 @@ export default function MuscleDonutChart({ data }: Props) {
         {/* Center text showing total sets */}
         <text
           x="50%"
-          y="42%"
+          y="43%"
           textAnchor="middle"
           dominantBaseline="central"
           fill="white"
@@ -216,7 +216,7 @@ export default function MuscleDonutChart({ data }: Props) {
         </text>
         <text
           x="50%"
-          y="50%"
+          y="48%"
           textAnchor="middle"
           dominantBaseline="central"
           fill="#a1a1aa"
