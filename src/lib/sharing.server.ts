@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db'
 import { requirePlanOwnership } from './plan-auth.server'
 
@@ -18,8 +19,9 @@ function generateCode(): string {
 }
 
 // Generate a unique share code (retry on collision)
+// 30^8 keyspace ≈ 656 billion combinations — collision probability is negligible
 async function generateUniqueCode(): Promise<string> {
-  const maxAttempts = 10
+  const maxAttempts = MAX_CODE_GENERATION_ATTEMPTS
   for (let i = 0; i < maxAttempts; i++) {
     const code = generateCode()
     const existing = await prisma.planShareCode.findUnique({ where: { code } })

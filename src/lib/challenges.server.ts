@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db'
 import type { ChallengeStatus, ChallengeType } from '@prisma/client'
 
@@ -33,6 +34,12 @@ export const createChallenge = createServerFn({ method: 'POST' })
       if (data.targetValue <= 0) {
         throw new Error('Target value must be positive')
       }
+      if (
+        data.maxParticipants !== undefined &&
+        (data.maxParticipants < 2 || data.maxParticipants > 10000)
+      ) {
+        throw new Error('Max participants must be between 2 and 10,000')
+      }
       return data
     },
   )
@@ -42,7 +49,8 @@ export const createChallenge = createServerFn({ method: 'POST' })
     let attempts = 0
     while (await prisma.challenge.findUnique({ where: { inviteCode } })) {
       inviteCode = generateInviteCode()
-      if (++attempts > 10) throw new Error('Failed to generate unique code')
+      if (++attempts > MAX_CODE_GENERATION_ATTEMPTS)
+        throw new Error('Failed to generate unique code')
     }
 
     // Determine initial status

@@ -199,6 +199,8 @@ export const deletePlan = createServerFn({ method: 'POST' })
 export const setActivePlan = createServerFn({ method: 'POST' })
   .inputValidator((data: { id: string; userId: string }) => data)
   .handler(async ({ data }) => {
+    await requirePlanAccess(data.id, data.userId)
+
     // Deactivate all other plans
     await prisma.workoutPlan.updateMany({
       where: { userId: data.userId },

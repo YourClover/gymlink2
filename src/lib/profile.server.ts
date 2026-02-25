@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db'
 
 // Character set for profile codes (excludes confusing chars: 0/O, 1/I/L)
@@ -37,7 +38,8 @@ export const createUserProfile = createServerFn({ method: 'POST' })
     let attempts = 0
     while (await prisma.userProfile.findUnique({ where: { profileCode } })) {
       profileCode = generateProfileCode()
-      if (++attempts > 10) throw new Error('Failed to generate unique code')
+      if (++attempts > MAX_CODE_GENERATION_ATTEMPTS)
+        throw new Error('Failed to generate unique code')
     }
 
     const profile = await prisma.userProfile.create({
@@ -195,7 +197,7 @@ export const searchUsers = createServerFn({ method: 'GET' })
     (data: { query: string; limit?: number; userId: string }) => data,
   )
   .handler(async ({ data }) => {
-    const limit = Math.min(data.limit ?? 20, 50)
+    const limit = Math.min(Math.max(1, data.limit ?? 20), 50)
     const query = data.query.toLowerCase()
 
     const profiles = await prisma.userProfile.findMany({
@@ -366,16 +368,21 @@ export const getProfileStats = createServerFn({ method: 'GET' })
       }),
     ])
 
-    // Calculate total volume
-    const volumeResult = await prisma.workoutSet.aggregate({
+    // Calculate total volume (weight × reps)
+    const volumeSets = await prisma.workoutSet.findMany({
       where: {
         workoutSession: { userId: data.userId, completedAt: { not: null } },
         isWarmup: false,
       },
-      _sum: {
-        weight: true,
-      },
+      select: { weight: true, reps: true },
     })
+
+    let totalVolume = 0
+    for (const set of volumeSets) {
+      if (set.weight != null && set.reps != null) {
+        totalVolume += set.weight * set.reps
+      }
+    }
 
     return {
       stats: {
@@ -383,7 +390,7 @@ export const getProfileStats = createServerFn({ method: 'GET' })
         totalSets,
         totalPRs,
         totalAchievements,
-        totalVolume: volumeResult._sum.weight ?? 0,
+        totalVolume,
         lastWorkoutAt: recentWorkout?.completedAt ?? null,
       },
     }

@@ -89,38 +89,52 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
       throw new Error('Can only invite mutual followers')
     }
 
-    // Check if already a collaborator
-    const existing = await prisma.planCollaborator.findUnique({
-      where: {
-        workoutPlanId_userId: {
-          workoutPlanId: data.planId,
-          userId: data.inviteeId,
-        },
-      },
-    })
+    const [plan, inviter] = await Promise.all([
+      prisma.workoutPlan.findUnique({
+        where: { id: data.planId },
+        select: { name: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { name: true },
+      }),
+    ])
 
-    if (existing) {
+    // Use transaction to prevent duplicate invite race condition
+    let collaborator
+    try {
+      collaborator = await prisma.$transaction(async (tx) => {
+        const existing = await tx.planCollaborator.findUnique({
+          where: {
+            workoutPlanId_userId: {
+              workoutPlanId: data.planId,
+              userId: data.inviteeId,
+            },
+          },
+        })
+
+        if (existing) {
+          throw new Error('User has already been invited to this plan')
+        }
+
+        return tx.planCollaborator.create({
+          data: {
+            workoutPlanId: data.planId,
+            userId: data.inviteeId,
+            role: data.role,
+            invitedBy: data.userId,
+          },
+        })
+      })
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === 'User has already been invited to this plan'
+      ) {
+        throw error
+      }
       throw new Error('User has already been invited to this plan')
     }
-
-    const plan = await prisma.workoutPlan.findUnique({
-      where: { id: data.planId },
-      select: { name: true },
-    })
-
-    const inviter = await prisma.user.findUnique({
-      where: { id: data.userId },
-      select: { name: true },
-    })
-
-    const collaborator = await prisma.planCollaborator.create({
-      data: {
-        workoutPlanId: data.planId,
-        userId: data.inviteeId,
-        role: data.role,
-        invitedBy: data.userId,
-      },
-    })
 
     // Send notification
     await prisma.notification.create({

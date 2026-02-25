@@ -166,7 +166,12 @@ describe('formatting utilities', () => {
   describe('formatPR', () => {
     it('formats MAX_VOLUME with weight and reps', () => {
       expect(
-        formatPR({ recordType: 'MAX_VOLUME', value: 1000, weight: 100, reps: 10 }),
+        formatPR({
+          recordType: 'MAX_VOLUME',
+          value: 1000,
+          weight: 100,
+          reps: 10,
+        }),
       ).toBe('100kg x 10 reps')
     })
 
@@ -182,9 +187,9 @@ describe('formatting utilities', () => {
     })
 
     it('formats MAX_VOLUME fallback with "vol" suffix', () => {
-      expect(
-        formatPR({ recordType: 'MAX_VOLUME', value: 1500 }),
-      ).toBe('1,500 vol')
+      expect(formatPR({ recordType: 'MAX_VOLUME', value: 1500 })).toBe(
+        '1,500 vol',
+      )
     })
 
     it('formats MAX_TIME', () => {

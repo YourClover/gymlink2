@@ -215,6 +215,7 @@ model PlanExercise {
   planDay  PlanDay  @relation(fields: [planDayId], references: [id], onDelete: Cascade)
   exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
+  @@unique([planDayId, exerciseOrder])
   @@map("plan_exercises")
 }
 
@@ -446,6 +447,7 @@ model ActivityFeedItem {
 
   @@index([userId])
   @@index([createdAt])
+  @@index([referenceId])
   @@map("activity_feed_items")
 }
 

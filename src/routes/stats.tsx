@@ -434,7 +434,7 @@ function StatsPage() {
         )}
 
         {/* 8. RPE Insights */}
-        {rpeData && (
+        {rpeData && rpeData.totalRatedSets > 0 && (
           <StatsSection
             icon={<Activity className="w-4 h-4" />}
             title="RPE Insights"

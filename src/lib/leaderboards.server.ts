@@ -156,13 +156,22 @@ async function getStreakLeaderboard(limit: number, userIds?: Array<string>) {
     take: 500, // Limit for performance
   })
 
-  // Calculate streak for each user
+  // Calculate streak for each user (batched for performance)
   const streaks: Array<{ userId: string; value: number }> = []
+  const chunkSize = 50
 
-  for (const user of users) {
-    const streak = await calculateStreak(user.id)
-    if (streak > 0) {
-      streaks.push({ userId: user.id, value: streak })
+  for (let i = 0; i < users.length; i += chunkSize) {
+    const chunk = users.slice(i, i + chunkSize)
+    const results = await Promise.all(
+      chunk.map(async (user) => ({
+        userId: user.id,
+        value: await calculateStreak(user.id),
+      })),
+    )
+    for (const result of results) {
+      if (result.value > 0) {
+        streaks.push(result)
+      }
     }
   }
 

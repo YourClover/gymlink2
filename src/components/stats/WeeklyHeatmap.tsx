@@ -85,7 +85,10 @@ export default function WeeklyHeatmap({ dayMap }: Props) {
         {Array.from({ length: 16 }, (_, i) => {
           const month = monthLabels.find((m) => m.col === i)
           return (
-            <div key={i} className="text-[11px] text-zinc-500 whitespace-nowrap">
+            <div
+              key={i}
+              className="text-[11px] text-zinc-500 whitespace-nowrap"
+            >
               {month?.label ?? ''}
             </div>
           )

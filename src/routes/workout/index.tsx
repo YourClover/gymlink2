@@ -329,10 +329,7 @@ function WorkoutPage() {
                               {plan._count.planDays} day
                               {plan._count.planDays !== 1 ? 's' : ''}
                               {plan.ownerName && (
-                                <span>
-                                  {' '}
-                                  &middot; by {plan.ownerName}
-                                </span>
+                                <span> &middot; by {plan.ownerName}</span>
                               )}
                             </p>
                           </div>

@@ -48,6 +48,11 @@ export const MAX_STREAK_WEEKS = 52 // One year lookback
 export const DAYS_PER_WEEK = 7
 
 // ============================================
+// CODE GENERATION
+// ============================================
+export const MAX_CODE_GENERATION_ATTEMPTS = 10
+
+// ============================================
 // SHARING
 // ============================================
 export const SHARE_CODE_LENGTH = 8

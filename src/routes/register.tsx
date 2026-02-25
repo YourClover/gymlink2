@@ -215,7 +215,8 @@ function RegisterPage() {
   const isFormValid =
     nameValid &&
     emailFormatValid &&
-    emailAvailable !== false && // Allow null (not checked yet) or true - server validates anyway
+    emailAvailable === true &&
+    !isCheckingEmail &&
     passwordValid &&
     passwordsMatch
 

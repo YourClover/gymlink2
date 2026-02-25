@@ -1,6 +1,14 @@
 import { prisma } from './db'
 import { getWeekStart } from './date-utils'
 
+/** Format a date as YYYY-MM-DD using local time (avoids UTC offset issues) */
+export function toDateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 /**
  * Calculate weekly workout streak for a user
  * A streak is counted in consecutive weeks where the user has at least one completed workout
@@ -33,7 +41,7 @@ export async function calculateStreak(userId: string): Promise<number> {
   for (const workout of workouts) {
     if (workout.completedAt) {
       const weekStart = getWeekStart(workout.completedAt)
-      workoutWeeks.add(weekStart.toISOString().split('T')[0])
+      workoutWeeks.add(toDateString(weekStart))
     }
   }
 
@@ -43,8 +51,8 @@ export async function calculateStreak(userId: string): Promise<number> {
   const lastWeekStart = new Date(currentWeekStart)
   lastWeekStart.setDate(lastWeekStart.getDate() - 7)
 
-  const currentWeekStr = currentWeekStart.toISOString().split('T')[0]
-  const lastWeekStr = lastWeekStart.toISOString().split('T')[0]
+  const currentWeekStr = toDateString(currentWeekStart)
+  const lastWeekStr = toDateString(lastWeekStart)
 
   // Streak must include current week or last week
   if (uniqueWeeks[0] !== currentWeekStr && uniqueWeeks[0] !== lastWeekStr) {
@@ -58,7 +66,7 @@ export async function calculateStreak(userId: string): Promise<number> {
   )
 
   for (const weekStr of uniqueWeeks) {
-    const expectedStr = expectedWeek.toISOString().split('T')[0]
+    const expectedStr = toDateString(expectedWeek)
 
     if (weekStr === expectedStr) {
       streak++

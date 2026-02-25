@@ -479,7 +479,11 @@ export const createAchievement = createServerFn({ method: 'POST' })
       sortOrder?: number
       isHidden?: boolean
       exerciseId?: string | null
-    }) => data,
+    }) => {
+      if (data.threshold <= 0)
+        throw new Error('Threshold must be a positive number')
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const {
@@ -535,7 +539,11 @@ export const updateAchievement = createServerFn({ method: 'POST' })
       sortOrder?: number
       isHidden?: boolean
       exerciseId?: string | null
-    }) => data,
+    }) => {
+      if (data.threshold !== undefined && data.threshold <= 0)
+        throw new Error('Threshold must be a positive number')
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const { userId, id, ...updateData } = data

@@ -67,7 +67,9 @@ export default function DurationStats({ data }: Props) {
           <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center mb-2">
             <TrendingUp className="w-4 h-4 text-blue-400" />
           </div>
-          <p className="text-base sm:text-lg font-bold text-white">{data.sessionCount}</p>
+          <p className="text-base sm:text-lg font-bold text-white">
+            {data.sessionCount}
+          </p>
           <p className="text-xs text-zinc-400">Sessions</p>
         </div>
       </div>

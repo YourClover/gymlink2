@@ -31,6 +31,7 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
             weight: true,
             reps: true,
             isWarmup: true,
+            isDropset: true,
           },
         },
       },

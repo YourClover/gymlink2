@@ -232,11 +232,10 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
 
     for (const ec of muscleGroupCounts) {
       const exercise = allExercises.find((e) => e.id === ec.exerciseId)
-      if (exercise?.muscleGroup) {
-        muscleDistribution[exercise.muscleGroup] =
-          (muscleDistribution[exercise.muscleGroup] ?? 0) + ec._count.id
-        totalSets += ec._count.id
-      }
+      const group = exercise?.muscleGroup ?? 'OTHER'
+      muscleDistribution[group] =
+        (muscleDistribution[group] ?? 0) + ec._count.id
+      totalSets += ec._count.id
     }
 
     // Convert to percentages and sort
@@ -584,7 +583,8 @@ export const getRpeStats = createServerFn({ method: 'GET' })
       },
     })
 
-    if (setsWithRpe.length === 0) return null
+    if (setsWithRpe.length === 0)
+      return { avgRpe: 0, totalRatedSets: 0, distribution: {}, trend: [] }
 
     // Distribution (count per RPE 1-10)
     const distribution: Record<number, number> = {}
