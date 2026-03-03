@@ -224,7 +224,6 @@ export default function ExpandableWorkoutCard({ workout, userId }: Props) {
           {calculateVolume(detail.workoutSets) > 0 && (
             <div className="pt-2 border-t border-zinc-700/30 text-xs text-zinc-500">
               Total volume: {formatVolume(calculateVolume(detail.workoutSets))}
-              kg
             </div>
           )}
 

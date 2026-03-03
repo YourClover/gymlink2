@@ -72,13 +72,12 @@ export function formatElapsedTime(startedAt: Date | string): string {
 
 /**
  * Format volume in kg to a readable string
- * Examples: "1,500", "2.5t" (for values >= 1000)
+ * Examples: "500 kg", "2.5K kg", "1.5M kg"
  */
 export function formatVolume(kg: number): string {
-  if (kg >= 1000) {
-    return `${(kg / 1000).toFixed(1)}t`
-  }
-  return kg.toLocaleString()
+  if (kg >= 1000000) return `${(kg / 1000000).toFixed(1)}M kg`
+  if (kg >= 1000) return `${(kg / 1000).toFixed(1)}K kg`
+  return `${Math.round(kg)} kg`
 }
 
 /**

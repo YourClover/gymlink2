@@ -127,15 +127,19 @@ describe('formatting utilities', () => {
   })
 
   describe('formatVolume', () => {
-    it('formats volumes under 1000 with locale string', () => {
-      expect(formatVolume(500)).toBe('500')
-      expect(formatVolume(999)).toBe('999')
+    it('formats volumes under 1000 with kg suffix', () => {
+      expect(formatVolume(500)).toBe('500 kg')
+      expect(formatVolume(999)).toBe('999 kg')
     })
 
-    it('formats volumes 1000+ in tonnes', () => {
-      expect(formatVolume(1000)).toBe('1.0t')
-      expect(formatVolume(2500)).toBe('2.5t')
-      expect(formatVolume(10000)).toBe('10.0t')
+    it('formats volumes 1000+ in K kg', () => {
+      expect(formatVolume(1000)).toBe('1.0K kg')
+      expect(formatVolume(2500)).toBe('2.5K kg')
+      expect(formatVolume(10000)).toBe('10.0K kg')
+    })
+
+    it('formats volumes 1000000+ in M kg', () => {
+      expect(formatVolume(1500000)).toBe('1.5M kg')
     })
   })
 

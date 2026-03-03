@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Dumbbell, Medal, PartyPopper, Target, Trophy } from 'lucide-react'
 import type { ActivityType } from '@prisma/client'
 import Avatar from '@/components/ui/Avatar'
+import { formatVolume } from '@/lib/formatting'
 
 interface ActivityMetadata {
   workoutName?: string
@@ -62,13 +63,6 @@ const formatDuration = (seconds: number) => {
     return `${hours}h ${mins}m`
   }
   return `${mins} min`
-}
-
-const formatVolume = (volume: number) => {
-  if (volume >= 1000) {
-    return `${(volume / 1000).toFixed(1)}K kg`
-  }
-  return `${Math.round(volume)} kg`
 }
 
 const formatPRTime = (seconds: number) => {

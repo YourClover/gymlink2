@@ -21,9 +21,14 @@ import { AchievementToast } from '@/components/achievements'
 import {
   completeWorkoutSession,
   getWorkoutSession,
+  updateWorkoutSession,
+  updateWorkoutSet,
 } from '@/lib/workouts.server'
 import { markAchievementsNotified } from '@/lib/achievements.server'
 import { useAuth } from '@/context/AuthContext'
+import { useToast } from '@/context/ToastContext'
+import { formatVolume } from '@/lib/formatting'
+import SetLoggerModal from '@/components/workout/SetLoggerModal'
 
 interface NewAchievement {
   id: string
@@ -80,11 +85,9 @@ function WorkoutSummaryPage() {
     null,
   )
 
-  // Duration editing (for incomplete sessions)
-  const [isEditingDuration, setIsEditingDuration] = useState(false)
-  const [editedHours, setEditedHours] = useState(0)
-  const [editedMinutes, setEditedMinutes] = useState(0)
-  const [hasEditedDuration, setHasEditedDuration] = useState(false)
+  // Duration editing
+  const [editedHours, setEditedHours] = useState<number | string>(0)
+  const [editedMinutes, setEditedMinutes] = useState<number | string>(0)
 
   // Achievement toasts
   const [pendingAchievements, setPendingAchievements] = useState<
@@ -92,6 +95,13 @@ function WorkoutSummaryPage() {
   >([])
   const [currentAchievement, setCurrentAchievement] =
     useState<NewAchievement | null>(null)
+
+  // Set editing
+  const [editingSet, setEditingSet] = useState<
+    (WorkoutSet & { exercise: Exercise }) | null
+  >(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const { showToast } = useToast()
 
   // Show achievements one by one
   useEffect(() => {
@@ -121,8 +131,12 @@ function WorkoutSummaryPage() {
         setNotes(result.session.notes || '')
         setMoodRating(result.session.moodRating || undefined)
 
-        // Calculate duration for incomplete sessions after hydration
-        if (!result.session.durationSeconds) {
+        // Initialize duration inputs
+        if (result.session.durationSeconds) {
+          const dur = result.session.durationSeconds
+          setEditedHours(Math.floor(dur / 3600))
+          setEditedMinutes(Math.floor((dur % 3600) / 60))
+        } else {
           const dur = Math.floor(
             (Date.now() - new Date(result.session.startedAt).getTime()) / 1000,
           )
@@ -166,7 +180,9 @@ function WorkoutSummaryPage() {
   }
 
   // Edited duration in seconds
-  const editedDurationSeconds = editedHours * 3600 + editedMinutes * 60
+  const editedDurationSeconds =
+    (typeof editedHours === 'string' ? parseInt(editedHours) || 0 : editedHours) * 3600 +
+    (typeof editedMinutes === 'string' ? parseInt(editedMinutes) || 0 : editedMinutes) * 60
 
   // Calculate stats
   const getStats = () => {
@@ -183,10 +199,7 @@ function WorkoutSummaryPage() {
 
     const exerciseIds = new Set(session.workoutSets.map((s) => s.exerciseId))
 
-    // Use edited duration if user adjusted it, stored duration if completed, otherwise calculated
-    const duration = hasEditedDuration
-      ? editedDurationSeconds
-      : (session.durationSeconds ?? calculatedDuration ?? 0)
+    const duration = editedDurationSeconds
 
     return {
       totalSets: workingSets.length,
@@ -208,12 +221,26 @@ function WorkoutSummaryPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Format volume
-  const formatVolume = (kg: number) => {
-    if (kg >= 1000) {
-      return `${(kg / 1000).toFixed(1)}t`
+  // Auto-save duration on blur (completed sessions only)
+  const saveDuration = async () => {
+    if (!isCompleted || !user || !session) return
+    if (editedDurationSeconds === session.durationSeconds) return
+    try {
+      await updateWorkoutSession({
+        data: {
+          sessionId: session.id,
+          userId: user.id,
+          durationSeconds: editedDurationSeconds,
+        },
+      })
+      setSession((prev) =>
+        prev ? { ...prev, durationSeconds: editedDurationSeconds } : null,
+      )
+      showToast('success', 'Duration updated')
+    } catch (error) {
+      console.error('Failed to update duration:', error)
+      showToast('error', 'Failed to update duration')
     }
-    return `${kg.toLocaleString()}kg`
   }
 
   // Handle completing the workout
@@ -228,9 +255,7 @@ function WorkoutSummaryPage() {
           userId: user.id,
           notes: notes || undefined,
           moodRating: moodRating,
-          durationSeconds: hasEditedDuration
-            ? editedDurationSeconds
-            : undefined,
+          durationSeconds: editedDurationSeconds,
         },
       })
 
@@ -251,9 +276,7 @@ function WorkoutSummaryPage() {
             ? {
                 ...prev,
                 completedAt: new Date(),
-                durationSeconds: hasEditedDuration
-                  ? editedDurationSeconds
-                  : calculatedDuration,
+                durationSeconds: editedDurationSeconds,
                 notes: notes || null,
                 moodRating: moodRating || null,
               }
@@ -272,6 +295,55 @@ function WorkoutSummaryPage() {
   // Handle done for already completed workouts
   const handleDone = () => {
     navigate({ to: '/workout' })
+  }
+
+  // Handle updating a set
+  const handleUpdateSet = async (setData: {
+    reps?: number
+    timeSeconds?: number
+    weight?: number
+    rpe?: number
+    isWarmup: boolean
+    isDropset: boolean
+  }) => {
+    if (!user || !editingSet) return
+
+    setIsUpdating(true)
+    try {
+      const result = await updateWorkoutSet({
+        data: {
+          id: editingSet.id,
+          userId: user.id,
+          reps: setData.reps,
+          timeSeconds: setData.timeSeconds,
+          weight: setData.weight,
+          rpe: setData.rpe,
+          isWarmup: setData.isWarmup,
+          isDropset: setData.isDropset,
+        },
+      })
+
+      // Update local session state
+      setSession((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          workoutSets: prev.workoutSets.map((s) =>
+            s.id === editingSet.id
+              ? { ...s, ...result.workoutSet, exercise: s.exercise }
+              : s,
+          ),
+        }
+      })
+
+      showToast('success', 'Set updated successfully')
+      setEditingSet(null)
+    } catch (error) {
+      console.error('Failed to update set:', error)
+      showToast('error', 'Failed to update set')
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   const exerciseSummaries = getExerciseSummaries()
@@ -384,83 +456,43 @@ function WorkoutSummaryPage() {
             style={{ animationFillMode: 'backwards' }}
           >
             {/* Duration */}
-            <div
-              className={`p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 ${isEditingDuration ? 'col-span-2' : ''}`}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isCompleted && !isEditingDuration) {
-                    setIsEditingDuration(true)
-                    setHasEditedDuration(true)
-                  }
-                }}
-                disabled={isCompleted}
-                className="flex items-center gap-2 mb-1 w-full text-left disabled:cursor-default"
-              >
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+              <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-4 h-4 text-blue-400" />
                 <span className="text-sm text-zinc-400">Duration</span>
-                {!isCompleted && !isEditingDuration && (
-                  <Pencil className="w-3 h-3 text-zinc-500 ml-auto" />
-                )}
-              </button>
-
-              {isEditingDuration ? (
-                <div className="mt-2">
-                  <div className="flex items-center gap-3">
-                    {/* Hours input */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        max={99}
-                        value={editedHours}
-                        onChange={(e) => {
-                          const v = parseInt(e.target.value, 10)
-                          setEditedHours(isNaN(v) ? 0 : Math.max(0, v))
-                        }}
-                        className="w-14 h-10 text-center text-xl font-bold text-white bg-zinc-700 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      />
-                      <span className="text-xs text-zinc-500">hr</span>
-                    </div>
-
-                    <span className="text-xl font-bold text-zinc-500">:</span>
-
-                    {/* Minutes input */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        max={59}
-                        value={editedMinutes}
-                        onChange={(e) => {
-                          const v = parseInt(e.target.value, 10)
-                          setEditedMinutes(
-                            isNaN(v) ? 0 : Math.max(0, Math.min(59, v)),
-                          )
-                        }}
-                        className="w-14 h-10 text-center text-xl font-bold text-white bg-zinc-700 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      />
-                      <span className="text-xs text-zinc-500">min</span>
-                    </div>
-
-                    {/* Done button */}
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingDuration(false)}
-                      className="ml-auto text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                      Done
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-2xl font-bold text-white">
-                  {formatDuration(stats.duration)}
-                </p>
-              )}
+              </div>
+              <div className="flex items-baseline gap-0.5">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={23}
+                  value={editedHours}
+                  onChange={(e) => {
+                    if (e.target.value === '') return setEditedHours('')
+                    const v = parseInt(e.target.value, 10)
+                    if (!isNaN(v)) setEditedHours(Math.max(0, Math.min(23, v)))
+                  }}
+                  onBlur={saveDuration}
+                  className="w-8 bg-transparent text-2xl font-bold text-white text-right focus:outline-none focus:bg-zinc-700/50 rounded px-0.5 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <span className="text-lg font-bold text-zinc-500">h</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={59}
+                  value={editedMinutes}
+                  onChange={(e) => {
+                    if (e.target.value === '') return setEditedMinutes('')
+                    const v = parseInt(e.target.value, 10)
+                    if (!isNaN(v)) setEditedMinutes(Math.max(0, Math.min(59, v)))
+                  }}
+                  onBlur={saveDuration}
+                  className="w-8 bg-transparent text-2xl font-bold text-white text-right focus:outline-none focus:bg-zinc-700/50 rounded px-0.5 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <span className="text-lg font-bold text-zinc-500">m</span>
+              </div>
             </div>
 
             {/* Total Sets */}
@@ -544,10 +576,18 @@ function WorkoutSummaryPage() {
                 {expandedExerciseId === summary.exercise.id && (
                   <div className="px-4 pb-4 space-y-2">
                     {summary.sets.map((set, setIndex) => (
-                      <div
+                      <button
                         key={set.id}
-                        className={`flex items-center gap-3 p-2 rounded-lg ${
-                          set.isWarmup ? 'bg-zinc-700/30' : 'bg-zinc-700/50'
+                        onClick={() => {
+                          const matchingSet = session!.workoutSets.find(
+                            (s) => s.id === set.id,
+                          )
+                          if (matchingSet) setEditingSet(matchingSet)
+                        }}
+                        className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${
+                          set.isWarmup
+                            ? 'bg-zinc-700/30 hover:bg-zinc-700/50'
+                            : 'bg-zinc-700/50 hover:bg-zinc-700/70'
                         }`}
                       >
                         <span
@@ -592,7 +632,8 @@ function WorkoutSummaryPage() {
                             RPE {set.rpe}
                           </span>
                         )}
-                      </div>
+                        <Pencil className="w-3.5 h-3.5 text-zinc-500" />
+                      </button>
                     ))}
                   </div>
                 )}
@@ -650,6 +691,27 @@ function WorkoutSummaryPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Set Modal */}
+      {editingSet && (
+        <SetLoggerModal
+          isOpen={!!editingSet}
+          onClose={() => setEditingSet(null)}
+          onLog={handleUpdateSet}
+          exercise={editingSet.exercise}
+          setNumber={editingSet.setNumber}
+          defaultValues={{
+            weight: editingSet.weight ?? undefined,
+            reps: editingSet.reps ?? undefined,
+            timeSeconds: editingSet.timeSeconds ?? undefined,
+            rpe: editingSet.rpe ?? undefined,
+            isWarmup: editingSet.isWarmup,
+            isDropset: editingSet.isDropset,
+          }}
+          isLoading={isUpdating}
+          mode="edit"
+        />
+      )}
 
       {/* Bottom Action */}
       <div className="p-4 border-t border-zinc-800 safe-area-mb">

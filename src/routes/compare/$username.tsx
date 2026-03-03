@@ -19,6 +19,7 @@ import CompareStatRow from '@/components/compare/CompareStatRow'
 import ComparePRCard from '@/components/compare/ComparePRCard'
 import CompareSummaryBar from '@/components/compare/CompareSummaryBar'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
+import { formatVolume } from '@/lib/formatting'
 
 export const Route = createFileRoute('/compare/$username')({
   component: ComparePage,
@@ -34,12 +35,6 @@ const muscleGroupOrder: Array<MuscleGroup> = [
   'CARDIO',
   'FULL_BODY',
 ]
-
-function formatVolume(volume: number) {
-  if (volume >= 1000000) return `${(volume / 1000000).toFixed(1)}M kg`
-  if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K kg`
-  return `${Math.round(volume)} kg`
-}
 
 function ComparePage() {
   const { username } = Route.useParams()

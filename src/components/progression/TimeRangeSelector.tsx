@@ -1,4 +1,12 @@
+import type { Granularity } from '@/lib/date-utils'
+
 export type TimeRange = '1w' | '1m' | '3m' | '6m' | 'all'
+
+export function getGranularityForRange(range: TimeRange): Granularity {
+  if (range === '1w') return 'daily'
+  if (range === 'all') return 'monthly'
+  return 'weekly'
+}
 
 type Props = {
   value: TimeRange

@@ -11,15 +11,17 @@ import {
   YAxis,
 } from 'recharts'
 import { useChartDimensions } from '@/hooks/useChartDimensions'
+import type { Granularity } from '@/lib/date-utils'
 
-type WeekData = {
-  weekStart: string
+export type VolumeDataPoint = {
+  periodStart: string
   volume: number
   workouts: number
 }
 
 type Props = {
-  data: Array<WeekData>
+  data: Array<VolumeDataPoint>
+  granularity: Granularity
 }
 
 const chartColors = {
@@ -33,23 +35,47 @@ const chartColors = {
   tooltipBorder: '#3f3f46', // zinc-700
 }
 
-function formatDateShort(weekStart: string): string {
-  const date = new Date(weekStart)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+function formatXAxisLabel(periodStart: string, granularity: Granularity): string {
+  const date = new Date(periodStart + 'T00:00:00')
+  switch (granularity) {
+    case 'daily':
+      return date.toLocaleDateString('en-US', { weekday: 'short' })
+    case 'weekly':
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    case 'monthly':
+      return date.toLocaleDateString('en-US', { month: 'short' })
+  }
+}
+
+function formatTooltipLabel(periodStart: string, granularity: Granularity): string {
+  const date = new Date(periodStart + 'T00:00:00')
+  switch (granularity) {
+    case 'daily':
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      })
+    case 'weekly':
+      return `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    case 'monthly':
+      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  }
 }
 
 type TooltipPayloadEntry = {
   value: number
   dataKey: string
-  payload: WeekData
+  payload: VolumeDataPoint
 }
 
 type CustomTooltipProps = {
   active?: boolean
   payload?: Array<TooltipPayloadEntry>
+  granularity: Granularity
 }
 
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, granularity }: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null
 
   const data = payload[0].payload
@@ -62,7 +88,9 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
         borderColor: chartColors.tooltipBorder,
       }}
     >
-      <p className="text-xs text-zinc-400">{formatDateShort(data.weekStart)}</p>
+      <p className="text-xs text-zinc-400">
+        {formatTooltipLabel(data.periodStart, granularity)}
+      </p>
       <p className="text-sm font-medium text-white">
         {data.volume >= 1000
           ? `${(data.volume / 1000).toFixed(1)}k kg`
@@ -75,7 +103,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   )
 }
 
-export default function VolumeChart({ data }: Props) {
+export default function VolumeChart({ data, granularity }: Props) {
   const { compact } = useChartDimensions()
   const hasVolume = data.some((w) => w.volume > 0)
 
@@ -120,8 +148,8 @@ export default function VolumeChart({ data }: Props) {
           vertical={false}
         />
         <XAxis
-          dataKey="weekStart"
-          tickFormatter={formatDateShort}
+          dataKey="periodStart"
+          tickFormatter={(v: string) => formatXAxisLabel(v, granularity)}
           stroke={chartColors.text}
           fontSize={compact ? 10 : 12}
           tickLine={false}
@@ -156,7 +184,10 @@ export default function VolumeChart({ data }: Props) {
             allowDecimals={false}
           />
         )}
-        <Tooltip content={<CustomTooltip />} cursor={false} />
+        <Tooltip
+          content={<CustomTooltip granularity={granularity} />}
+          cursor={false}
+        />
         <ReferenceLine
           yAxisId="volume"
           y={avgVolume}

@@ -22,6 +22,7 @@ import {
   SkeletonProfileHeader,
   SkeletonStatsCard,
 } from '@/components/ui/Skeleton'
+import { formatVolume } from '@/lib/formatting'
 
 export const Route = createFileRoute('/u/$username')({
   component: PublicProfilePage,
@@ -136,16 +137,6 @@ function PublicProfilePage() {
       month: 'short',
       year: 'numeric',
     })
-  }
-
-  const formatVolume = (volume: number) => {
-    if (volume >= 1000000) {
-      return `${(volume / 1000000).toFixed(1)}M kg`
-    }
-    if (volume >= 1000) {
-      return `${(volume / 1000).toFixed(1)}K kg`
-    }
-    return `${Math.round(volume)} kg`
   }
 
   if (isLoading) {

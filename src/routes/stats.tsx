@@ -15,9 +15,12 @@ import {
 } from 'lucide-react'
 import type { AchievementRarity, MuscleGroup, RecordType } from '@prisma/client'
 import type { TimeRange } from '@/components/progression/TimeRangeSelector'
+import type { VolumeDataPoint } from '@/components/stats/VolumeChart'
+import type { Granularity } from '@/lib/date-utils'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import TimeRangeSelector, {
+  getGranularityForRange,
   getStartDateForRange,
 } from '@/components/progression/TimeRangeSelector'
 import StatCard from '@/components/stats/StatCard'
@@ -62,12 +65,6 @@ type PreviousStats = {
   totalTimeSeconds: number
   totalVolume: number
   totalPRs: number
-}
-
-type WeekData = {
-  weekStart: string
-  volume: number
-  workouts: number
 }
 
 type MuscleGroupData = {
@@ -130,7 +127,8 @@ function StatsPage() {
   const [previousStats, setPreviousStats] = useState<PreviousStats | undefined>(
     undefined,
   )
-  const [volumeHistory, setVolumeHistory] = useState<Array<WeekData>>([])
+  const [volumeHistory, setVolumeHistory] = useState<Array<VolumeDataPoint>>([])
+  const [granularity, setGranularity] = useState<Granularity>('monthly')
   const [muscleGroups, setMuscleGroups] = useState<Array<MuscleGroupData>>([])
   const [durationData, setDurationData] = useState<DurationData | null>(null)
   const [moodData, setMoodData] = useState<MoodData | null>(null)
@@ -162,6 +160,7 @@ function StatsPage() {
 
       setLoading(true)
       const startDate = getStartDateForRange(timeRange)
+      const gran = getGranularityForRange(timeRange)
 
       try {
         const [
@@ -175,7 +174,9 @@ function StatsPage() {
           prTimelineRes,
         ] = await Promise.all([
           getOverviewStats({ data: { userId: user.id, startDate } }),
-          getVolumeHistory({ data: { userId: user.id, startDate } }),
+          getVolumeHistory({
+            data: { userId: user.id, startDate, granularity: gran },
+          }),
           getExerciseStats({ data: { userId: user.id, startDate } }),
           getDurationStats({ data: { userId: user.id, startDate } }),
           getMoodStats({ data: { userId: user.id, startDate } }),
@@ -186,7 +187,8 @@ function StatsPage() {
 
         setOverview(overviewRes.stats)
         setPreviousStats(overviewRes.previousStats)
-        setVolumeHistory(volumeRes.weeks)
+        setVolumeHistory(volumeRes.periods)
+        setGranularity(gran)
         setMuscleGroups(exerciseRes.muscleGroups)
         setDurationData(durationRes)
         setMoodData(moodRes)
@@ -407,7 +409,7 @@ function StatsPage() {
           style={{ animationDelay: '200ms' }}
         >
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-            <VolumeChart data={volumeHistory} />
+            <VolumeChart data={volumeHistory} granularity={granularity} />
           </div>
         </StatsSection>
 

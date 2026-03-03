@@ -774,6 +774,41 @@ export const getWorkoutSession = createServerFn({ method: 'GET' })
     return { session }
   })
 
+// Update a workout session (e.g. duration for completed sessions)
+export const updateWorkoutSession = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: {
+      sessionId: string
+      userId: string
+      durationSeconds?: number
+    }) => {
+      if (data.durationSeconds !== undefined && data.durationSeconds < 0) {
+        throw new Error('durationSeconds must be non-negative')
+      }
+      return data
+    },
+  )
+  .handler(async ({ data }) => {
+    const existing = await prisma.workoutSession.findFirst({
+      where: { id: data.sessionId, userId: data.userId },
+    })
+
+    if (!existing) {
+      throw new Error('Session not found')
+    }
+
+    const session = await prisma.workoutSession.update({
+      where: { id: data.sessionId },
+      data: {
+        ...(data.durationSeconds !== undefined && {
+          durationSeconds: data.durationSeconds,
+        }),
+      },
+    })
+
+    return { session }
+  })
+
 // Get user's recent completed workouts
 export const getRecentWorkouts = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId: string; limit?: number }) => {

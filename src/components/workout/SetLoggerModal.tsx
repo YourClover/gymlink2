@@ -40,9 +40,13 @@ interface SetLoggerModalProps {
     reps?: number
     timeSeconds?: number
     weight?: number
+    rpe?: number
+    isWarmup?: boolean
+    isDropset?: boolean
   }
   previousWorkout?: PreviousWorkoutData | null
   isLoading?: boolean
+  mode?: 'log' | 'edit'
 }
 
 export default function SetLoggerModal({
@@ -54,6 +58,7 @@ export default function SetLoggerModal({
   defaultValues,
   previousWorkout,
   isLoading = false,
+  mode = 'log',
 }: SetLoggerModalProps) {
   const [weight, setWeight] = useState<number | string>(
     defaultValues?.weight ?? 0,
@@ -72,9 +77,9 @@ export default function SetLoggerModal({
       setWeight(defaultValues?.weight ?? 0)
       setReps(defaultValues?.reps ?? 10)
       setTimeSeconds(defaultValues?.timeSeconds ?? 60)
-      setRpe(undefined)
-      setIsWarmup(false)
-      setIsDropset(false)
+      setRpe(defaultValues?.rpe ?? undefined)
+      setIsWarmup(defaultValues?.isWarmup ?? false)
+      setIsDropset(defaultValues?.isDropset ?? false)
     }
   }, [isOpen, defaultValues])
 
@@ -135,7 +140,7 @@ export default function SetLoggerModal({
         <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-800">
           <div>
             <h2 className="text-lg font-semibold text-white">
-              Log Set {setNumber}
+              {mode === 'edit' ? 'Edit' : 'Log'} Set {setNumber}
             </h2>
             <p className="text-sm text-zinc-400">{exercise.name}</p>
           </div>
@@ -387,7 +392,13 @@ export default function SetLoggerModal({
             disabled={isLoading}
             className="w-full py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 active:bg-blue-800 disabled:bg-zinc-700 disabled:text-zinc-500 transition-colors"
           >
-            {isLoading ? 'Logging...' : 'Log Set'}
+            {isLoading
+              ? mode === 'edit'
+                ? 'Saving...'
+                : 'Logging...'
+              : mode === 'edit'
+                ? 'Save Changes'
+                : 'Log Set'}
           </button>
         </div>
       </div>

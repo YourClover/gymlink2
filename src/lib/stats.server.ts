@@ -1,7 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import { calculateStreak } from './date-utils.server'
-import { getWeekStart } from './date-utils'
+import {
+  getDayStart,
+  getMonthStart,
+  getWeekStart,
+  type Granularity,
+} from './date-utils'
 import { PR_PRIORITY } from './pr-utils'
 import type { RecordType } from '@prisma/client'
 
@@ -100,32 +105,67 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
   })
 
 // ============================================
-// VOLUME HISTORY (last 12 weeks)
+// VOLUME HISTORY
 // ============================================
+
+function getPeriodStart(date: Date, granularity: Granularity): Date {
+  switch (granularity) {
+    case 'daily':
+      return getDayStart(date)
+    case 'weekly':
+      return getWeekStart(date)
+    case 'monthly':
+      return getMonthStart(date)
+  }
+}
+
+function advancePeriod(date: Date, granularity: Granularity): Date {
+  const d = new Date(date)
+  switch (granularity) {
+    case 'daily':
+      d.setDate(d.getDate() + 1)
+      return d
+    case 'weekly':
+      d.setDate(d.getDate() + 7)
+      return d
+    case 'monthly':
+      d.setMonth(d.getMonth() + 1)
+      return d
+  }
+}
 
 export const getVolumeHistory = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { userId: string; weeks?: number; startDate?: string }) => data,
+    (data: {
+      userId: string
+      startDate?: string
+      granularity?: Granularity
+    }) => data,
   )
   .handler(async ({ data }) => {
+    const granularity = data.granularity ?? 'weekly'
     const today = new Date()
-    const currentWeekStart = getWeekStart(today)
 
-    let weeksToFetch: number
     let startDate: Date
 
     if (data.startDate) {
-      const rangeStart = new Date(data.startDate)
-      const diffMs = currentWeekStart.getTime() - rangeStart.getTime()
-      weeksToFetch = Math.max(
-        1,
-        Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1,
-      )
-      startDate = getWeekStart(rangeStart)
+      startDate = getPeriodStart(new Date(data.startDate), granularity)
     } else {
-      weeksToFetch = data.weeks ?? 12
-      startDate = new Date(currentWeekStart)
-      startDate.setDate(startDate.getDate() - (weeksToFetch - 1) * 7)
+      // For "all" (no startDate), find the user's earliest completed workout
+      const earliest = await prisma.workoutSession.findFirst({
+        where: {
+          userId: data.userId,
+          completedAt: { not: null },
+        },
+        orderBy: { completedAt: 'asc' },
+        select: { completedAt: true },
+      })
+
+      if (!earliest?.completedAt) {
+        return { periods: [] }
+      }
+
+      startDate = getPeriodStart(earliest.completedAt, granularity)
     }
 
     // Get all completed workout sets in this period
@@ -148,50 +188,51 @@ export const getVolumeHistory = createServerFn({ method: 'GET' })
       },
     })
 
-    // Group by week
-    const weeklyVolume: Record<string, number> = {}
-    const weeklyWorkouts: Record<string, number> = {}
+    // Group by period
+    const periodVolume: Record<string, number> = {}
+    const periodWorkouts: Record<string, number> = {}
 
     for (const workout of workouts) {
       if (!workout.completedAt) continue
 
-      const weekStart = getWeekStart(workout.completedAt)
-      const weekKey = weekStart.toISOString().split('T')[0]
+      const periodStart = getPeriodStart(workout.completedAt, granularity)
+      const periodKey = periodStart.toISOString().split('T')[0]
 
-      if (!weeklyVolume[weekKey]) {
-        weeklyVolume[weekKey] = 0
-        weeklyWorkouts[weekKey] = 0
+      if (!periodVolume[periodKey]) {
+        periodVolume[periodKey] = 0
+        periodWorkouts[periodKey] = 0
       }
 
-      weeklyWorkouts[weekKey]++
+      periodWorkouts[periodKey]++
 
       for (const set of workout.workoutSets) {
         if (set.weight && set.reps) {
-          weeklyVolume[weekKey] += set.weight * set.reps
+          periodVolume[periodKey] += set.weight * set.reps
         }
       }
     }
 
-    // Build array of weeks with data
-    const weeks: Array<{
-      weekStart: string
+    // Build array of periods
+    const periods: Array<{
+      periodStart: string
       volume: number
       workouts: number
     }> = []
 
-    for (let i = 0; i < weeksToFetch; i++) {
-      const weekDate = new Date(startDate)
-      weekDate.setDate(weekDate.getDate() + i * 7)
-      const weekKey = weekDate.toISOString().split('T')[0]
+    const endDate = getPeriodStart(today, granularity)
+    let cursor = new Date(startDate)
 
-      weeks.push({
-        weekStart: weekKey,
-        volume: weeklyVolume[weekKey] ?? 0,
-        workouts: weeklyWorkouts[weekKey] ?? 0,
+    while (cursor <= endDate) {
+      const periodKey = cursor.toISOString().split('T')[0]
+      periods.push({
+        periodStart: periodKey,
+        volume: periodVolume[periodKey] ?? 0,
+        workouts: periodWorkouts[periodKey] ?? 0,
       })
+      cursor = advancePeriod(cursor, granularity)
     }
 
-    return { weeks }
+    return { periods }
   })
 
 // ============================================
