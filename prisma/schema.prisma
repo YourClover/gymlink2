@@ -100,6 +100,19 @@ enum ActivityType {
   ACHIEVEMENT_EARNED
   CHALLENGE_JOINED
   CHALLENGE_COMPLETED
+  LEVEL_UP
+}
+
+enum XpSource {
+  WORKOUT_COMPLETE
+  SET_LOGGED
+  PR_ACHIEVED
+  RPE_LOGGED
+  STREAK_BONUS
+  CHALLENGE_COMPLETE
+  ACHIEVEMENT_EARNED
+  FIRST_WORKOUT_OF_WEEK
+  NEW_EXERCISE
 }
 
 enum NotificationType {
@@ -134,6 +147,8 @@ model User {
   name         String
   isAdmin      Boolean   @default(false) @map("is_admin")
   preferences  Json      @default("{}")
+  totalXp      Int       @default(0) @map("total_xp")
+  level        Int       @default(1)
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at") // Soft delete field
@@ -158,6 +173,7 @@ model User {
   createdChallenges       Challenge[]
   challengeParticipations ChallengeParticipant[]
   notifications           Notification[]
+  xpEvents                XpEvent[]
 
   @@index([deletedAt]) // For efficient filtering of active users
   @@map("users")
@@ -511,4 +527,20 @@ model Notification {
   @@index([isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+model XpEvent {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  amount    Int
+  source    XpSource
+  sourceId  String?  @map("source_id")
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("xp_events")
 }

@@ -1,6 +1,13 @@
 import { memo } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Dumbbell, Medal, PartyPopper, Target, Trophy } from 'lucide-react'
+import {
+  Dumbbell,
+  Medal,
+  PartyPopper,
+  Sparkles,
+  Target,
+  Trophy,
+} from 'lucide-react'
 import type { ActivityType } from '@prisma/client'
 import Avatar from '@/components/ui/Avatar'
 import { formatVolume } from '@/lib/formatting'
@@ -20,6 +27,8 @@ interface ActivityMetadata {
   achievementName?: string
   achievementRarity?: string
   challengeName?: string
+  level?: number
+  levelName?: string
 }
 
 interface ActivityFeedItemProps {
@@ -100,6 +109,7 @@ const accentBorder: Record<string, string> = {
   ACHIEVEMENT_EARNED: 'border-l-purple-500',
   CHALLENGE_JOINED: 'border-l-blue-500',
   CHALLENGE_COMPLETED: 'border-l-amber-500',
+  LEVEL_UP: 'border-l-emerald-500',
 }
 
 function ActivityFeedItemComponent({ activity, style }: ActivityFeedItemProps) {
@@ -203,6 +213,23 @@ function ActivityFeedItemComponent({ activity, style }: ActivityFeedItemProps) {
                 Completed the challenge{' '}
                 <span className="font-medium">
                   {metadata.challengeName ?? ''}
+                </span>
+              </p>
+            </div>
+          </div>
+        )
+
+      case 'LEVEL_UP':
+        return (
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-emerald-500/20 rounded-lg">
+              <Sparkles className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-white">
+                Reached{' '}
+                <span className="font-medium">
+                  Level {metadata.level}: {metadata.levelName}
                 </span>
               </p>
             </div>

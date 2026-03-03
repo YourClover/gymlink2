@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import { checkAchievements } from './achievements.server'
 import { updateChallengeProgress } from './challenges.server'
+import { awardXp, calculateWorkoutXp } from './xp.server'
+import { XP_VALUES } from './xp-constants'
 import { BODYWEIGHT_BASE_SCORE, isDominatedByExistingPR } from './pr-utils'
 import type { PrismaClient, RecordType, WeightUnit } from '@prisma/client'
 
@@ -376,7 +378,57 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
       data: { userId: data.userId, triggerType: 'workout_complete' },
     })
 
-    return { session, newAchievements: achievementResult.newlyEarned }
+    // Calculate and award XP for the workout
+    let xpBreakdown: Array<{ source: string; amount: number }> = []
+    let leveledUp = false
+    let newLevel = 0
+    let newLevelName = ''
+    try {
+      const xpResult = await prisma.$transaction(async (tx) => {
+        const breakdown = await calculateWorkoutXp(
+          tx,
+          data.userId,
+          data.sessionId,
+        )
+        const user = await tx.user.findUnique({
+          where: { id: data.userId },
+          select: { totalXp: true, level: true },
+        })
+        return {
+          breakdown,
+          totalXp: user?.totalXp ?? 0,
+          level: user?.level ?? 1,
+        }
+      })
+      xpBreakdown = xpResult.breakdown
+      const { getLevelForXp } = await import('./xp-constants')
+      const levelInfo = getLevelForXp(xpResult.totalXp)
+      newLevel = levelInfo.level
+      newLevelName = levelInfo.name
+      // Check if we leveled up by comparing with the level before XP was awarded
+      // The level in the DB is already updated by awardXp, so check if any level-up events were created
+      leveledUp =
+        xpResult.breakdown.length > 0 && xpResult.level > 1
+          ? (await prisma.activityFeedItem.count({
+              where: {
+                userId: data.userId,
+                activityType: 'LEVEL_UP',
+                createdAt: { gte: session.completedAt! },
+              },
+            })) > 0
+          : false
+    } catch (error) {
+      console.error('Failed to calculate XP:', error)
+    }
+
+    return {
+      session,
+      newAchievements: achievementResult.newlyEarned,
+      xpBreakdown,
+      leveledUp,
+      newLevel,
+      newLevelName,
+    }
   })
 
 // Discard/cancel an active workout
@@ -622,6 +674,15 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
               timeSeconds: time > 0 ? time : undefined,
             }
 
+            // Award XP for the PR
+            await awardXp(
+              tx,
+              userId,
+              XP_VALUES.PR_ACHIEVED,
+              'PR_ACHIEVED',
+              newPR.id,
+            )
+
             if (!dominated) {
               // Create activity feed item for PR achieved
               await tx.activityFeedItem.create({
@@ -777,11 +838,7 @@ export const getWorkoutSession = createServerFn({ method: 'GET' })
 // Update a workout session (e.g. duration for completed sessions)
 export const updateWorkoutSession = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      sessionId: string
-      userId: string
-      durationSeconds?: number
-    }) => {
+    (data: { sessionId: string; userId: string; durationSeconds?: number }) => {
       if (data.durationSeconds !== undefined && data.durationSeconds < 0) {
         throw new Error('durationSeconds must be non-negative')
       }

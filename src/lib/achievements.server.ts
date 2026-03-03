@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import { calculateStreak } from './date-utils.server'
 import { getWeekStart } from './date-utils'
+import { awardXp } from './xp.server'
+import { XP_VALUES } from './xp-constants'
 import type {
   AchievementCategory,
   AchievementRarity,
@@ -188,26 +190,39 @@ export const checkAchievements = createServerFn({ method: 'POST' })
       }
 
       if (earned) {
-        const userAchievement = await prisma.userAchievement.create({
-          data: {
-            userId: data.userId,
-            achievementId: achievement.id,
-            notified: false,
-          },
-        })
-
-        // Create activity feed item for achievement earned
-        await prisma.activityFeedItem.create({
-          data: {
-            userId: data.userId,
-            activityType: 'ACHIEVEMENT_EARNED',
-            referenceId: userAchievement.id,
-            metadata: {
-              achievementName: achievement.name,
-              achievementIcon: achievement.icon,
-              achievementRarity: achievement.rarity,
+        const userAchievement = await prisma.$transaction(async (tx) => {
+          const ua = await tx.userAchievement.create({
+            data: {
+              userId: data.userId,
+              achievementId: achievement.id,
+              notified: false,
             },
-          },
+          })
+
+          // Create activity feed item for achievement earned
+          await tx.activityFeedItem.create({
+            data: {
+              userId: data.userId,
+              activityType: 'ACHIEVEMENT_EARNED',
+              referenceId: ua.id,
+              metadata: {
+                achievementName: achievement.name,
+                achievementIcon: achievement.icon,
+                achievementRarity: achievement.rarity,
+              },
+            },
+          })
+
+          // Award XP for achievement
+          await awardXp(
+            tx,
+            data.userId,
+            XP_VALUES.ACHIEVEMENT_EARNED,
+            'ACHIEVEMENT_EARNED',
+            ua.id,
+          )
+
+          return ua
         })
 
         newlyEarned.push({

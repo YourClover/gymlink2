@@ -1,11 +1,20 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { Crown, Dumbbell, Flame, Medal, Trophy, Zap } from 'lucide-react'
+import {
+  Crown,
+  Dumbbell,
+  Flame,
+  Medal,
+  Sparkles,
+  Trophy,
+  Zap,
+} from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
   getFriendsLeaderboard,
   getGlobalLeaderboard,
 } from '@/lib/leaderboards.server'
+import { getXpLeaderboard } from '@/lib/xp.server'
 import AppLayout from '@/components/AppLayout'
 import Avatar from '@/components/ui/Avatar'
 import { SkeletonLeaderboardRow } from '@/components/ui/Skeleton'
@@ -15,7 +24,7 @@ export const Route = createFileRoute('/leaderboards')({
   component: LeaderboardsPage,
 })
 
-type LeaderboardMetric = 'volume' | 'workouts' | 'streak' | 'prs'
+type LeaderboardMetric = 'volume' | 'workouts' | 'streak' | 'prs' | 'xp'
 type TimeRange = 'week' | 'month' | 'all'
 type LeaderboardScope = 'friends' | 'global'
 
@@ -41,14 +50,21 @@ function LeaderboardsPage() {
     setIsLoading(true)
 
     try {
-      const result =
-        scope === 'friends'
-          ? await getFriendsLeaderboard({
-              data: { userId: user.id, metric, timeRange },
-            })
-          : await getGlobalLeaderboard({ data: { metric, timeRange } })
+      let result: { leaderboard: Array<LeaderboardEntry> }
+      if (metric === 'xp') {
+        result = (await getXpLeaderboard({
+          data: { userId: user.id, scope },
+        })) as { leaderboard: Array<LeaderboardEntry> }
+      } else {
+        result =
+          scope === 'friends'
+            ? await getFriendsLeaderboard({
+                data: { userId: user.id, metric, timeRange },
+              })
+            : await getGlobalLeaderboard({ data: { metric, timeRange } })
+      }
 
-      setLeaderboard(result.leaderboard as Array<LeaderboardEntry>)
+      setLeaderboard(result.leaderboard)
     } catch (error) {
       console.error('Failed to load leaderboard:', error)
     } finally {
@@ -70,6 +86,8 @@ function LeaderboardsPage() {
         return 'Streak'
       case 'prs':
         return 'PRs'
+      case 'xp':
+        return 'XP'
     }
   }
 
@@ -83,6 +101,8 @@ function LeaderboardsPage() {
         return <Zap className="w-4 h-4" />
       case 'prs':
         return <Trophy className="w-4 h-4" />
+      case 'xp':
+        return <Sparkles className="w-4 h-4" />
     }
   }
 
@@ -98,6 +118,9 @@ function LeaderboardsPage() {
         return `${value} weeks`
       case 'prs':
         return `${value} PRs`
+      case 'xp':
+        if (value >= 1000) return `${(value / 1000).toFixed(1)}K XP`
+        return `${value} XP`
     }
   }
 
@@ -169,7 +192,13 @@ function LeaderboardsPage() {
         {/* Metric Selection */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
           {(
-            ['volume', 'workouts', 'streak', 'prs'] as Array<LeaderboardMetric>
+            [
+              'volume',
+              'workouts',
+              'streak',
+              'prs',
+              'xp',
+            ] as Array<LeaderboardMetric>
           ).map((m) => (
             <button
               key={m}
@@ -187,7 +216,7 @@ function LeaderboardsPage() {
         </div>
 
         {/* Time Range Selection */}
-        {metric !== 'streak' && (
+        {metric !== 'streak' && metric !== 'xp' && (
           <div className="flex gap-2 mb-6">
             {(['week', 'month', 'all'] as Array<TimeRange>).map((t) => (
               <button

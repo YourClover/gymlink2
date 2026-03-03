@@ -22,8 +22,10 @@ import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import Avatar from '@/components/ui/Avatar'
 import { AchievementBadge } from '@/components/achievements'
+import { LevelBadge, XpProgressBar } from '@/components/xp'
 import { getUserAchievements } from '@/lib/achievements.server'
 import { getProfileStats, getUserProfile } from '@/lib/profile.server'
+import { getUserXpSummary } from '@/lib/xp.server'
 import { getFollowCounts } from '@/lib/social.server'
 import { formatVolume } from '@/lib/formatting'
 import { SkeletonProfilePage } from '@/components/ui/Skeleton'
@@ -78,6 +80,11 @@ function ProfilePage() {
   )
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [xpData, setXpData] = useState<{
+    totalXp: number
+    level: number
+    levelName: string
+  } | null>(null)
 
   useEffect(() => {
     async function loadData() {
@@ -86,11 +93,12 @@ function ProfilePage() {
       setLoading(true)
       try {
         // Load achievements, profile, and stats in parallel
-        const [achievementResult, profileResult, statsResult] =
+        const [achievementResult, profileResult, statsResult, xpResult] =
           await Promise.all([
             getUserAchievements({ data: { userId: user.id } }),
             getUserProfile({ data: { userId: user.id } }),
             getProfileStats({ data: { userId: user.id } }),
+            getUserXpSummary({ data: { userId: user.id } }).catch(() => null),
           ])
 
         setAchievementStats({
@@ -104,6 +112,14 @@ function ProfilePage() {
           name: ua.achievement.name,
         }))
         setRecentAchievements(recent)
+
+        if (xpResult) {
+          setXpData({
+            totalXp: xpResult.totalXp,
+            level: xpResult.level,
+            levelName: xpResult.levelName,
+          })
+        }
 
         if (statsResult.stats) {
           setStats({
@@ -180,9 +196,18 @@ function ProfilePage() {
               variant="gradient"
             />
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold text-white truncate">
-                {user?.name}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-white truncate">
+                  {user?.name}
+                </h2>
+                {xpData && (
+                  <LevelBadge
+                    level={xpData.level}
+                    name={xpData.levelName}
+                    size="sm"
+                  />
+                )}
+              </div>
               {profile ? (
                 <>
                   <p className="text-zinc-400 text-sm">@{profile.username}</p>
@@ -242,6 +267,16 @@ function ProfilePage() {
             </Link>
           )}
         </div>
+
+        {/* XP Progress */}
+        {xpData && (
+          <div
+            className="animate-fade-in"
+            style={{ animationDelay: '25ms', animationFillMode: 'backwards' }}
+          >
+            <XpProgressBar totalXp={xpData.totalXp} />
+          </div>
+        )}
 
         {/* Stats Grid */}
         {stats && (
