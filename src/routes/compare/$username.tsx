@@ -38,7 +38,7 @@ const muscleGroupOrder: Array<MuscleGroup> = [
 
 function ComparePage() {
   const { username } = Route.useParams()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const router = useRouter()
 
   const [data, setData] = useState<ComparisonData | null>(null)
@@ -52,7 +52,7 @@ function ComparePage() {
       setError(null)
       try {
         const result = await getComparisonData({
-          data: { userId: user.id, targetUsername: username },
+          data: { token, targetUsername: username },
         })
         setData(result)
       } catch (err) {

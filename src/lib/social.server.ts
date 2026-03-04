@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
+import { prisma } from './db.server'
 import { MAX_PAGE_SIZE } from './constants'
+import { requireAuth } from './auth-guard.server'
 
 // Validate pagination parameters to prevent DoS
 function validatePagination(limit?: number, offset?: number): void {
@@ -16,18 +17,19 @@ function validatePagination(limit?: number, offset?: number): void {
 
 // Send a follow request
 export const sendFollowRequest = createServerFn({ method: 'POST' })
-  .inputValidator((data: { followerId: string; followingId: string }) => {
-    if (data.followerId === data.followingId) {
+  .inputValidator((data: { token: string | null; followingId: string }) => data)
+  .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
+    if (userId === data.followingId) {
       throw new Error('Cannot follow yourself')
     }
-    return data
-  })
-  .handler(async ({ data }) => {
+
     // Check if follow already exists
     const existing = await prisma.follow.findUnique({
       where: {
         followerId_followingId: {
-          followerId: data.followerId,
+          followerId: userId,
           followingId: data.followingId,
         },
       },
@@ -54,7 +56,7 @@ export const sendFollowRequest = createServerFn({ method: 'POST' })
 
     const follow = await prisma.follow.create({
       data: {
-        followerId: data.followerId,
+        followerId: userId,
         followingId: data.followingId,
         status,
         respondedAt: status === 'ACCEPTED' ? new Date() : null,
@@ -64,7 +66,7 @@ export const sendFollowRequest = createServerFn({ method: 'POST' })
     // Create notification if pending
     if (status === 'PENDING') {
       const follower = await prisma.user.findUnique({
-        where: { id: data.followerId },
+        where: { id: userId },
         select: { name: true },
       })
 
@@ -85,13 +87,15 @@ export const sendFollowRequest = createServerFn({ method: 'POST' })
 // Respond to a follow request (accept/decline)
 export const respondToFollowRequest = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { followId: string; userId: string; accept: boolean }) => data,
+    (data: { followId: string; token: string | null; accept: boolean }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const follow = await prisma.follow.findFirst({
       where: {
         id: data.followId,
-        followingId: data.userId, // Must be the person being followed
+        followingId: userId, // Must be the person being followed
         status: 'PENDING',
       },
       include: { following: { select: { name: true } } },
@@ -127,12 +131,14 @@ export const respondToFollowRequest = createServerFn({ method: 'POST' })
 
 // Remove a follower (as the person being followed)
 export const removeFollower = createServerFn({ method: 'POST' })
-  .inputValidator((data: { userId: string; followerId: string }) => data)
+  .inputValidator((data: { token: string | null; followerId: string }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     await prisma.follow.deleteMany({
       where: {
         followerId: data.followerId,
-        followingId: data.userId,
+        followingId: userId,
       },
     })
     return { success: true }
@@ -140,22 +146,76 @@ export const removeFollower = createServerFn({ method: 'POST' })
 
 // Unfollow someone (as the follower)
 export const unfollow = createServerFn({ method: 'POST' })
-  .inputValidator((data: { followerId: string; followingId: string }) => data)
+  .inputValidator((data: { token: string | null; followingId: string }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     await prisma.follow.deleteMany({
       where: {
-        followerId: data.followerId,
+        followerId: userId,
         followingId: data.followingId,
       },
     })
     return { success: true }
   })
 
+// Internal helper for getFollowers logic (used by getFollowers and getPendingFollowRequests)
+async function getFollowersInternal(
+  userId: string,
+  status?: 'PENDING' | 'ACCEPTED',
+  limit?: number,
+  offset?: number,
+) {
+  // Fetch followers with profiles in a single query (fixes N+1)
+  const followers = await prisma.follow.findMany({
+    where: {
+      followingId: userId,
+      ...(status && { status }),
+    },
+    take: limit ?? 50,
+    skip: offset ?? 0,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      follower: {
+        select: {
+          id: true,
+          name: true,
+          profile: true,
+        },
+      },
+    },
+  })
+
+  const followerIds = followers.map((f) => f.followerId)
+
+  // Get mutual follows (users I also follow back)
+  const mutualFollows =
+    followerIds.length > 0
+      ? await prisma.follow.findMany({
+          where: {
+            followerId: userId,
+            followingId: { in: followerIds },
+            status: 'ACCEPTED',
+          },
+          select: { followingId: true },
+        })
+      : []
+  const mutualSet = new Set(mutualFollows.map((f) => f.followingId))
+
+  return {
+    followers: followers.map((f) => ({
+      ...f,
+      profile: f.follower.profile,
+      isMutual: mutualSet.has(f.followerId),
+    })),
+  }
+}
+
 // Get followers list
 export const getFollowers = createServerFn({ method: 'GET' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       status?: 'PENDING' | 'ACCEPTED'
       limit?: number
       offset?: number
@@ -165,56 +225,15 @@ export const getFollowers = createServerFn({ method: 'GET' })
     },
   )
   .handler(async ({ data }) => {
-    // Fetch followers with profiles in a single query (fixes N+1)
-    const followers = await prisma.follow.findMany({
-      where: {
-        followingId: data.userId,
-        ...(data.status && { status: data.status }),
-      },
-      take: data.limit ?? 50,
-      skip: data.offset ?? 0,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        follower: {
-          select: {
-            id: true,
-            name: true,
-            profile: true,
-          },
-        },
-      },
-    })
-
-    const followerIds = followers.map((f) => f.followerId)
-
-    // Get mutual follows (users I also follow back)
-    const mutualFollows =
-      followerIds.length > 0
-        ? await prisma.follow.findMany({
-            where: {
-              followerId: data.userId,
-              followingId: { in: followerIds },
-              status: 'ACCEPTED',
-            },
-            select: { followingId: true },
-          })
-        : []
-    const mutualSet = new Set(mutualFollows.map((f) => f.followingId))
-
-    return {
-      followers: followers.map((f) => ({
-        ...f,
-        profile: f.follower.profile,
-        isMutual: mutualSet.has(f.followerId),
-      })),
-    }
+    const { userId } = await requireAuth(data.token)
+    return getFollowersInternal(userId, data.status, data.limit, data.offset)
   })
 
 // Get following list
 export const getFollowing = createServerFn({ method: 'GET' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       status?: 'PENDING' | 'ACCEPTED'
       limit?: number
       offset?: number
@@ -224,10 +243,12 @@ export const getFollowing = createServerFn({ method: 'GET' })
     },
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Fetch following with profiles in a single query (fixes N+1)
     const following = await prisma.follow.findMany({
       where: {
-        followerId: data.userId,
+        followerId: userId,
         ...(data.status && { status: data.status }),
       },
       take: data.limit ?? 50,
@@ -252,7 +273,7 @@ export const getFollowing = createServerFn({ method: 'GET' })
         ? await prisma.follow.findMany({
             where: {
               followerId: { in: followingIds },
-              followingId: data.userId,
+              followingId: userId,
               status: 'ACCEPTED',
             },
             select: { followerId: true },
@@ -271,19 +292,22 @@ export const getFollowing = createServerFn({ method: 'GET' })
 
 // Get pending follow requests (for the user to approve)
 export const getPendingFollowRequests = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
-    return getFollowers({ data: { userId: data.userId, status: 'PENDING' } })
+    const { userId } = await requireAuth(data.token)
+    return getFollowersInternal(userId, 'PENDING')
   })
 
 // Get follow status between two users
 export const getFollowStatus = createServerFn({ method: 'GET' })
-  .inputValidator((data: { followerId: string; followingId: string }) => data)
+  .inputValidator((data: { token: string | null; followingId: string }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const follow = await prisma.follow.findUnique({
       where: {
         followerId_followingId: {
-          followerId: data.followerId,
+          followerId: userId,
           followingId: data.followingId,
         },
       },
@@ -293,17 +317,19 @@ export const getFollowStatus = createServerFn({ method: 'GET' })
 
 // Get follow counts
 export const getFollowCounts = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const [followersCount, followingCount, pendingCount] = await Promise.all([
       prisma.follow.count({
-        where: { followingId: data.userId, status: 'ACCEPTED' },
+        where: { followingId: userId, status: 'ACCEPTED' },
       }),
       prisma.follow.count({
-        where: { followerId: data.userId, status: 'ACCEPTED' },
+        where: { followerId: userId, status: 'ACCEPTED' },
       }),
       prisma.follow.count({
-        where: { followingId: data.userId, status: 'PENDING' },
+        where: { followingId: userId, status: 'PENDING' },
       }),
     ])
     return { followersCount, followingCount, pendingCount }
@@ -311,11 +337,13 @@ export const getFollowCounts = createServerFn({ method: 'GET' })
 
 // Get mutual followers (users who follow each other)
 export const getMutualFollowers = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Get all my followers
     const followers = await prisma.follow.findMany({
-      where: { followingId: data.userId, status: 'ACCEPTED' },
+      where: { followingId: userId, status: 'ACCEPTED' },
       select: { followerId: true },
     })
     const followerIds = followers.map((f) => f.followerId)
@@ -327,7 +355,7 @@ export const getMutualFollowers = createServerFn({ method: 'GET' })
     // Get users I also follow back (mutuals) with profiles in single query (fixes N+1)
     const mutual = await prisma.follow.findMany({
       where: {
-        followerId: data.userId,
+        followerId: userId,
         followingId: { in: followerIds },
         status: 'ACCEPTED',
       },

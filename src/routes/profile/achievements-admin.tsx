@@ -73,7 +73,7 @@ const RARITY_COLORS: Record<AchievementRarity, string> = {
 }
 
 function AchievementsAdminPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [achievements, setAchievements] = useState<Array<Achievement>>([])
   const [exercises, setExercises] = useState<Array<Exercise>>([])
@@ -108,7 +108,7 @@ function AchievementsAdminPage() {
     setIsLoading(true)
     try {
       const [achievementsResult, exercisesResult] = await Promise.all([
-        getAllAchievements({ data: { userId: user.id } }),
+        getAllAchievements({ data: { token } }),
         getExercises({ data: {} }),
       ])
       setAchievements(achievementsResult.achievements)
@@ -176,7 +176,7 @@ function AchievementsAdminPage() {
       if (editingAchievement) {
         await updateAchievement({
           data: {
-            userId: user.id,
+            token,
             id: editingAchievement.id,
             code,
             name,
@@ -193,7 +193,7 @@ function AchievementsAdminPage() {
       } else {
         await createAchievement({
           data: {
-            userId: user.id,
+            token,
             code,
             name,
             description,
@@ -227,7 +227,7 @@ function AchievementsAdminPage() {
       return
 
     try {
-      await deleteAchievement({ data: { userId: user.id, id: achievement.id } })
+      await deleteAchievement({ data: { token, id: achievement.id } })
       loadAchievements()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete')

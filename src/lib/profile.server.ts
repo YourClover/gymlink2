@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
+import { requireAuth } from './auth-guard.server'
 import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
-import { prisma } from './db'
+import { prisma } from './db.server'
 
 // Character set for profile codes (excludes confusing chars: 0/O, 1/I/L)
 const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
@@ -15,7 +16,7 @@ function generateProfileCode(): string {
 
 // Create user profile (called after registration)
 export const createUserProfile = createServerFn({ method: 'POST' })
-  .inputValidator((data: { userId: string; username: string }) => {
+  .inputValidator((data: { token: string | null; username: string }) => {
     // Validate username format
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(data.username)) {
       throw new Error(
@@ -25,6 +26,8 @@ export const createUserProfile = createServerFn({ method: 'POST' })
     return data
   })
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Check username availability
     const existing = await prisma.userProfile.findUnique({
       where: { username: data.username.toLowerCase() },
@@ -44,7 +47,7 @@ export const createUserProfile = createServerFn({ method: 'POST' })
 
     const profile = await prisma.userProfile.create({
       data: {
-        userId: data.userId,
+        userId,
         username: data.username.toLowerCase(),
         profileCode,
         isPrivate: true,
@@ -60,7 +63,7 @@ export const createUserProfile = createServerFn({ method: 'POST' })
 export const updateUserProfile = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       bio?: string
       avatarUrl?: string
       isPrivate?: boolean
@@ -69,7 +72,8 @@ export const updateUserProfile = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { userId, ...updateData } = data
+    const { userId } = await requireAuth(data.token)
+    const { token: _, ...updateData } = data
 
     const profile = await prisma.userProfile.update({
       where: { userId },
@@ -81,10 +85,12 @@ export const updateUserProfile = createServerFn({ method: 'POST' })
 
 // Get profile by user ID
 export const getUserProfile = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const profile = await prisma.userProfile.findUnique({
-      where: { userId: data.userId },
+      where: { userId },
       include: {
         user: {
           select: { id: true, name: true, createdAt: true },
@@ -97,8 +103,18 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 
 // Get profile by username (for public profile pages)
 export const getProfileByUsername = createServerFn({ method: 'GET' })
-  .inputValidator((data: { username: string; viewerId?: string }) => data)
+  .inputValidator((data: { username: string; token?: string | null }) => data)
   .handler(async ({ data }) => {
+    let viewerId: string | undefined
+    if (data.token) {
+      try {
+        const auth = await requireAuth(data.token)
+        viewerId = auth.userId
+      } catch {
+        // Invalid token, proceed as public view
+      }
+    }
+
     const profile = await prisma.userProfile.findFirst({
       where: {
         username: data.username.toLowerCase(),
@@ -122,14 +138,14 @@ export const getProfileByUsername = createServerFn({ method: 'GET' })
     let canView = !profile.isPrivate
     let followStatus: string | null = null
 
-    if (data.viewerId) {
-      if (data.viewerId === profile.userId) {
+    if (viewerId) {
+      if (viewerId === profile.userId) {
         canView = true // Own profile
       } else {
         const follow = await prisma.follow.findUnique({
           where: {
             followerId_followingId: {
-              followerId: data.viewerId,
+              followerId: viewerId,
               followingId: profile.userId,
             },
           },
@@ -194,9 +210,10 @@ export const checkUsernameAvailable = createServerFn({ method: 'GET' })
 // Search users by username or name
 export const searchUsers = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { query: string; limit?: number; userId: string }) => data,
+    (data: { query: string; limit?: number; token: string | null }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const limit = Math.min(Math.max(1, data.limit ?? 20), 50)
     const query = data.query.toLowerCase()
 
@@ -207,7 +224,7 @@ export const searchUsers = createServerFn({ method: 'GET' })
           { user: { name: { contains: query, mode: 'insensitive' } } },
         ],
         userId: {
-          not: data.userId, // Exclude self
+          not: userId, // Exclude self
         },
         user: {
           deletedAt: null, // Exclude soft-deleted users
@@ -222,7 +239,7 @@ export const searchUsers = createServerFn({ method: 'GET' })
     // Get follow status for each result
     const followStatuses = await prisma.follow.findMany({
       where: {
-        followerId: data.userId,
+        followerId: userId,
         followingId: { in: profiles.map((p) => p.userId) },
       },
     })
@@ -242,13 +259,16 @@ export const searchUsers = createServerFn({ method: 'GET' })
 // Soft delete user account
 export const deleteUserAccount = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { userId: string; confirmEmail: string; password: string }) => data,
+    (data: { token: string | null; confirmEmail: string; password: string }) =>
+      data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Verify user exists and is not already deleted
     const user = await prisma.user.findFirst({
       where: {
-        id: data.userId,
+        id: userId,
         deletedAt: null,
       },
     })
@@ -271,13 +291,13 @@ export const deleteUserAccount = createServerFn({ method: 'POST' })
 
     // Soft delete the user
     await prisma.user.update({
-      where: { id: data.userId },
+      where: { id: userId },
       data: { deletedAt: new Date() },
     })
 
     // Optionally: clear sensitive profile data while keeping the record
     await prisma.userProfile.updateMany({
-      where: { userId: data.userId },
+      where: { userId },
       data: {
         bio: null,
         avatarUrl: null,
@@ -289,12 +309,16 @@ export const deleteUserAccount = createServerFn({ method: 'POST' })
 
 // Restore a soft-deleted user account (admin only or within grace period)
 export const restoreUserAccount = createServerFn({ method: 'POST' })
-  .inputValidator((data: { userId: string; adminId?: string }) => data)
+  .inputValidator(
+    (data: { targetUserId: string; token: string | null }) => data,
+  )
   .handler(async ({ data }) => {
+    const auth = await requireAuth(data.token)
+
     // Find the soft-deleted user
     const user = await prisma.user.findFirst({
       where: {
-        id: data.userId,
+        id: data.targetUserId,
         deletedAt: { not: null },
       },
     })
@@ -310,25 +334,21 @@ export const restoreUserAccount = createServerFn({ method: 'POST' })
       (Date.now() - deletedAt.getTime()) / (1000 * 60 * 60 * 24),
     )
 
-    if (daysSinceDelete > gracePeriodDays && !data.adminId) {
+    const isSelfRestore = auth.userId === data.targetUserId
+
+    if (isSelfRestore && daysSinceDelete > gracePeriodDays) {
       throw new Error(
         `Account can only be restored within ${gracePeriodDays} days of deletion`,
       )
     }
 
-    // If admin is restoring, verify admin status
-    if (data.adminId) {
-      const admin = await prisma.user.findFirst({
-        where: { id: data.adminId, isAdmin: true, deletedAt: null },
-      })
-      if (!admin) {
-        throw new Error('Admin access required')
-      }
+    if (!isSelfRestore && !auth.isAdmin) {
+      throw new Error('Admin access required')
     }
 
     // Restore the user
     await prisma.user.update({
-      where: { id: data.userId },
+      where: { id: data.targetUserId },
       data: { deletedAt: null },
     })
 
@@ -337,8 +357,13 @@ export const restoreUserAccount = createServerFn({ method: 'POST' })
 
 // Get profile stats for a user (workout counts, PRs, etc.)
 export const getProfileStats = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator(
+    (data: { token: string | null; targetUserId?: string }) => data,
+  )
   .handler(async ({ data }) => {
+    const auth = await requireAuth(data.token)
+    const userId = data.targetUserId ?? auth.userId
+
     const [
       totalWorkouts,
       totalSets,
@@ -347,22 +372,22 @@ export const getProfileStats = createServerFn({ method: 'GET' })
       recentWorkout,
     ] = await Promise.all([
       prisma.workoutSession.count({
-        where: { userId: data.userId, completedAt: { not: null } },
+        where: { userId, completedAt: { not: null } },
       }),
       prisma.workoutSet.count({
         where: {
-          workoutSession: { userId: data.userId, completedAt: { not: null } },
+          workoutSession: { userId, completedAt: { not: null } },
           isWarmup: false,
         },
       }),
       prisma.personalRecord.count({
-        where: { userId: data.userId },
+        where: { userId },
       }),
       prisma.userAchievement.count({
-        where: { userId: data.userId },
+        where: { userId },
       }),
       prisma.workoutSession.findFirst({
-        where: { userId: data.userId, completedAt: { not: null } },
+        where: { userId, completedAt: { not: null } },
         orderBy: { completedAt: 'desc' },
         select: { completedAt: true },
       }),
@@ -371,7 +396,7 @@ export const getProfileStats = createServerFn({ method: 'GET' })
     // Calculate total volume (weight × reps)
     const volumeSets = await prisma.workoutSet.findMany({
       where: {
-        workoutSession: { userId: data.userId, completedAt: { not: null } },
+        workoutSession: { userId, completedAt: { not: null } },
         isWarmup: false,
       },
       select: { weight: true, reps: true },

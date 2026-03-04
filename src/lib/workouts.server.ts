@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
-import { checkAchievements } from './achievements.server'
-import { updateChallengeProgress } from './challenges.server'
+import { prisma } from './db.server'
+import { requireAuth } from './auth-guard.server'
+import { checkAchievementsInternal } from './achievements.server'
+import { updateChallengeProgressInternal } from './challenges.server'
 import { BODYWEIGHT_BASE_SCORE, isDominatedByExistingPR } from './pr-utils'
 import type { PrismaClient, RecordType, WeightUnit } from '@prisma/client'
 
@@ -184,11 +185,12 @@ async function recalculatePR(
 
 // Get user's active (incomplete) workout session
 export const getActiveSession = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const session = await prisma.workoutSession.findFirst({
       where: {
-        userId: data.userId,
+        userId,
         completedAt: null,
       },
       include: {
@@ -223,10 +225,14 @@ export const getActiveSession = createServerFn({ method: 'GET' })
 // Start a new workout session
 export const startWorkoutSession = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { userId: string; workoutPlanId?: string; planDayId?: string }) =>
-      data,
+    (data: {
+      token: string | null
+      workoutPlanId?: string
+      planDayId?: string
+    }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     // If plan/day provided, verify access (owner or accepted collaborator)
     if (data.planDayId) {
       const planDay = await prisma.planDay.findFirst({
@@ -241,12 +247,12 @@ export const startWorkoutSession = createServerFn({ method: 'POST' })
       }
 
       // Allow if owner or accepted collaborator
-      if (planDay.workoutPlan.userId !== data.userId) {
+      if (planDay.workoutPlan.userId !== userId) {
         const collaborator = await prisma.planCollaborator.findUnique({
           where: {
             workoutPlanId_userId: {
               workoutPlanId: planDay.workoutPlan.id,
-              userId: data.userId,
+              userId,
             },
           },
           select: { inviteStatus: true },
@@ -263,7 +269,7 @@ export const startWorkoutSession = createServerFn({ method: 'POST' })
 
     const session = await prisma.workoutSession.create({
       data: {
-        userId: data.userId,
+        userId,
         workoutPlanId: data.workoutPlanId,
         planDayId: data.planDayId,
         startedAt: new Date(),
@@ -296,7 +302,7 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
       sessionId: string
-      userId: string
+      token: string | null
       notes?: string
       moodRating?: number
       durationSeconds?: number
@@ -316,9 +322,10 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
     },
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     // Verify ownership and get plan info for activity metadata
     const existing = await prisma.workoutSession.findFirst({
-      where: { id: data.sessionId, userId: data.userId },
+      where: { id: data.sessionId, userId },
       include: {
         planDay: {
           include: {
@@ -352,7 +359,7 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
       // Create activity feed item for workout completion
       await tx.activityFeedItem.create({
         data: {
-          userId: data.userId,
+          userId,
           activityType: 'WORKOUT_COMPLETED',
           referenceId: updatedSession.id,
           metadata: {
@@ -367,25 +374,25 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
     })
 
     // Update challenge progress (has its own error handling)
-    await updateChallengeProgress({
-      data: { userId: data.userId, sessionId: data.sessionId },
-    })
+    await updateChallengeProgressInternal(userId, data.sessionId)
 
     // Check for newly earned achievements (has its own error handling)
-    const achievementResult = await checkAchievements({
-      data: { userId: data.userId, triggerType: 'workout_complete' },
-    })
+    const achievementResult = await checkAchievementsInternal(
+      userId,
+      'workout_complete',
+    )
 
     return { session, newAchievements: achievementResult.newlyEarned }
   })
 
 // Discard/cancel an active workout
 export const discardWorkoutSession = createServerFn({ method: 'POST' })
-  .inputValidator((data: { sessionId: string; userId: string }) => data)
+  .inputValidator((data: { sessionId: string; token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     // Verify ownership
     const existing = await prisma.workoutSession.findFirst({
-      where: { id: data.sessionId, userId: data.userId },
+      where: { id: data.sessionId, userId },
     })
 
     if (!existing) {
@@ -414,7 +421,7 @@ export const discardWorkoutSession = createServerFn({ method: 'POST' })
 
       // Recalculate PRs for all affected exercises
       for (const { exerciseId } of affectedExercises) {
-        await recalculatePR(tx, data.userId, exerciseId)
+        await recalculatePR(tx, userId, exerciseId)
       }
 
       // Clean up orphaned activity feed entries for deleted PRs
@@ -447,7 +454,7 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
       isDropset?: boolean
       rpe?: number
       notes?: string
-      userId: string
+      token: string | null
     }) => {
       // Validate numeric fields
       if (data.reps !== undefined && data.reps < 0) {
@@ -472,7 +479,8 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
     },
   )
   .handler(async ({ data }) => {
-    const { userId, ...setData } = data
+    const { userId } = await requireAuth(data.token)
+    const { token: _, ...setData } = data
 
     // Verify session ownership
     const session = await prisma.workoutSession.findFirst({
@@ -664,11 +672,12 @@ export const updateWorkoutSet = createServerFn({ method: 'POST' })
       isDropset?: boolean
       rpe?: number
       notes?: string
-      userId: string
+      token: string | null
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { id, userId, ...updateData } = data
+    const { userId } = await requireAuth(data.token)
+    const { id, token: _, ...updateData } = data
 
     // Verify ownership through session
     const existing = await prisma.workoutSet.findFirst({
@@ -702,8 +711,9 @@ export const updateWorkoutSet = createServerFn({ method: 'POST' })
 
 // Delete a logged set
 export const deleteWorkoutSet = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     // Verify ownership through session
     const existing = await prisma.workoutSet.findFirst({
       where: { id: data.id },
@@ -712,7 +722,7 @@ export const deleteWorkoutSet = createServerFn({ method: 'POST' })
       },
     })
 
-    if (!existing || existing.workoutSession.userId !== data.userId) {
+    if (!existing || existing.workoutSession.userId !== userId) {
       throw new Error('Set not found')
     }
 
@@ -729,7 +739,7 @@ export const deleteWorkoutSet = createServerFn({ method: 'POST' })
       })
 
       // Recalculate PRs since the deleted set may have held a PR
-      await recalculatePR(tx, data.userId, existing.exerciseId)
+      await recalculatePR(tx, userId, existing.exerciseId)
 
       // Clean up orphaned activity feed entries for deleted PRs
       if (oldPRIds.length > 0) {
@@ -748,12 +758,13 @@ export const deleteWorkoutSet = createServerFn({ method: 'POST' })
 
 // Get workout session with full details (for summary page)
 export const getWorkoutSession = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const session = await prisma.workoutSession.findFirst({
       where: {
         id: data.id,
-        userId: data.userId,
+        userId,
       },
       include: {
         workoutPlan: {
@@ -777,7 +788,11 @@ export const getWorkoutSession = createServerFn({ method: 'GET' })
 // Update a workout session (e.g. duration for completed sessions)
 export const updateWorkoutSession = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { sessionId: string; userId: string; durationSeconds?: number }) => {
+    (data: {
+      sessionId: string
+      token: string | null
+      durationSeconds?: number
+    }) => {
       if (data.durationSeconds !== undefined && data.durationSeconds < 0) {
         throw new Error('durationSeconds must be non-negative')
       }
@@ -785,8 +800,9 @@ export const updateWorkoutSession = createServerFn({ method: 'POST' })
     },
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const existing = await prisma.workoutSession.findFirst({
-      where: { id: data.sessionId, userId: data.userId },
+      where: { id: data.sessionId, userId },
     })
 
     if (!existing) {
@@ -807,7 +823,7 @@ export const updateWorkoutSession = createServerFn({ method: 'POST' })
 
 // Get user's recent completed workouts
 export const getRecentWorkouts = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; limit?: number }) => {
+  .inputValidator((data: { token: string | null; limit?: number }) => {
     // Validate limit if provided
     if (data.limit !== undefined && (data.limit < 1 || data.limit > 100)) {
       throw new Error('limit must be between 1 and 100')
@@ -815,9 +831,10 @@ export const getRecentWorkouts = createServerFn({ method: 'GET' })
     return data
   })
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const workouts = await prisma.workoutSession.findMany({
       where: {
-        userId: data.userId,
+        userId,
         completedAt: { not: null },
       },
       orderBy: { completedAt: 'desc' },
@@ -849,14 +866,18 @@ export const getRecentWorkouts = createServerFn({ method: 'GET' })
 // Get last workout data for a specific exercise (for showing previous performance)
 export const getLastExerciseSets = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { userId: string; exerciseId: string; excludeSessionId?: string }) =>
-      data,
+    (data: {
+      token: string | null
+      exerciseId: string
+      excludeSessionId?: string
+    }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     // Find the most recent completed session that includes this exercise
     const lastSession = await prisma.workoutSession.findFirst({
       where: {
-        userId: data.userId,
+        userId,
         completedAt: { not: null },
         ...(data.excludeSessionId && { id: { not: data.excludeSessionId } }),
         workoutSets: {
@@ -905,19 +926,22 @@ export const getLastExerciseSets = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getMonthlyWorkoutDays = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; year: number; month: number }) => {
-    if (data.month < 1 || data.month > 12) {
-      throw new Error('month must be between 1 and 12')
-    }
-    return data
-  })
+  .inputValidator(
+    (data: { token: string | null; year: number; month: number }) => {
+      if (data.month < 1 || data.month > 12) {
+        throw new Error('month must be between 1 and 12')
+      }
+      return data
+    },
+  )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const startDate = new Date(data.year, data.month - 1, 1)
     const endDate = new Date(data.year, data.month, 1)
 
     const sessions = await prisma.workoutSession.findMany({
       where: {
-        userId: data.userId,
+        userId,
         completedAt: { gte: startDate, lt: endDate },
       },
       orderBy: { completedAt: 'asc' },
@@ -976,7 +1000,7 @@ export const getMonthlyWorkoutDays = createServerFn({ method: 'GET' })
 export const getFilteredWorkouts = createServerFn({ method: 'GET' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       limit?: number
       offset?: number
       muscleGroups?: Array<string>
@@ -992,8 +1016,9 @@ export const getFilteredWorkouts = createServerFn({ method: 'GET' })
     },
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const where: Record<string, unknown> = {
-      userId: data.userId,
+      userId,
       completedAt: { not: null },
     }
 

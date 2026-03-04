@@ -24,7 +24,7 @@ export default function ImportPlanModal({
   onClose,
   onImportSuccess,
 }: ImportPlanModalProps) {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [code, setCode] = useState('')
   const [preview, setPreview] = useState<Preview | null>(null)
   const [customName, setCustomName] = useState('')
@@ -64,7 +64,7 @@ export default function ImportPlanModal({
       const result = await importPlanFromCode({
         data: {
           code: code.trim(),
-          userId: user.id,
+          token,
           newPlanName: customName !== preview.planName ? customName : undefined,
         },
       })

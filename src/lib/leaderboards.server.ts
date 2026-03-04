@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { Prisma } from '@prisma/client'
-import { prisma } from './db'
+import { prisma } from './db.server'
 import { calculateStreak } from './date-utils.server'
+import { requireAuth } from './auth-guard.server'
 
 type LeaderboardMetric = 'volume' | 'workouts' | 'streak' | 'prs'
 type TimeRange = 'week' | 'month' | 'all'
@@ -35,20 +36,22 @@ export const getGlobalLeaderboard = createServerFn({ method: 'GET' })
 export const getFriendsLeaderboard = createServerFn({ method: 'GET' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       metric: LeaderboardMetric
       timeRange: TimeRange
       limit?: number
     }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Get followed users
     const following = await prisma.follow.findMany({
-      where: { followerId: data.userId, status: 'ACCEPTED' },
+      where: { followerId: userId, status: 'ACCEPTED' },
       select: { followingId: true },
     })
 
-    const userIds = [data.userId, ...following.map((f) => f.followingId)]
+    const userIds = [userId, ...following.map((f) => f.followingId)]
     const limit = data.limit ?? 50
     const dateFilter = getDateFilter(data.timeRange)
 

@@ -17,7 +17,7 @@ export default function SharePlanModal({
   planId,
   planName,
 }: SharePlanModalProps) {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [shareCode, setShareCode] = useState<{
     code: string
     expiresAt: Date
@@ -37,7 +37,7 @@ export default function SharePlanModal({
       const result = await generateShareCode({
         data: {
           workoutPlanId: planId,
-          userId: user.id,
+          token,
         },
       })
       setShareCode({

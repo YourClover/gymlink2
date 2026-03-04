@@ -80,7 +80,7 @@ type PlanOption = {
 }
 
 function HistoryPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const searchParams = Route.useSearch()
 
@@ -117,7 +117,7 @@ function HistoryPage() {
   // Fetch plans once
   useEffect(() => {
     if (!user) return
-    getPlans({ data: { userId: user.id } }).then((result) => {
+    getPlans({ data: { token } }).then((result) => {
       setPlans(
         result.plans.map((p: { id: string; name: string }) => ({
           id: p.id,
@@ -135,7 +135,7 @@ function HistoryPage() {
     if (hasActiveFilters) {
       getFilteredWorkouts({
         data: {
-          userId: user.id,
+          token,
           limit: 50,
           muscleGroups:
             selectedMuscles.length > 0 ? selectedMuscles : undefined,
@@ -152,7 +152,7 @@ function HistoryPage() {
         )
         .finally(() => setLoading(false))
     } else {
-      getRecentWorkouts({ data: { userId: user.id, limit: 50 } })
+      getRecentWorkouts({ data: { token, limit: 50 } })
         .then((result) => {
           setWorkouts(result.workouts as Array<WorkoutHistory>)
           setTotalFiltered(result.workouts.length)
@@ -176,7 +176,7 @@ function HistoryPage() {
       setCalendarLoading(true)
       try {
         const result = await getMonthlyWorkoutDays({
-          data: { userId: user.id, year, month },
+          data: { token, year, month },
         })
         const dayMap = result.dayMap as Record<number, Array<WorkoutDaySummary>>
         setCalendarData(dayMap)

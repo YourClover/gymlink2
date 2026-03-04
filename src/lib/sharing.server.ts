@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAdmin, requireAuth } from './auth-guard.server'
 import { requirePlanOwnership } from './plan-auth.server'
 
 // Safe charset for share codes (no 0/O, 1/I/L confusion)
@@ -37,11 +38,15 @@ async function generateUniqueCode(): Promise<string> {
 // Generate a share code for a plan
 export const generateShareCode = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { workoutPlanId: string; userId: string; expiresInDays?: number }) =>
-      data,
+    (data: {
+      workoutPlanId: string
+      token: string | null
+      expiresInDays?: number
+    }) => data,
   )
   .handler(async ({ data }) => {
-    await requirePlanOwnership(data.workoutPlanId, data.userId)
+    const { userId } = await requireAuth(data.token)
+    await requirePlanOwnership(data.workoutPlanId, userId)
 
     const plan = await prisma.workoutPlan.findUnique({
       where: { id: data.workoutPlanId },
@@ -64,7 +69,7 @@ export const generateShareCode = createServerFn({ method: 'POST' })
       data: {
         code,
         workoutPlanId: data.workoutPlanId,
-        creatorId: data.userId,
+        creatorId: userId,
         expiresAt,
       },
     })
@@ -135,9 +140,11 @@ export const getShareCodePreview = createServerFn({ method: 'GET' })
 // Import a plan from a share code
 export const importPlanFromCode = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { code: string; userId: string; newPlanName?: string }) => data,
+    (data: { code: string; token: string | null; newPlanName?: string }) =>
+      data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const code = data.code.toUpperCase().trim()
 
     // Find and validate share code
@@ -172,7 +179,7 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
     }
 
     // Prevent importing your own plan
-    if (shareCode.creatorId === data.userId) {
+    if (shareCode.creatorId === userId) {
       throw new Error('Cannot import your own plan')
     }
 
@@ -185,7 +192,7 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
         data: {
           name: data.newPlanName || `${sourcePlan.name} (Imported)`,
           description: sourcePlan.description,
-          userId: data.userId,
+          userId,
           isActive: false,
         },
       })
@@ -235,13 +242,15 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
 
 // Revoke a share code
 export const revokeShareCode = createServerFn({ method: 'POST' })
-  .inputValidator((data: { codeId: string; userId: string }) => data)
+  .inputValidator((data: { codeId: string; token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Verify ownership
     const shareCode = await prisma.planShareCode.findFirst({
       where: {
         id: data.codeId,
-        creatorId: data.userId,
+        creatorId: userId,
       },
     })
 
@@ -263,16 +272,11 @@ export const revokeShareCode = createServerFn({ method: 'POST' })
 // Clean up expired share codes
 // This should be called periodically (e.g., via cron job or scheduled task)
 export const cleanupExpiredShareCodes = createServerFn({ method: 'POST' })
-  .inputValidator((data: { adminId?: string }) => data)
+  .inputValidator((data: { token?: string | null }) => data)
   .handler(async ({ data }) => {
     // Optional: verify admin access for manual cleanup
-    if (data.adminId) {
-      const admin = await prisma.user.findFirst({
-        where: { id: data.adminId, isAdmin: true, deletedAt: null },
-      })
-      if (!admin) {
-        throw new Error('Admin access required')
-      }
+    if (data.token) {
+      await requireAdmin(data.token)
     }
 
     const now = new Date()
@@ -292,15 +296,9 @@ export const cleanupExpiredShareCodes = createServerFn({ method: 'POST' })
 
 // Get statistics about share codes (admin only)
 export const getShareCodeStats = createServerFn({ method: 'GET' })
-  .inputValidator((data: { adminId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
-    // Verify admin access
-    const admin = await prisma.user.findFirst({
-      where: { id: data.adminId, isAdmin: true, deletedAt: null },
-    })
-    if (!admin) {
-      throw new Error('Admin access required')
-    }
+    await requireAdmin(data.token)
 
     const now = new Date()
 

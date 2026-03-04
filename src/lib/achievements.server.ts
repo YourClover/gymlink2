@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAdmin, requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
 import { getWeekStart } from './date-utils'
 import type {
@@ -48,10 +49,15 @@ export interface NewlyEarnedAchievement {
 // ============================================
 
 export const getUserAchievements = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator(
+    (data: { token: string | null; targetUserId?: string }) => data,
+  )
   .handler(async ({ data }) => {
+    const auth = await requireAuth(data.token)
+    const userId = data.targetUserId ?? auth.userId
+
     const userAchievements = await prisma.userAchievement.findMany({
-      where: { userId: data.userId },
+      where: { userId },
       include: {
         achievement: true,
       },
@@ -81,11 +87,13 @@ export const getUserAchievements = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getUnnotifiedAchievements = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const unnotified = await prisma.userAchievement.findMany({
       where: {
-        userId: data.userId,
+        userId,
         notified: false,
       },
       include: {
@@ -102,11 +110,16 @@ export const getUnnotifiedAchievements = createServerFn({ method: 'GET' })
 // ============================================
 
 export const markAchievementsNotified = createServerFn({ method: 'POST' })
-  .inputValidator((data: { achievementIds: Array<string> }) => data)
+  .inputValidator(
+    (data: { token: string | null; achievementIds: Array<string> }) => data,
+  )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     await prisma.userAchievement.updateMany({
       where: {
         id: { in: data.achievementIds },
+        userId,
       },
       data: { notified: true },
     })
@@ -118,111 +131,114 @@ export const markAchievementsNotified = createServerFn({ method: 'POST' })
 // CHECK AND AWARD ACHIEVEMENTS
 // ============================================
 
+export async function checkAchievementsInternal(
+  userId: string,
+  triggerType: 'workout_complete' | 'pr_achieved' | 'manual',
+) {
+  const newlyEarned: Array<NewlyEarnedAchievement> = []
+
+  // Get user's current stats
+  const [
+    totalWorkouts,
+    totalPRs,
+    totalVolume,
+    currentStreak,
+    muscleGroupSets,
+    consistencyWeeks,
+  ] = await Promise.all([
+    getTotalWorkouts(userId),
+    getTotalPRs(userId),
+    getTotalVolume(userId),
+    calculateStreak(userId),
+    getMuscleGroupSetCounts(userId),
+    getConsistencyStreak(userId),
+  ])
+
+  // Get all achievements not yet earned
+  const earnedAchievementIds = await prisma.userAchievement.findMany({
+    where: { userId },
+    select: { achievementId: true },
+  })
+  const earnedSet = new Set(earnedAchievementIds.map((e) => e.achievementId))
+
+  const allAchievements = await prisma.achievement.findMany()
+
+  // Check each achievement
+  for (const achievement of allAchievements) {
+    if (earnedSet.has(achievement.id)) continue
+
+    let earned = false
+
+    switch (achievement.category) {
+      case 'MILESTONE':
+        earned = checkMilestoneAchievement(achievement.code, totalWorkouts)
+        break
+      case 'STREAK':
+        earned = checkStreakAchievement(achievement.code, currentStreak)
+        break
+      case 'PERSONAL_RECORD':
+        earned = checkPRAchievement(achievement.code, totalPRs)
+        break
+      case 'VOLUME':
+        earned = checkVolumeAchievement(achievement.code, totalVolume)
+        break
+      case 'CONSISTENCY':
+        earned = checkConsistencyAchievement(achievement.code, consistencyWeeks)
+        break
+      case 'MUSCLE_FOCUS':
+        earned = checkMuscleFocusAchievement(achievement.code, muscleGroupSets)
+        break
+    }
+
+    if (earned) {
+      const userAchievement = await prisma.userAchievement.create({
+        data: {
+          userId,
+          achievementId: achievement.id,
+          notified: false,
+        },
+      })
+
+      // Create activity feed item for achievement earned
+      await prisma.activityFeedItem.create({
+        data: {
+          userId,
+          activityType: 'ACHIEVEMENT_EARNED',
+          referenceId: userAchievement.id,
+          metadata: {
+            achievementName: achievement.name,
+            achievementIcon: achievement.icon,
+            achievementRarity: achievement.rarity,
+          },
+        },
+      })
+
+      newlyEarned.push({
+        id: achievement.id,
+        userAchievementId: userAchievement.id,
+        code: achievement.code,
+        name: achievement.name,
+        description: achievement.description,
+        rarity: achievement.rarity,
+        icon: achievement.icon,
+      })
+    }
+  }
+
+  return { newlyEarned }
+}
+
 export const checkAchievements = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       triggerType: 'workout_complete' | 'pr_achieved' | 'manual'
     }) => data,
   )
   .handler(async ({ data }) => {
-    const newlyEarned: Array<NewlyEarnedAchievement> = []
+    const { userId } = await requireAuth(data.token)
 
-    // Get user's current stats
-    const [
-      totalWorkouts,
-      totalPRs,
-      totalVolume,
-      currentStreak,
-      muscleGroupSets,
-      consistencyWeeks,
-    ] = await Promise.all([
-      getTotalWorkouts(data.userId),
-      getTotalPRs(data.userId),
-      getTotalVolume(data.userId),
-      calculateStreak(data.userId),
-      getMuscleGroupSetCounts(data.userId),
-      getConsistencyStreak(data.userId),
-    ])
-
-    // Get all achievements not yet earned
-    const earnedAchievementIds = await prisma.userAchievement.findMany({
-      where: { userId: data.userId },
-      select: { achievementId: true },
-    })
-    const earnedSet = new Set(earnedAchievementIds.map((e) => e.achievementId))
-
-    const allAchievements = await prisma.achievement.findMany()
-
-    // Check each achievement
-    for (const achievement of allAchievements) {
-      if (earnedSet.has(achievement.id)) continue
-
-      let earned = false
-
-      switch (achievement.category) {
-        case 'MILESTONE':
-          earned = checkMilestoneAchievement(achievement.code, totalWorkouts)
-          break
-        case 'STREAK':
-          earned = checkStreakAchievement(achievement.code, currentStreak)
-          break
-        case 'PERSONAL_RECORD':
-          earned = checkPRAchievement(achievement.code, totalPRs)
-          break
-        case 'VOLUME':
-          earned = checkVolumeAchievement(achievement.code, totalVolume)
-          break
-        case 'CONSISTENCY':
-          earned = checkConsistencyAchievement(
-            achievement.code,
-            consistencyWeeks,
-          )
-          break
-        case 'MUSCLE_FOCUS':
-          earned = checkMuscleFocusAchievement(
-            achievement.code,
-            muscleGroupSets,
-          )
-          break
-      }
-
-      if (earned) {
-        const userAchievement = await prisma.userAchievement.create({
-          data: {
-            userId: data.userId,
-            achievementId: achievement.id,
-            notified: false,
-          },
-        })
-
-        // Create activity feed item for achievement earned
-        await prisma.activityFeedItem.create({
-          data: {
-            userId: data.userId,
-            activityType: 'ACHIEVEMENT_EARNED',
-            referenceId: userAchievement.id,
-            metadata: {
-              achievementName: achievement.name,
-              achievementIcon: achievement.icon,
-              achievementRarity: achievement.rarity,
-            },
-          },
-        })
-
-        newlyEarned.push({
-          id: achievement.id,
-          userAchievementId: userAchievement.id,
-          code: achievement.code,
-          name: achievement.name,
-          description: achievement.description,
-          rarity: achievement.rarity,
-          icon: achievement.icon,
-        })
-      }
-    }
-
-    return { newlyEarned }
+    return checkAchievementsInternal(userId, data.triggerType)
   })
 
 // ============================================
@@ -441,16 +457,9 @@ function checkMuscleFocusAchievement(
 
 // Get all achievements (for admin panel)
 export const getAllAchievements = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
-    // Verify admin
-    const user = await prisma.user.findUnique({
-      where: { id: data.userId },
-      select: { isAdmin: true },
-    })
-    if (!user?.isAdmin) {
-      throw new Error('Admin access required')
-    }
+    await requireAdmin(data.token)
 
     const achievements = await prisma.achievement.findMany({
       orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }],
@@ -468,7 +477,7 @@ export const getAllAchievements = createServerFn({ method: 'GET' })
 export const createAchievement = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       code: string
       name: string
       description: string
@@ -486,22 +495,15 @@ export const createAchievement = createServerFn({ method: 'POST' })
     },
   )
   .handler(async ({ data }) => {
+    await requireAdmin(data.token)
+
     const {
-      userId,
+      token: _,
       sortOrder = 0,
       isHidden = false,
       exerciseId,
       ...achievementData
     } = data
-
-    // Verify admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { isAdmin: true },
-    })
-    if (!user?.isAdmin) {
-      throw new Error('Admin access required')
-    }
 
     // Check code uniqueness
     const existing = await prisma.achievement.findUnique({
@@ -527,7 +529,7 @@ export const createAchievement = createServerFn({ method: 'POST' })
 export const updateAchievement = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       id: string
       code?: string
       name?: string
@@ -546,16 +548,9 @@ export const updateAchievement = createServerFn({ method: 'POST' })
     },
   )
   .handler(async ({ data }) => {
-    const { userId, id, ...updateData } = data
+    await requireAdmin(data.token)
 
-    // Verify admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { isAdmin: true },
-    })
-    if (!user?.isAdmin) {
-      throw new Error('Admin access required')
-    }
+    const { token: _, id, ...updateData } = data
 
     // Check if achievement exists
     const existing = await prisma.achievement.findUnique({
@@ -585,16 +580,9 @@ export const updateAchievement = createServerFn({ method: 'POST' })
 
 // Delete achievement (admin only)
 export const deleteAchievement = createServerFn({ method: 'POST' })
-  .inputValidator((data: { userId: string; id: string }) => data)
+  .inputValidator((data: { token: string | null; id: string }) => data)
   .handler(async ({ data }) => {
-    // Verify admin
-    const user = await prisma.user.findUnique({
-      where: { id: data.userId },
-      select: { isAdmin: true },
-    })
-    if (!user?.isAdmin) {
-      throw new Error('Admin access required')
-    }
+    await requireAdmin(data.token)
 
     // Check if achievement exists
     const existing = await prisma.achievement.findUnique({

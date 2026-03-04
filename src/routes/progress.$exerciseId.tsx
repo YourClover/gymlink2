@@ -62,7 +62,7 @@ type RecentSession = {
 
 function ProgressPage() {
   const { exerciseId } = Route.useParams()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
 
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<ExerciseSummary | null>(null)
@@ -97,9 +97,9 @@ function ProgressPage() {
 
       try {
         const [summaryRes, sessionsRes] = await Promise.all([
-          getExerciseSummary({ data: { userId: user.id, exerciseId } }),
+          getExerciseSummary({ data: { token, exerciseId } }),
           getExerciseRecentSessions({
-            data: { userId: user.id, exerciseId, limit: 5 },
+            data: { token, exerciseId, limit: 5 },
           }),
         ])
 
@@ -123,7 +123,7 @@ function ProgressPage() {
         const startDate = getStartDateForRange(timeRange)
         const result = await getExerciseProgression({
           data: {
-            userId: user.id,
+            token,
             exerciseId,
             metric,
             startDate,

@@ -31,7 +31,7 @@ interface UserAchievement {
 }
 
 function AchievementsPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const router = useRouter()
   const [achievements, setAchievements] = useState<Array<Achievement>>([])
   const [earnedAchievements, setEarnedAchievements] = useState<
@@ -45,7 +45,7 @@ function AchievementsPage() {
       if (!user?.id) return
 
       try {
-        const result = await getUserAchievements({ data: { userId: user.id } })
+        const result = await getUserAchievements({ data: { token } })
         setAchievements(result.all)
         setEarnedAchievements(result.earned)
         setEarnedSet(new Set(result.earnedSet))

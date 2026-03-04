@@ -10,7 +10,7 @@ export const Route = createFileRoute('/challenges/join/$code')({
 
 function JoinChallengeByCodePage() {
   const { code } = Route.useParams()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
 
   const [isJoining, setIsJoining] = useState(true)
@@ -26,7 +26,7 @@ function JoinChallengeByCodePage() {
 
       try {
         const result = await joinChallengeByCode({
-          data: { inviteCode: code, userId: user.id },
+          data: { inviteCode: code, token },
         })
 
         // Redirect to challenge page

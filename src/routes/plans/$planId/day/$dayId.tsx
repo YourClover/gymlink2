@@ -58,7 +58,7 @@ type PlanDay = {
 
 function DayDetailPage() {
   const { planId, dayId } = Route.useParams()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -89,7 +89,7 @@ function DayDetailPage() {
     if (!user) return
 
     try {
-      const result = await getPlanDay({ data: { id: dayId, userId: user.id } })
+      const result = await getPlanDay({ data: { id: dayId, token } })
       setPlanDay(result.planDay)
       setAccess(result.access)
     } catch (error) {
@@ -113,7 +113,7 @@ function DayDetailPage() {
           id: dayId,
           name: data.name,
           restDay: data.restDay,
-          userId: user.id,
+          token,
         },
       })
       await fetchPlanDay()
@@ -128,7 +128,7 @@ function DayDetailPage() {
 
     setIsSubmitting(true)
     try {
-      await deletePlanDay({ data: { id: dayId, userId: user.id } })
+      await deletePlanDay({ data: { id: dayId, token } })
       navigate({ to: '/plans/$planId', params: { planId } })
     } finally {
       setIsSubmitting(false)
@@ -163,7 +163,7 @@ function DayDetailPage() {
           targetWeight: targets.targetWeight,
           restSeconds: targets.restSeconds,
           notes: targets.notes,
-          userId: user.id,
+          token,
         },
       })
       await fetchPlanDay()
@@ -194,7 +194,7 @@ function DayDetailPage() {
           targetWeight: targets.targetWeight,
           restSeconds: targets.restSeconds,
           notes: targets.notes,
-          userId: user.id,
+          token,
         },
       })
       await fetchPlanDay()
@@ -212,7 +212,7 @@ function DayDetailPage() {
       await removePlanExercise({
         data: {
           id: exerciseToRemove.id,
-          userId: user.id,
+          token,
         },
       })
       await fetchPlanDay()
@@ -245,7 +245,7 @@ function DayDetailPage() {
         data: {
           planDayId: dayId,
           exerciseIds: exercises.map((e) => e.id),
-          userId: user.id,
+          token,
         },
       })
     } catch (error) {

@@ -1,16 +1,18 @@
 import { createServerFn } from '@tanstack/react-start'
 import { Prisma } from '@prisma/client'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAdmin, requireAuth } from './auth-guard.server'
 import { requirePlanAccess, requirePlanOwnership } from './plan-auth.server'
 import type { PlanCollaboratorRole } from '@prisma/client'
 
 // Get mutual followers who can be invited to a plan
 export const getInvitableUsers = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { userId: string; planId: string; search?: string }) => data,
+    (data: { token: string | null; planId: string; search?: string }) => data,
   )
   .handler(async ({ data }) => {
-    await requirePlanOwnership(data.planId, data.userId)
+    const { userId } = await requireAuth(data.token)
+    await requirePlanOwnership(data.planId, userId)
 
     // Find mutual followers (both sides ACCEPTED)
     const searchFilter = data.search
@@ -24,16 +26,16 @@ export const getInvitableUsers = createServerFn({ method: 'GET' })
       FROM users u
       LEFT JOIN user_profiles up ON up.user_id = u.id
       WHERE u.deleted_at IS NULL
-        AND u.id != ${data.userId}
+        AND u.id != ${userId}
         AND EXISTS (
           SELECT 1 FROM follows f1
           WHERE f1.follower_id = u.id
-            AND f1.following_id = ${data.userId}
+            AND f1.following_id = ${userId}
             AND f1.status = 'ACCEPTED'
         )
         AND EXISTS (
           SELECT 1 FROM follows f2
-          WHERE f2.follower_id = ${data.userId}
+          WHERE f2.follower_id = ${userId}
             AND f2.following_id = u.id
             AND f2.status = 'ACCEPTED'
         )
@@ -54,31 +56,33 @@ export const getInvitableUsers = createServerFn({ method: 'GET' })
 export const inviteCollaborator = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       planId: string
       inviteeId: string
       role: PlanCollaboratorRole
     }) => data,
   )
   .handler(async ({ data }) => {
-    if (data.userId === data.inviteeId) {
+    const { userId } = await requireAuth(data.token)
+
+    if (userId === data.inviteeId) {
       throw new Error('Cannot invite yourself')
     }
 
-    await requirePlanOwnership(data.planId, data.userId)
+    await requirePlanOwnership(data.planId, userId)
 
     // Verify mutual follow
     const [theyFollowMe, iFollowThem] = await Promise.all([
       prisma.follow.findFirst({
         where: {
           followerId: data.inviteeId,
-          followingId: data.userId,
+          followingId: userId,
           status: 'ACCEPTED',
         },
       }),
       prisma.follow.findFirst({
         where: {
-          followerId: data.userId,
+          followerId: userId,
           followingId: data.inviteeId,
           status: 'ACCEPTED',
         },
@@ -95,7 +99,7 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
         select: { name: true },
       }),
       prisma.user.findUnique({
-        where: { id: data.userId },
+        where: { id: userId },
         select: { name: true },
       }),
     ])
@@ -122,7 +126,7 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
             workoutPlanId: data.planId,
             userId: data.inviteeId,
             role: data.role,
-            invitedBy: data.userId,
+            invitedBy: userId,
           },
         })
       })
@@ -153,14 +157,16 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
 // Accept or decline a collaboration invite
 export const respondToCollabInvite = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { userId: string; planId: string; accept: boolean }) => data,
+    (data: { token: string | null; planId: string; accept: boolean }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const collaborator = await prisma.planCollaborator.findUnique({
       where: {
         workoutPlanId_userId: {
           workoutPlanId: data.planId,
-          userId: data.userId,
+          userId,
         },
       },
       include: {
@@ -180,7 +186,7 @@ export const respondToCollabInvite = createServerFn({ method: 'POST' })
 
       // Notify the plan owner
       const joiner = await prisma.user.findUnique({
-        where: { id: data.userId },
+        where: { id: userId },
         select: { name: true },
       })
 
@@ -207,14 +213,15 @@ export const respondToCollabInvite = createServerFn({ method: 'POST' })
 export const updateCollaboratorRole = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       planId: string
       collaboratorUserId: string
       role: PlanCollaboratorRole
     }) => data,
   )
   .handler(async ({ data }) => {
-    await requirePlanOwnership(data.planId, data.userId)
+    const { userId } = await requireAuth(data.token)
+    await requirePlanOwnership(data.planId, userId)
 
     const collaborator = await prisma.planCollaborator.findUnique({
       where: {
@@ -240,11 +247,15 @@ export const updateCollaboratorRole = createServerFn({ method: 'POST' })
 // Remove a collaborator (owner only)
 export const removeCollaborator = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { userId: string; planId: string; collaboratorUserId: string }) =>
-      data,
+    (data: {
+      token: string | null
+      planId: string
+      collaboratorUserId: string
+    }) => data,
   )
   .handler(async ({ data }) => {
-    await requirePlanOwnership(data.planId, data.userId)
+    const { userId } = await requireAuth(data.token)
+    await requirePlanOwnership(data.planId, userId)
 
     await prisma.planCollaborator.deleteMany({
       where: {
@@ -258,8 +269,10 @@ export const removeCollaborator = createServerFn({ method: 'POST' })
 
 // Leave a collaboration (collaborator self-removes)
 export const leaveCollaboration = createServerFn({ method: 'POST' })
-  .inputValidator((data: { userId: string; planId: string }) => data)
+  .inputValidator((data: { token: string | null; planId: string }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Verify the user is a collaborator (not the owner)
     const plan = await prisma.workoutPlan.findUnique({
       where: { id: data.planId },
@@ -270,14 +283,14 @@ export const leaveCollaboration = createServerFn({ method: 'POST' })
       throw new Error('Plan not found')
     }
 
-    if (plan.userId === data.userId) {
+    if (plan.userId === userId) {
       throw new Error('Owner cannot leave their own plan')
     }
 
     await prisma.planCollaborator.deleteMany({
       where: {
         workoutPlanId: data.planId,
-        userId: data.userId,
+        userId,
       },
     })
 
@@ -286,9 +299,10 @@ export const leaveCollaboration = createServerFn({ method: 'POST' })
 
 // Get plan collaborators
 export const getPlanCollaborators = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; planId: string }) => data)
+  .inputValidator((data: { token: string | null; planId: string }) => data)
   .handler(async ({ data }) => {
-    await requirePlanAccess(data.planId, data.userId)
+    const { userId } = await requireAuth(data.token)
+    await requirePlanAccess(data.planId, userId)
 
     const plan = await prisma.workoutPlan.findUnique({
       where: { id: data.planId },

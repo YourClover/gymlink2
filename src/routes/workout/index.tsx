@@ -64,7 +64,7 @@ type PlanWithDays = Plan & {
 }
 
 function WorkoutPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -88,9 +88,9 @@ function WorkoutPage() {
 
       try {
         const [sessionResult, recentResult, plansResult] = await Promise.all([
-          getActiveSession({ data: { userId: user.id } }),
-          getRecentWorkouts({ data: { userId: user.id, limit: 3 } }),
-          getPlans({ data: { userId: user.id } }),
+          getActiveSession({ data: { token } }),
+          getRecentWorkouts({ data: { token, limit: 3 } }),
+          getPlans({ data: { token } }),
         ])
 
         setActiveSession(sessionResult.session)
@@ -112,7 +112,7 @@ function WorkoutPage() {
 
     setStartingQuick(true)
     try {
-      await startWorkoutSession({ data: { userId: user.id } })
+      await startWorkoutSession({ data: { token } })
       navigate({ to: '/workout/active' })
     } catch (error) {
       console.error('Failed to start workout:', error)
@@ -137,7 +137,7 @@ function WorkoutPage() {
     setLoadingDays(true)
     try {
       if (!user) return
-      const result = await getPlan({ data: { id: planId, userId: user.id } })
+      const result = await getPlan({ data: { id: planId, token } })
       if (result.plan && 'planDays' in result.plan) {
         setPlans((prev) =>
           prev.map((p) =>
@@ -160,7 +160,7 @@ function WorkoutPage() {
     try {
       await startWorkoutSession({
         data: {
-          userId: user.id,
+          token,
           planDayId: planDay.id,
         },
       })

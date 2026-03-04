@@ -37,7 +37,7 @@ interface NotificationData {
 }
 
 function NotificationsPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState<Array<NotificationData>>(
     [],
@@ -49,7 +49,7 @@ function NotificationsPage() {
     setIsLoading(true)
     try {
       const result = await getNotifications({
-        data: { userId: user.id, limit: 50 },
+        data: { token, limit: 50 },
       })
       setNotifications(result.notifications as Array<NotificationData>)
     } catch (error) {
@@ -67,7 +67,7 @@ function NotificationsPage() {
     if (!user) return
     try {
       await markNotificationRead({
-        data: { notificationId, userId: user.id },
+        data: { notificationId, token },
       })
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n)),
@@ -80,7 +80,7 @@ function NotificationsPage() {
   const handleMarkAllRead = async () => {
     if (!user) return
     try {
-      await markAllNotificationsRead({ data: { userId: user.id } })
+      await markAllNotificationsRead({ data: { token } })
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
     } catch (error) {
       console.error('Failed to mark all as read:', error)

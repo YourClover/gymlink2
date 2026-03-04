@@ -26,7 +26,7 @@ interface ActivityData {
 }
 
 function FeedPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [activities, setActivities] = useState<Array<ActivityData>>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -42,7 +42,7 @@ function FeedPage() {
     try {
       const result = await getActivityFeed({
         data: {
-          userId: user.id,
+          token,
           cursor: append ? (cursor ?? undefined) : undefined,
         },
       })

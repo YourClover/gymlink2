@@ -18,7 +18,7 @@ type AchievementShowcaseProps = {
   earnedCount: number
   totalCount: number
   recentEarned: Array<EarnedAchievement>
-  rarityBreakdown: Partial<
+  rarityBreakdown?: Partial<
     Record<AchievementRarity, { earned: number; total: number }>
   >
 }
@@ -73,7 +73,7 @@ export default function AchievementShowcase({
   }
 
   const percentage = Math.round((earnedCount / totalCount) * 100)
-  const totalEarnedForBar = Object.values(rarityBreakdown).reduce(
+  const totalEarnedForBar = Object.values(rarityBreakdown ?? {}).reduce(
     (sum, r) => sum + r.earned,
     0,
   )

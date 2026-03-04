@@ -64,7 +64,7 @@ type ExerciseSummary = {
 
 function WorkoutSummaryPage() {
   const { sessionId } = Route.useParams()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
 
   const [session, setSession] = useState<SessionDetails | null>(null)
@@ -118,7 +118,7 @@ function WorkoutSummaryPage() {
 
       try {
         const result = await getWorkoutSession({
-          data: { id: sessionId, userId: user.id },
+          data: { id: sessionId, token },
         })
 
         if (!result.session) {
@@ -235,7 +235,7 @@ function WorkoutSummaryPage() {
       await updateWorkoutSession({
         data: {
           sessionId: session.id,
-          userId: user.id,
+          token,
           durationSeconds: editedDurationSeconds,
         },
       })
@@ -258,7 +258,7 @@ function WorkoutSummaryPage() {
       const result = await completeWorkoutSession({
         data: {
           sessionId: session.id,
-          userId: user.id,
+          token,
           notes: notes || undefined,
           moodRating: moodRating,
           durationSeconds: editedDurationSeconds,
@@ -319,7 +319,7 @@ function WorkoutSummaryPage() {
       const result = await updateWorkoutSet({
         data: {
           id: editingSet.id,
-          userId: user.id,
+          token,
           reps: setData.reps,
           timeSeconds: setData.timeSeconds,
           weight: setData.weight,

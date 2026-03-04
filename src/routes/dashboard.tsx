@@ -59,7 +59,7 @@ type WorkoutSuggestion = {
 }
 
 function DashboardPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -79,10 +79,10 @@ function DashboardPage() {
       try {
         const [statsResult, sessionResult, suggestionResult, recentResult] =
           await Promise.all([
-            getDashboardStats({ data: { userId: user.id } }),
-            getActiveSession({ data: { userId: user.id } }),
-            getNextWorkoutSuggestion({ data: { userId: user.id } }),
-            getRecentWorkouts({ data: { userId: user.id, limit: 3 } }),
+            getDashboardStats({ data: { token } }),
+            getActiveSession({ data: { token } }),
+            getNextWorkoutSuggestion({ data: { token } }),
+            getRecentWorkouts({ data: { token, limit: 3 } }),
           ])
 
         setStats(statsResult.stats)
@@ -125,7 +125,7 @@ function DashboardPage() {
     try {
       await startWorkoutSession({
         data: {
-          userId: user.id,
+          token,
           planDayId: suggestion.dayId,
         },
       })

@@ -30,7 +30,7 @@ type SharedPlan = PlanWithCount & {
 }
 
 function PlansPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [plans, setPlans] = useState<Array<PlanWithCount>>([])
   const [sharedPlans, setSharedPlans] = useState<Array<SharedPlan>>([])
@@ -42,7 +42,7 @@ function PlansPage() {
       if (!user) return
 
       try {
-        const result = await getPlans({ data: { userId: user.id } })
+        const result = await getPlans({ data: { token } })
         setPlans(result.plans)
         setSharedPlans(result.sharedPlans as Array<SharedPlan>)
       } catch (error) {

@@ -28,7 +28,7 @@ interface ProfileData {
 }
 
 function SettingsPage() {
-  const { user, logout, isLoading: isAuthLoading } = useAuth()
+  const { user, token, logout, isLoading: isAuthLoading } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -36,7 +36,7 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!user) return
-    getUserProfile({ data: { userId: user.id } }).then((result) => {
+    getUserProfile({ data: { token } }).then((result) => {
       if (result.profile) {
         setProfile({
           isPrivate: result.profile.isPrivate,
@@ -59,7 +59,7 @@ function SettingsPage() {
 
     try {
       await updateUserProfile({
-        data: { userId: user.id, [field]: newValue },
+        data: { token, [field]: newValue },
       })
     } catch {
       setProfile((p) => (p ? { ...p, [field]: previous } : p))

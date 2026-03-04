@@ -63,7 +63,7 @@ interface ChallengeData {
 
 function ChallengeDetailPage() {
   const { challengeId } = Route.useParams()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
 
   const [challenge, setChallenge] = useState<ChallengeData | null>(null)
@@ -77,7 +77,7 @@ function ChallengeDetailPage() {
     setIsLoading(true)
     try {
       const result = await getChallengeDetails({
-        data: { challengeId, userId: user?.id },
+        data: { challengeId, token },
       })
 
       if (result.challenge) {
@@ -100,7 +100,7 @@ function ChallengeDetailPage() {
     if (!user) return
     setIsJoining(true)
     try {
-      await joinChallenge({ data: { challengeId, userId: user.id } })
+      await joinChallenge({ data: { challengeId, token } })
       loadChallenge()
     } catch (error) {
       console.error('Failed to join:', error)
@@ -113,7 +113,7 @@ function ChallengeDetailPage() {
     if (!user) return
     setIsJoining(true)
     try {
-      await leaveChallenge({ data: { challengeId, userId: user.id } })
+      await leaveChallenge({ data: { challengeId, token } })
       loadChallenge()
     } catch (error) {
       console.error('Failed to leave:', error)

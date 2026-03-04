@@ -63,7 +63,7 @@ interface FollowCountsData {
 }
 
 function ProfilePage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [recentAchievements, setRecentAchievements] = useState<
     Array<RecentAchievement>
   >([])
@@ -88,9 +88,9 @@ function ProfilePage() {
         // Load achievements, profile, and stats in parallel
         const [achievementResult, profileResult, statsResult] =
           await Promise.all([
-            getUserAchievements({ data: { userId: user.id } }),
-            getUserProfile({ data: { userId: user.id } }),
-            getProfileStats({ data: { userId: user.id } }),
+            getUserAchievements({ data: { token } }),
+            getUserProfile({ data: { token } }),
+            getProfileStats({ data: { token } }),
           ])
 
         setAchievementStats({
@@ -126,7 +126,7 @@ function ProfilePage() {
 
           // Load follow counts once we know profile exists
           const followResult = await getFollowCounts({
-            data: { userId: user.id },
+            data: { token },
           })
           setFollowCounts(followResult)
         }

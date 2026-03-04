@@ -25,7 +25,7 @@ export const Route = createFileRoute('/exercises/')({
 })
 
 function ExercisesPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [exercises, setExercises] = useState<Array<Exercise>>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -89,7 +89,7 @@ function ExercisesPage() {
       await createExercise({
         data: {
           ...data,
-          userId: user.id,
+          token,
         },
       })
       await refreshExercises()
@@ -108,7 +108,7 @@ function ExercisesPage() {
         data: {
           id: exerciseToEdit.id,
           ...data,
-          userId: user.id,
+          token,
         },
       })
       await refreshExercises()
@@ -127,7 +127,7 @@ function ExercisesPage() {
       await deleteExercise({
         data: {
           id: exerciseToEdit.id,
-          userId: user.id,
+          token,
         },
       })
       await refreshExercises()

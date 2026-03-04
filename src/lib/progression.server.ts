@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAuth } from './auth-guard.server'
 import { calculateMetricValue } from './progression-utils'
 import { selectDisplayPR } from './pr-utils'
 import type { ProgressionMetric } from './progression-utils'
@@ -17,7 +18,7 @@ export type ProgressionDataPoint = {
 export const getExerciseProgression = createServerFn({ method: 'GET' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       exerciseId: string
       metric: ProgressionMetric
       startDate?: string
@@ -25,6 +26,8 @@ export const getExerciseProgression = createServerFn({ method: 'GET' })
     }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Build date filter
     const dateFilter: { gte?: Date; lte?: Date } = {}
     if (data.startDate) {
@@ -40,7 +43,7 @@ export const getExerciseProgression = createServerFn({ method: 'GET' })
         exerciseId: data.exerciseId,
         isWarmup: false,
         workoutSession: {
-          userId: data.userId,
+          userId,
           completedAt: { not: null },
           ...(Object.keys(dateFilter).length > 0 && {
             completedAt: dateFilter,
@@ -111,8 +114,9 @@ export const getExerciseProgression = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getExerciseSummary = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; exerciseId: string }) => data)
+  .inputValidator((data: { token: string | null; exerciseId: string }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     // Get exercise details
     const exercise = await prisma.exercise.findUnique({
       where: { id: data.exerciseId },
@@ -132,7 +136,7 @@ export const getExerciseSummary = createServerFn({ method: 'GET' })
     // Get all completed sessions that include this exercise
     const sessions = await prisma.workoutSession.findMany({
       where: {
-        userId: data.userId,
+        userId,
         completedAt: { not: null },
         workoutSets: {
           some: {
@@ -157,7 +161,7 @@ export const getExerciseSummary = createServerFn({ method: 'GET' })
     // Get current PR — use shared priority logic to pick the best one
     const allPRs = await prisma.personalRecord.findMany({
       where: {
-        userId: data.userId,
+        userId,
         exerciseId: data.exerciseId,
       },
       include: {
@@ -197,14 +201,16 @@ export const getExerciseSummary = createServerFn({ method: 'GET' })
 
 export const getExerciseRecentSessions = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { userId: string; exerciseId: string; limit?: number }) => data,
+    (data: { token: string | null; exerciseId: string; limit?: number }) =>
+      data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
     const limit = data.limit ?? 5
 
     const sessions = await prisma.workoutSession.findMany({
       where: {
-        userId: data.userId,
+        userId,
         completedAt: { not: null },
         workoutSets: {
           some: {

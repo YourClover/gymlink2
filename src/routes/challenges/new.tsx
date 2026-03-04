@@ -12,7 +12,7 @@ export const Route = createFileRoute('/challenges/new')({
 })
 
 function NewChallengePage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
 
   const [name, setName] = useState('')
@@ -84,7 +84,7 @@ function NewChallengePage() {
     try {
       const result = await createChallenge({
         data: {
-          creatorId: user.id,
+          token,
           name,
           description: description || undefined,
           challengeType,

@@ -114,7 +114,7 @@ const rangeLabels: Record<TimeRange, string> = {
 }
 
 function StatsPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
 
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<TimeRange>('all')
@@ -168,16 +168,16 @@ function StatsPage() {
           rpeRes,
           prTimelineRes,
         ] = await Promise.all([
-          getOverviewStats({ data: { userId: user.id, startDate } }),
+          getOverviewStats({ data: { token, startDate } }),
           getVolumeHistory({
-            data: { userId: user.id, startDate, granularity: gran },
+            data: { token, startDate, granularity: gran },
           }),
-          getExerciseStats({ data: { userId: user.id, startDate } }),
-          getDurationStats({ data: { userId: user.id, startDate } }),
-          getMoodStats({ data: { userId: user.id, startDate } }),
-          getWorkoutConsistency({ data: { userId: user.id } }),
-          getRpeStats({ data: { userId: user.id, startDate } }),
-          getPrTimeline({ data: { userId: user.id, limit: 5, startDate } }),
+          getExerciseStats({ data: { token, startDate } }),
+          getDurationStats({ data: { token, startDate } }),
+          getMoodStats({ data: { token, startDate } }),
+          getWorkoutConsistency({ data: { token } }),
+          getRpeStats({ data: { token, startDate } }),
+          getPrTimeline({ data: { token, limit: 5, startDate } }),
         ])
 
         setOverview(overviewRes.stats)
@@ -200,7 +200,7 @@ function StatsPage() {
         // Fetch achievements only once (not affected by time range)
         if (!achievementCacheRef.current) {
           const achRes = await getUserAchievements({
-            data: { userId: user.id },
+            data: { token },
           })
           const recentEarned = achRes.earned.slice(0, 5)
           const earnedSet = new Set(achRes.earnedSet)

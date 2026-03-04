@@ -43,7 +43,7 @@ interface MutualData {
 }
 
 function FollowersPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const router = useRouter()
   const [tab, setTab] = useState<
@@ -64,10 +64,10 @@ function FollowersPage() {
     try {
       const [followersResult, followingResult, requestsResult, mutualsResult] =
         await Promise.all([
-          getFollowers({ data: { userId: user.id, status: 'ACCEPTED' } }),
-          getFollowing({ data: { userId: user.id, status: 'ACCEPTED' } }),
-          getPendingFollowRequests({ data: { userId: user.id } }),
-          getMutualFollowers({ data: { userId: user.id } }),
+          getFollowers({ data: { token, status: 'ACCEPTED' } }),
+          getFollowing({ data: { token, status: 'ACCEPTED' } }),
+          getPendingFollowRequests({ data: { token } }),
+          getMutualFollowers({ data: { token } }),
         ])
 
       setFollowers(followersResult.followers as Array<FollowData>)
@@ -100,7 +100,7 @@ function FollowersPage() {
     if (!user) return
     try {
       await respondToFollowRequest({
-        data: { followId, userId: user.id, accept: true },
+        data: { followId, token, accept: true },
       })
       loadData()
     } catch (error) {
@@ -112,7 +112,7 @@ function FollowersPage() {
     if (!user) return
     try {
       await respondToFollowRequest({
-        data: { followId, userId: user.id, accept: false },
+        data: { followId, token, accept: false },
       })
       loadData()
     } catch (error) {
@@ -125,7 +125,7 @@ function FollowersPage() {
     if (!confirm('Remove this follower? They can request to follow you again.'))
       return
     try {
-      await removeFollower({ data: { userId: user.id, followerId } })
+      await removeFollower({ data: { token, followerId } })
       setActiveMenu(null)
       loadData()
     } catch (error) {
@@ -137,7 +137,7 @@ function FollowersPage() {
     if (!user) return
     if (!confirm('Unfollow this user?')) return
     try {
-      await unfollow({ data: { followerId: user.id, followingId } })
+      await unfollow({ data: { token, followingId } })
       setActiveMenu(null)
       loadData()
     } catch (error) {

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAuth } from './auth-guard.server'
 import { DEFAULT_FEED_LIMIT, MAX_PAGE_SIZE } from './constants'
 import type { ActivityType } from '@prisma/client'
 
@@ -15,17 +16,19 @@ function validatePagination(limit?: number): number {
 // Get activity feed from followed users
 export const getActivityFeed = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { userId: string; limit?: number; cursor?: string }) => {
+    (data: { token: string | null; limit?: number; cursor?: string }) => {
       // Validate limit to prevent DoS
       validatePagination(data.limit)
       return data
     },
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Get list of users this person follows (accepted only)
     const following = await prisma.follow.findMany({
       where: {
-        followerId: data.userId,
+        followerId: userId,
         status: 'ACCEPTED',
       },
       select: { followingId: true },
@@ -34,7 +37,7 @@ export const getActivityFeed = createServerFn({ method: 'GET' })
     const followingIds = following.map((f) => f.followingId)
 
     // Include own activity in feed
-    const userIds = [data.userId, ...followingIds]
+    const userIds = [userId, ...followingIds]
 
     // Fetch activities with user profiles in a single query (fixes N+1)
     const activities = await prisma.activityFeedItem.findMany({
@@ -71,8 +74,8 @@ export const getActivityFeed = createServerFn({ method: 'GET' })
 export const getUserActivity = createServerFn({ method: 'GET' })
   .inputValidator(
     (data: {
-      userId: string
-      viewerId?: string
+      targetUserId: string
+      token?: string | null
       limit?: number
       cursor?: string
     }) => {
@@ -81,18 +84,28 @@ export const getUserActivity = createServerFn({ method: 'GET' })
     },
   )
   .handler(async ({ data }) => {
+    let viewerId: string | undefined
+    if (data.token) {
+      try {
+        const auth = await requireAuth(data.token)
+        viewerId = auth.userId
+      } catch {
+        // Token invalid — treat as unauthenticated viewer
+      }
+    }
+
     // Check if viewer can see this user's activity
     const profile = await prisma.userProfile.findUnique({
-      where: { userId: data.userId },
+      where: { userId: data.targetUserId },
     })
 
-    if (profile?.isPrivate && data.viewerId !== data.userId) {
+    if (profile?.isPrivate && viewerId !== data.targetUserId) {
       // Check if viewer follows this user
       const follow = await prisma.follow.findUnique({
         where: {
           followerId_followingId: {
-            followerId: data.viewerId ?? '',
-            followingId: data.userId,
+            followerId: viewerId ?? '',
+            followingId: data.targetUserId,
           },
         },
       })
@@ -104,7 +117,7 @@ export const getUserActivity = createServerFn({ method: 'GET' })
 
     const activities = await prisma.activityFeedItem.findMany({
       where: {
-        userId: data.userId,
+        userId: data.targetUserId,
         ...(data.cursor && { createdAt: { lt: new Date(data.cursor) } }),
       },
       take: data.limit ?? 20,
@@ -118,16 +131,18 @@ export const getUserActivity = createServerFn({ method: 'GET' })
 export const createActivityItem = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
-      userId: string
+      token: string | null
       activityType: ActivityType
       referenceId?: string
       metadata?: Record<string, string | number | boolean | null>
     }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const activity = await prisma.activityFeedItem.create({
       data: {
-        userId: data.userId,
+        userId,
         activityType: data.activityType,
         referenceId: data.referenceId,
         metadata: data.metadata ?? {},

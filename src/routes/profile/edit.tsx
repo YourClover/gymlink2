@@ -19,7 +19,7 @@ interface ProfileData {
 }
 
 function ProfileEditPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [bio, setBio] = useState('')
@@ -28,7 +28,7 @@ function ProfileEditPage() {
 
   useEffect(() => {
     if (!user) return
-    getUserProfile({ data: { userId: user.id } }).then((result) => {
+    getUserProfile({ data: { token } }).then((result) => {
       if (result.profile) {
         setProfile({
           username: result.profile.username,
@@ -46,7 +46,7 @@ function ProfileEditPage() {
     setIsSaving(true)
     try {
       await updateUserProfile({
-        data: { userId: user.id, bio },
+        data: { token, bio },
       })
       navigate({ to: '/profile' })
     } finally {

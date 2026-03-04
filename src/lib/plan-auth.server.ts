@@ -1,4 +1,4 @@
-import { prisma } from './db'
+import { prisma } from './db.server'
 import type { PlanAccess, PlanRole } from './plan-types'
 
 export type { PlanAccess, PlanRole } from './plan-types'

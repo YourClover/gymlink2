@@ -44,7 +44,7 @@ export default function ManageCollaboratorsModal({
   onClose,
   planId,
 }: ManageCollaboratorsModalProps) {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [owner, setOwner] = useState<{ id: string; name: string } | null>(null)
   const [collaborators, setCollaborators] = useState<Array<CollaboratorData>>(
     [],
@@ -64,7 +64,7 @@ export default function ManageCollaboratorsModal({
     setLoading(true)
     try {
       const result = await getPlanCollaborators({
-        data: { userId: user.id, planId },
+        data: { token, planId },
       })
       setOwner(result.owner)
       setCollaborators(result.collaborators)
@@ -89,7 +89,7 @@ export default function ManageCollaboratorsModal({
     try {
       const result = await getInvitableUsers({
         data: {
-          userId: user.id,
+          token,
           planId,
           search: searchQuery || undefined,
         },
@@ -116,7 +116,7 @@ export default function ManageCollaboratorsModal({
     setActionLoading(inviteeId)
     try {
       await inviteCollaborator({
-        data: { userId: user.id, planId, inviteeId, role },
+        data: { token, planId, inviteeId, role },
       })
       await loadCollaborators()
       setInvitableUsers((prev) => prev.filter((u) => u.id !== inviteeId))
@@ -132,7 +132,7 @@ export default function ManageCollaboratorsModal({
     setActionLoading(collaboratorUserId)
     try {
       await removeCollaborator({
-        data: { userId: user.id, planId, collaboratorUserId },
+        data: { token, planId, collaboratorUserId },
       })
       await loadCollaborators()
     } catch (error) {
@@ -150,7 +150,7 @@ export default function ManageCollaboratorsModal({
     setActionLoading(collaboratorUserId)
     try {
       await updateCollaboratorRole({
-        data: { userId: user.id, planId, collaboratorUserId, role },
+        data: { token, planId, collaboratorUserId, role },
       })
       setCollaborators((prev) =>
         prev.map((c) => (c.userId === collaboratorUserId ? { ...c, role } : c)),

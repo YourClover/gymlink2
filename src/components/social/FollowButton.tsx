@@ -16,7 +16,7 @@ export function FollowButton({
   onStatusChange,
   size = 'md',
 }: FollowButtonProps) {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [status, setStatus] = useState(currentStatus)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -26,11 +26,11 @@ export function FollowButton({
     setIsLoading(true)
     try {
       if (status === 'ACCEPTED' || status === 'PENDING') {
-        await unfollow({ data: { followerId: user.id, followingId: userId } })
+        await unfollow({ data: { token, followingId: userId } })
         setStatus(null)
       } else {
         const result = await sendFollowRequest({
-          data: { followerId: user.id, followingId: userId },
+          data: { token, followingId: userId },
         })
         setStatus(result.follow.status)
       }

@@ -9,7 +9,7 @@ export const Route = createFileRoute('/profile/setup')({
 })
 
 function ProfileSetupPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [isChecking, setIsChecking] = useState(false)
@@ -52,7 +52,7 @@ function ProfileSetupPage() {
     setIsSubmitting(true)
     setError(null)
     try {
-      await createUserProfile({ data: { userId: user.id, username } })
+      await createUserProfile({ data: { token, username } })
       navigate({ to: '/profile' })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create profile')

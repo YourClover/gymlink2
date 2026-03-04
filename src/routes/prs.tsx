@@ -31,7 +31,7 @@ type ExercisePR = {
 type GroupedPRs = Record<string, Array<ExercisePR>>
 
 function PRsPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -45,7 +45,7 @@ function PRsPage() {
       if (!user) return
 
       try {
-        const result = await getUserExercisePRs({ data: { userId: user.id } })
+        const result = await getUserExercisePRs({ data: { token } })
         setGrouped(result.grouped)
         setTotal(result.total)
       } catch (error) {

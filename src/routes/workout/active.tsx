@@ -54,7 +54,7 @@ type SessionData = {
 }
 
 function ActiveWorkoutPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
 
   const [session, setSession] = useState<SessionData | null>(null)
@@ -112,7 +112,7 @@ function ActiveWorkoutPage() {
     if (!user) return
 
     try {
-      const result = await getActiveSession({ data: { userId: user.id } })
+      const result = await getActiveSession({ data: { token } })
 
       if (!result.session) {
         // No active session, redirect to workout home
@@ -202,7 +202,7 @@ function ActiveWorkoutPage() {
     try {
       const result = await getLastExerciseSets({
         data: {
-          userId: user.id,
+          token,
           exerciseId: ex.exercise.id,
           excludeSessionId: session.id,
         },
@@ -239,7 +239,7 @@ function ActiveWorkoutPage() {
           rpe: setData.rpe,
           isWarmup: setData.isWarmup,
           isDropset: setData.isDropset,
-          userId: user.id,
+          token,
         },
       })
 
@@ -281,7 +281,7 @@ function ActiveWorkoutPage() {
     if (!user) return
 
     try {
-      await deleteWorkoutSet({ data: { id: setId, userId: user.id } })
+      await deleteWorkoutSet({ data: { id: setId, token } })
       await fetchSession()
     } catch (error) {
       console.error('Failed to delete set:', error)
@@ -313,7 +313,7 @@ function ActiveWorkoutPage() {
 
     try {
       await discardWorkoutSession({
-        data: { sessionId: session.id, userId: user.id },
+        data: { sessionId: session.id, token },
       })
       navigate({ to: '/workout' })
     } catch (error) {

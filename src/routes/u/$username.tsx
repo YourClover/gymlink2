@@ -65,7 +65,7 @@ interface AchievementData {
 
 function PublicProfilePage() {
   const { username } = Route.useParams()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
 
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -81,7 +81,7 @@ function PublicProfilePage() {
     setIsLoading(true)
     try {
       const result = await getProfileByUsername({
-        data: { username, viewerId: user?.id },
+        data: { username, token },
       })
 
       if (result.profile) {
@@ -93,10 +93,14 @@ function PublicProfilePage() {
         if (result.canView) {
           const [statsResult, achievementsResult] = await Promise.all([
             result.profile.showStats
-              ? getProfileStats({ data: { userId: result.profile.userId } })
+              ? getProfileStats({
+                  data: { token, targetUserId: result.profile.userId },
+                })
               : Promise.resolve(null),
             result.profile.showAchievements
-              ? getUserAchievements({ data: { userId: result.profile.userId } })
+              ? getUserAchievements({
+                  data: { token, targetUserId: result.profile.userId },
+                })
               : Promise.resolve(null),
           ])
 

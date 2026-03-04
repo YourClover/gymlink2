@@ -28,7 +28,7 @@ interface UserResult {
 }
 
 function UserSearchPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const router = useRouter()
   const [query, setQuery] = useState('')
@@ -48,7 +48,7 @@ function UserSearchPage() {
       setIsSearching(true)
       try {
         const result = await searchUsers({
-          data: { query: searchQuery, userId: user.id, limit: 20 },
+          data: { query: searchQuery, token, limit: 20 },
         })
         setResults(result.users as Array<UserResult>)
       } catch (error) {

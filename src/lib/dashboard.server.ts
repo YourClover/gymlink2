@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
 
 // ============================================
@@ -7,8 +8,10 @@ import { calculateStreak } from './date-utils.server'
 // ============================================
 
 export const getDashboardStats = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Calculate week boundaries (Monday to Sunday)
     const now = new Date()
     const dayOfWeek = now.getDay() // 0 = Sunday, 1 = Monday, etc.
@@ -20,7 +23,7 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
     // Get workouts completed this week
     const workoutsThisWeek = await prisma.workoutSession.findMany({
       where: {
-        userId: data.userId,
+        userId,
         completedAt: {
           gte: weekStart,
         },
@@ -48,12 +51,12 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
     }
 
     // Calculate streak
-    const currentStreak = await calculateStreak(data.userId)
+    const currentStreak = await calculateStreak(userId)
 
     // Count PRs this week
     const prsThisWeek = await prisma.personalRecord.count({
       where: {
-        userId: data.userId,
+        userId,
         achievedAt: {
           gte: weekStart,
         },
@@ -75,12 +78,14 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
 // ============================================
 
 export const getNextWorkoutSuggestion = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Find active plan
     const activePlan = await prisma.workoutPlan.findFirst({
       where: {
-        userId: data.userId,
+        userId,
         isActive: true,
       },
       include: {
@@ -122,7 +127,7 @@ export const getNextWorkoutSuggestion = createServerFn({ method: 'GET' })
     // Find last completed workout for this plan
     const lastWorkout = await prisma.workoutSession.findFirst({
       where: {
-        userId: data.userId,
+        userId,
         workoutPlanId: activePlan.id,
         completedAt: { not: null },
       },

@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { getUnreadNotificationCount } from '@/lib/notifications.server'
 
 export function NotificationBell() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
@@ -14,7 +14,7 @@ export function NotificationBell() {
     const fetchCount = async () => {
       try {
         const result = await getUnreadNotificationCount({
-          data: { userId: user.id },
+          data: { token },
         })
         setUnreadCount(result.count)
       } catch (error) {

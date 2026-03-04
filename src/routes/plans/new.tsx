@@ -10,7 +10,7 @@ export const Route = createFileRoute('/plans/new')({
 })
 
 function NewPlanPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -23,7 +23,7 @@ function NewPlanPage() {
         data: {
           name: data.name,
           description: data.description,
-          userId: user.id,
+          token,
         },
       })
 

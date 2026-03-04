@@ -1,4 +1,4 @@
-import { prisma } from './db'
+import { prisma } from './db.server'
 import { getWeekStart } from './date-utils'
 
 /** Format a date as YYYY-MM-DD using local time (avoids UTC offset issues) */

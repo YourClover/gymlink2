@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAuth } from './auth-guard.server'
 import {
   checkPlanAccess,
   requirePlanAccess,
@@ -13,11 +14,13 @@ import {
 
 // Get user's plans (owned + shared)
 export const getPlans = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     // Own plans
     const plans = await prisma.workoutPlan.findMany({
-      where: { userId: data.userId },
+      where: { userId },
       include: {
         _count: {
           select: { planDays: true, collaborators: true },
@@ -29,7 +32,7 @@ export const getPlans = createServerFn({ method: 'GET' })
     // Plans shared with me (accepted collaborations)
     const collaborations = await prisma.planCollaborator.findMany({
       where: {
-        userId: data.userId,
+        userId,
         inviteStatus: 'ACCEPTED',
       },
       include: {
@@ -56,9 +59,11 @@ export const getPlans = createServerFn({ method: 'GET' })
 
 // Get single plan with full details
 export const getPlan = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
-    const access = await checkPlanAccess(data.id, data.userId)
+    const { userId } = await requireAuth(data.token)
+
+    const access = await checkPlanAccess(data.id, userId)
 
     // No access — check for pending invite before rejecting
     if (!access.hasAccess) {
@@ -66,7 +71,7 @@ export const getPlan = createServerFn({ method: 'GET' })
         where: {
           workoutPlanId_userId: {
             workoutPlanId: data.id,
-            userId: data.userId,
+            userId,
           },
         },
         select: { inviteStatus: true },
@@ -145,14 +150,17 @@ export const getPlan = createServerFn({ method: 'GET' })
 // Create a new plan
 export const createPlan = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { name: string; description?: string; userId: string }) => data,
+    (data: { name: string; description?: string; token: string | null }) =>
+      data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const plan = await prisma.workoutPlan.create({
       data: {
         name: data.name,
         description: data.description,
-        userId: data.userId,
+        userId,
       },
     })
 
@@ -166,11 +174,12 @@ export const updatePlan = createServerFn({ method: 'POST' })
       id: string
       name?: string
       description?: string
-      userId: string
+      token: string | null
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { id, userId, ...updateData } = data
+    const { userId } = await requireAuth(data.token)
+    const { id, token: _, ...updateData } = data
 
     await requirePlanEditAccess(id, userId)
 
@@ -184,9 +193,11 @@ export const updatePlan = createServerFn({ method: 'POST' })
 
 // Delete a plan
 export const deletePlan = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
-    await requirePlanOwnership(data.id, data.userId)
+    const { userId } = await requireAuth(data.token)
+
+    await requirePlanOwnership(data.id, userId)
 
     await prisma.workoutPlan.delete({
       where: { id: data.id },
@@ -197,13 +208,15 @@ export const deletePlan = createServerFn({ method: 'POST' })
 
 // Set a plan as active (deactivates others)
 export const setActivePlan = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
-    await requirePlanAccess(data.id, data.userId)
+    const { userId } = await requireAuth(data.token)
+
+    await requirePlanAccess(data.id, userId)
 
     // Deactivate all other plans
     await prisma.workoutPlan.updateMany({
-      where: { userId: data.userId },
+      where: { userId },
       data: { isActive: false },
     })
 
@@ -228,11 +241,12 @@ export const createPlanDay = createServerFn({ method: 'POST' })
       name: string
       dayOrder: number
       restDay?: boolean
-      userId: string
+      token: string | null
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { userId, ...dayData } = data
+    const { userId } = await requireAuth(data.token)
+    const { token: _, ...dayData } = data
 
     await requirePlanEditAccess(dayData.workoutPlanId, userId)
 
@@ -256,11 +270,12 @@ export const updatePlanDay = createServerFn({ method: 'POST' })
       name?: string
       dayOrder?: number
       restDay?: boolean
-      userId: string
+      token: string | null
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { id, userId, ...updateData } = data
+    const { userId } = await requireAuth(data.token)
+    const { id, token: _, ...updateData } = data
 
     const existing = await prisma.planDay.findFirst({
       where: { id },
@@ -283,8 +298,10 @@ export const updatePlanDay = createServerFn({ method: 'POST' })
 
 // Delete a plan day
 export const deletePlanDay = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const existing = await prisma.planDay.findFirst({
       where: { id: data.id },
       select: { workoutPlanId: true },
@@ -294,7 +311,7 @@ export const deletePlanDay = createServerFn({ method: 'POST' })
       throw new Error('Day not found')
     }
 
-    await requirePlanEditAccess(existing.workoutPlanId, data.userId)
+    await requirePlanEditAccess(existing.workoutPlanId, userId)
 
     await prisma.planDay.delete({
       where: { id: data.id },
@@ -306,11 +323,16 @@ export const deletePlanDay = createServerFn({ method: 'POST' })
 // Reorder plan days
 export const reorderPlanDays = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { workoutPlanId: string; dayIds: Array<string>; userId: string }) =>
-      data,
+    (data: {
+      workoutPlanId: string
+      dayIds: Array<string>
+      token: string | null
+    }) => data,
   )
   .handler(async ({ data }) => {
-    await requirePlanEditAccess(data.workoutPlanId, data.userId)
+    const { userId } = await requireAuth(data.token)
+
+    await requirePlanEditAccess(data.workoutPlanId, userId)
 
     // Update each day's order
     await Promise.all(
@@ -342,11 +364,12 @@ export const addPlanExercise = createServerFn({ method: 'POST' })
       targetWeight?: number
       restSeconds?: number
       notes?: string
-      userId: string
+      token: string | null
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { userId, ...exerciseData } = data
+    const { userId } = await requireAuth(data.token)
+    const { token: _, ...exerciseData } = data
 
     const planDay = await prisma.planDay.findFirst({
       where: { id: exerciseData.planDayId },
@@ -390,11 +413,12 @@ export const updatePlanExercise = createServerFn({ method: 'POST' })
       targetWeight?: number
       restSeconds?: number
       notes?: string
-      userId: string
+      token: string | null
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { id, userId, ...updateData } = data
+    const { userId } = await requireAuth(data.token)
+    const { id, token: _, ...updateData } = data
 
     const existing = await prisma.planExercise.findFirst({
       where: { id },
@@ -422,8 +446,10 @@ export const updatePlanExercise = createServerFn({ method: 'POST' })
 
 // Remove exercise from day
 export const removePlanExercise = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const existing = await prisma.planExercise.findFirst({
       where: { id: data.id },
       include: {
@@ -435,7 +461,7 @@ export const removePlanExercise = createServerFn({ method: 'POST' })
       throw new Error('Exercise not found')
     }
 
-    await requirePlanEditAccess(existing.planDay.workoutPlanId, data.userId)
+    await requirePlanEditAccess(existing.planDay.workoutPlanId, userId)
 
     await prisma.planExercise.delete({
       where: { id: data.id },
@@ -447,10 +473,15 @@ export const removePlanExercise = createServerFn({ method: 'POST' })
 // Reorder exercises in a day
 export const reorderPlanExercises = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { planDayId: string; exerciseIds: Array<string>; userId: string }) =>
-      data,
+    (data: {
+      planDayId: string
+      exerciseIds: Array<string>
+      token: string | null
+    }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const planDay = await prisma.planDay.findFirst({
       where: { id: data.planDayId },
       select: { workoutPlanId: true },
@@ -460,7 +491,7 @@ export const reorderPlanExercises = createServerFn({ method: 'POST' })
       throw new Error('Day not found')
     }
 
-    await requirePlanEditAccess(planDay.workoutPlanId, data.userId)
+    await requirePlanEditAccess(planDay.workoutPlanId, userId)
 
     // Update each exercise's order
     await Promise.all(
@@ -477,8 +508,10 @@ export const reorderPlanExercises = createServerFn({ method: 'POST' })
 
 // Get a single plan day with exercises
 export const getPlanDay = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
+    const { userId } = await requireAuth(data.token)
+
     const planDay = await prisma.planDay.findFirst({
       where: { id: data.id },
       include: {
@@ -498,7 +531,7 @@ export const getPlanDay = createServerFn({ method: 'GET' })
       return { planDay: null, access: null }
     }
 
-    const access = await requirePlanAccess(planDay.workoutPlan.id, data.userId)
+    const access = await requirePlanAccess(planDay.workoutPlan.id, userId)
 
     return {
       planDay,

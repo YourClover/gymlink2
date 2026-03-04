@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAdmin, requireAuth } from './auth-guard.server'
 import type { Equipment, ExerciseType, MuscleGroup } from '@prisma/client'
 
 // Get exercises with optional filtering
@@ -71,25 +72,17 @@ export const createExercise = createServerFn({ method: 'POST' })
       exerciseType?: ExerciseType
       isTimed?: boolean
       instructions?: string
-      userId: string
+      token: string | null
     }) => data,
   )
   .handler(async ({ data }) => {
+    const { userId } = await requireAdmin(data.token)
     const {
-      userId,
+      token: _,
       exerciseType = 'STRENGTH' as ExerciseType,
       isTimed = false,
       ...rest
     } = data
-
-    // Verify admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { isAdmin: true },
-    })
-    if (!user?.isAdmin) {
-      throw new Error('Admin access required')
-    }
 
     const exercise = await prisma.exercise.create({
       data: {
@@ -106,9 +99,10 @@ export const createExercise = createServerFn({ method: 'POST' })
 
 // Delete a custom exercise (only owner can delete)
 export const deleteExercise = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .inputValidator((data: { id: string; token: string | null }) => data)
   .handler(async ({ data }) => {
-    const { id, userId } = data
+    const { userId } = await requireAuth(data.token)
+    const id = data.id
 
     // Verify ownership
     const exercise = await prisma.exercise.findUnique({
@@ -147,11 +141,12 @@ export const updateExercise = createServerFn({ method: 'POST' })
       exerciseType?: ExerciseType
       isTimed?: boolean
       instructions?: string
-      userId: string
+      token: string | null
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { id, userId, ...updateData } = data
+    const { userId } = await requireAuth(data.token)
+    const { id, token: _, ...updateData } = data
 
     // Verify ownership and that it's a custom exercise
     const existing = await prisma.exercise.findUnique({

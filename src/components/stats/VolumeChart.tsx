@@ -20,7 +20,7 @@ export type VolumeDataPoint = {
 }
 
 type Props = {
-  data: Array<VolumeDataPoint>
+  data?: Array<VolumeDataPoint>
   granularity: Granularity
 }
 
@@ -117,7 +117,7 @@ function CustomTooltip({ active, payload, granularity }: CustomTooltipProps) {
 
 export default function VolumeChart({ data, granularity }: Props) {
   const { compact } = useChartDimensions()
-  const hasVolume = data.some((w) => w.volume > 0)
+  const hasVolume = data?.some((w) => w.volume > 0) ?? false
 
   if (!hasVolume) {
     return (

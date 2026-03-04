@@ -66,7 +66,7 @@ type Plan = {
 
 function PlanDetailPage() {
   const { planId } = Route.useParams()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -100,7 +100,7 @@ function PlanDetailPage() {
     if (!user) return
 
     try {
-      const result = await getPlan({ data: { id: planId, userId: user.id } })
+      const result = await getPlan({ data: { id: planId, token } })
       if (result.pendingInvite) {
         setPendingInvite(true)
         setInviteInfo(result.inviteInfo)
@@ -132,7 +132,7 @@ function PlanDetailPage() {
           id: planId,
           name: data.name,
           description: data.description,
-          userId: user.id,
+          token,
         },
       })
       await fetchPlan()
@@ -147,7 +147,7 @@ function PlanDetailPage() {
 
     setIsSubmitting(true)
     try {
-      await deletePlan({ data: { id: planId, userId: user.id } })
+      await deletePlan({ data: { id: planId, token } })
       navigate({ to: '/plans' })
     } finally {
       setIsSubmitting(false)
@@ -165,7 +165,7 @@ function PlanDetailPage() {
           name: data.name,
           dayOrder: plan.planDays.length + 1,
           restDay: data.restDay,
-          userId: user.id,
+          token,
         },
       })
       await fetchPlan()
@@ -197,7 +197,7 @@ function PlanDetailPage() {
         data: {
           workoutPlanId: planId,
           dayIds: newDays.map((d) => d.id),
-          userId: user.id,
+          token,
         },
       })
     } catch (error) {
@@ -212,7 +212,7 @@ function PlanDetailPage() {
     setIsSubmitting(true)
     try {
       await respondToCollabInvite({
-        data: { userId: user.id, planId, accept },
+        data: { token, planId, accept },
       })
       if (accept) {
         setPendingInvite(false)
@@ -230,7 +230,7 @@ function PlanDetailPage() {
 
     setIsSubmitting(true)
     try {
-      await leaveCollaboration({ data: { userId: user.id, planId } })
+      await leaveCollaboration({ data: { token, planId } })
       navigate({ to: '/plans' })
     } finally {
       setIsSubmitting(false)

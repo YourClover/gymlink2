@@ -28,7 +28,7 @@ interface LeaderboardEntry {
 }
 
 function LeaderboardsPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [metric, setMetric] = useState<LeaderboardMetric>('volume')
   const [timeRange, setTimeRange] = useState<TimeRange>('week')
@@ -44,7 +44,7 @@ function LeaderboardsPage() {
       const result =
         scope === 'friends'
           ? await getFriendsLeaderboard({
-              data: { userId: user.id, metric, timeRange },
+              data: { token, metric, timeRange },
             })
           : await getGlobalLeaderboard({ data: { metric, timeRange } })
 

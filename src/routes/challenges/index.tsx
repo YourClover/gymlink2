@@ -56,7 +56,7 @@ interface PublicChallengeData {
 }
 
 function ChallengesPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [tab, setTab] = useState<
     'active' | 'upcoming' | 'completed' | 'discover'
@@ -72,7 +72,7 @@ function ChallengesPage() {
     if (!user) return
     setIsLoading(true)
     try {
-      const result = await getUserChallenges({ data: { userId: user.id } })
+      const result = await getUserChallenges({ data: { token } })
       setChallenges(result.challenges as Array<ChallengeData>)
     } catch (error) {
       console.error('Failed to load challenges:', error)
@@ -85,7 +85,7 @@ function ChallengesPage() {
     if (!user) return
     setIsLoading(true)
     try {
-      const result = await getPublicChallenges({ data: { userId: user.id } })
+      const result = await getPublicChallenges({ data: { token } })
       setPublicChallenges(result.challenges as Array<PublicChallengeData>)
     } catch (error) {
       console.error('Failed to load public challenges:', error)
@@ -98,7 +98,7 @@ function ChallengesPage() {
     if (!user) return
     setJoiningId(challengeId)
     try {
-      await joinChallenge({ data: { challengeId, userId: user.id } })
+      await joinChallenge({ data: { challengeId, token } })
       await loadPublicChallenges()
       await loadChallenges()
     } catch (error) {

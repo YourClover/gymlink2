@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from './db'
+import { prisma } from './db.server'
+import { requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
 import { PR_PRIORITY } from './pr-utils'
 import type { RecordType } from '@prisma/client'
@@ -136,8 +137,11 @@ async function getUserPRMap(userId: string) {
 }
 
 export const getComparisonData = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId: string; targetUsername: string }) => data)
+  .inputValidator(
+    (data: { token: string | null; targetUsername: string }) => data,
+  )
   .handler(async ({ data }): Promise<ComparisonData> => {
+    const { userId } = await requireAuth(data.token)
     // Look up target user profile
     const targetProfile = await prisma.userProfile.findFirst({
       where: {
@@ -157,7 +161,7 @@ export const getComparisonData = createServerFn({ method: 'GET' })
     const follow = await prisma.follow.findUnique({
       where: {
         followerId_followingId: {
-          followerId: data.userId,
+          followerId: userId,
           followingId: targetProfile.userId,
         },
       },
@@ -174,7 +178,7 @@ export const getComparisonData = createServerFn({ method: 'GET' })
 
     // Get own profile
     const myProfile = await prisma.userProfile.findUnique({
-      where: { userId: data.userId },
+      where: { userId },
       include: {
         user: { select: { id: true, name: true } },
       },
@@ -186,9 +190,9 @@ export const getComparisonData = createServerFn({ method: 'GET' })
 
     // Fetch all data in parallel
     const [myStats, theirStats, myPRMap, theirPRMap] = await Promise.all([
-      getUserStats(data.userId),
+      getUserStats(userId),
       getUserStats(targetProfile.userId),
-      getUserPRMap(data.userId),
+      getUserPRMap(userId),
       getUserPRMap(targetProfile.userId),
     ])
 

@@ -17,7 +17,7 @@ import type { MuscleGroupData } from './muscle-chart-utils'
 import { useChartDimensions } from '@/hooks/useChartDimensions'
 
 type Props = {
-  data: Array<MuscleGroupData>
+  data?: Array<MuscleGroupData>
 }
 
 type LegendPayloadEntry = {
@@ -90,7 +90,7 @@ export default function MuscleDonutChart({ data }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
   const { compact } = useChartDimensions()
 
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div className="h-[280px] flex items-center justify-center text-zinc-500">
         No muscle group data yet
