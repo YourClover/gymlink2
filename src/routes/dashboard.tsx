@@ -3,7 +3,7 @@ import {
   useLocation,
   useNavigate,
 } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Calendar,
   ChevronRight,
@@ -28,7 +28,9 @@ import {
   getDashboardStats,
   getNextWorkoutSuggestion,
 } from '@/lib/dashboard.server'
+import { backfillUserXp, getUserXpSummary } from '@/lib/xp.server'
 import { formatElapsedTime, formatVolume } from '@/lib/formatting'
+import { XpDashboardCard } from '@/components/xp'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardPage,
@@ -70,6 +72,13 @@ function DashboardPage() {
   const [recentWorkouts, setRecentWorkouts] = useState<Array<RecentWorkout>>([])
   const [startingWorkout, setStartingWorkout] = useState(false)
   const [greeting, setGreeting] = useState('Welcome')
+  const [xpData, setXpData] = useState<{
+    totalXp: number
+    level: number
+    levelName: string
+    weeklyXp: number
+  } | null>(null)
+  const backfillAttempted = useRef(false)
 
   // Fetch all dashboard data
   useEffect(() => {
@@ -77,18 +86,59 @@ function DashboardPage() {
       if (!user) return
 
       try {
-        const [statsResult, sessionResult, suggestionResult, recentResult] =
-          await Promise.all([
-            getDashboardStats({ data: { userId: user.id } }),
-            getActiveSession({ data: { userId: user.id } }),
-            getNextWorkoutSuggestion({ data: { userId: user.id } }),
-            getRecentWorkouts({ data: { userId: user.id, limit: 3 } }),
-          ])
+        const [
+          statsResult,
+          sessionResult,
+          suggestionResult,
+          recentResult,
+          xpResult,
+        ] = await Promise.all([
+          getDashboardStats({ data: { userId: user.id } }),
+          getActiveSession({ data: { userId: user.id } }),
+          getNextWorkoutSuggestion({ data: { userId: user.id } }),
+          getRecentWorkouts({ data: { userId: user.id, limit: 3 } }),
+          getUserXpSummary({ data: { userId: user.id } }).catch(() => null),
+        ])
 
         setStats(statsResult.stats)
         setActiveSession(sessionResult.session)
         setSuggestion(suggestionResult.suggestion)
         setRecentWorkouts(recentResult.workouts)
+
+        if (xpResult) {
+          setXpData({
+            totalXp: xpResult.totalXp,
+            level: xpResult.level,
+            levelName: xpResult.levelName,
+            weeklyXp: xpResult.weeklyXp,
+          })
+
+          // Trigger backfill for existing users with workouts but no XP
+          if (
+            !backfillAttempted.current &&
+            xpResult.totalXp === 0 &&
+            recentResult.workouts.length > 0
+          ) {
+            backfillAttempted.current = true
+            backfillUserXp({ data: { userId: user.id } })
+              .then((result) => {
+                if (result.backfilled) {
+                  // Refresh XP data
+                  getUserXpSummary({ data: { userId: user.id } }).then(
+                    (refreshed) => {
+                      setXpData({
+                        totalXp: refreshed.totalXp,
+                        level: refreshed.level,
+                        levelName: refreshed.levelName,
+                        weeklyXp: refreshed.weeklyXp,
+                      })
+                    },
+                  )
+                }
+              })
+              .catch(console.error)
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
       } finally {
@@ -305,6 +355,14 @@ function DashboardPage() {
                   subtext="this week"
                 />
               </div>
+              {xpData && (
+                <XpDashboardCard
+                  totalXp={xpData.totalXp}
+                  level={xpData.level}
+                  levelName={xpData.levelName}
+                  weeklyXp={xpData.weeklyXp}
+                />
+              )}
             </div>
 
             {/* Recent Workouts */}

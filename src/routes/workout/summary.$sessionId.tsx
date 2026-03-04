@@ -11,7 +11,12 @@ import {
   Trophy,
   Weight,
 } from 'lucide-react'
-import type { AchievementRarity, Exercise, WorkoutSet } from '@prisma/client'
+import type {
+  AchievementRarity,
+  Exercise,
+  WorkoutSet,
+  XpSource,
+} from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import { Skeleton, SkeletonStatsCard } from '@/components/ui/Skeleton'
@@ -28,6 +33,8 @@ import { markAchievementsNotified } from '@/lib/achievements.server'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
 import { formatVolume } from '@/lib/formatting'
+import { getXpBreakdown } from '@/lib/xp.server'
+import { LevelUpCelebration, XpBreakdownCard } from '@/components/xp'
 import SetLoggerModal from '@/components/workout/SetLoggerModal'
 
 interface NewAchievement {
@@ -103,6 +110,16 @@ function WorkoutSummaryPage() {
   const [isUpdating, setIsUpdating] = useState(false)
   const { showToast } = useToast()
 
+  // XP state
+  const [xpBreakdown, setXpBreakdown] = useState<
+    Array<{ source: XpSource | string; amount: number }>
+  >([])
+  const [xpTotal, setXpTotal] = useState(0)
+  const [levelUp, setLevelUp] = useState<{
+    level: number
+    levelName: string
+  } | null>(null)
+
   // Show achievements one by one
   useEffect(() => {
     if (!currentAchievement && pendingAchievements.length > 0) {
@@ -130,6 +147,18 @@ function WorkoutSummaryPage() {
         setSession(result.session)
         setNotes(result.session.notes || '')
         setMoodRating(result.session.moodRating || undefined)
+
+        // Fetch XP breakdown for completed sessions
+        if (result.session.completedAt) {
+          getXpBreakdown({
+            data: { userId: user.id, sessionId },
+          })
+            .then((xpResult) => {
+              setXpBreakdown(xpResult.breakdown)
+              setXpTotal(xpResult.totalXp)
+            })
+            .catch(console.error)
+        }
 
         // Initialize duration inputs
         if (result.session.durationSeconds) {
@@ -181,8 +210,14 @@ function WorkoutSummaryPage() {
 
   // Edited duration in seconds
   const editedDurationSeconds =
-    (typeof editedHours === 'string' ? parseInt(editedHours) || 0 : editedHours) * 3600 +
-    (typeof editedMinutes === 'string' ? parseInt(editedMinutes) || 0 : editedMinutes) * 60
+    (typeof editedHours === 'string'
+      ? parseInt(editedHours) || 0
+      : editedHours) *
+      3600 +
+    (typeof editedMinutes === 'string'
+      ? parseInt(editedMinutes) || 0
+      : editedMinutes) *
+      60
 
   // Calculate stats
   const getStats = () => {
@@ -259,6 +294,25 @@ function WorkoutSummaryPage() {
         },
       })
 
+      // Set XP breakdown from the result
+      if (result.xpBreakdown.length > 0) {
+        setXpBreakdown(result.xpBreakdown)
+        setXpTotal(
+          result.xpBreakdown.reduce(
+            (sum: number, item: { amount: number }) => sum + item.amount,
+            0,
+          ),
+        )
+      }
+
+      // Check for level-up
+      if (result.leveledUp && result.newLevel && result.newLevelName) {
+        setLevelUp({
+          level: result.newLevel,
+          levelName: result.newLevelName,
+        })
+      }
+
       // Show achievement toasts if any were earned
       if (result.newAchievements.length > 0) {
         setPendingAchievements(result.newAchievements)
@@ -283,7 +337,22 @@ function WorkoutSummaryPage() {
             : null,
         )
       } else {
-        navigate({ to: '/workout', search: { completed: Date.now() } })
+        // Update session to completed before redirecting (so XP card shows)
+        setSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                completedAt: new Date(),
+                durationSeconds: editedDurationSeconds,
+                notes: notes || null,
+                moodRating: moodRating || null,
+              }
+            : null,
+        )
+        // If there's XP or level-up to show, don't navigate yet
+        if (!result.leveledUp && result.xpBreakdown.length === 0) {
+          navigate({ to: '/workout', search: { completed: Date.now() } })
+        }
       }
     } catch (error) {
       console.error('Failed to complete workout:', error)
@@ -415,6 +484,15 @@ function WorkoutSummaryPage() {
         />
       )}
 
+      {/* Level Up Celebration */}
+      {levelUp && (
+        <LevelUpCelebration
+          level={levelUp.level}
+          levelName={levelUp.levelName}
+          onDismiss={() => setLevelUp(null)}
+        />
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800">
         <div className="flex items-center gap-3 px-4 py-3">
@@ -486,7 +564,8 @@ function WorkoutSummaryPage() {
                   onChange={(e) => {
                     if (e.target.value === '') return setEditedMinutes('')
                     const v = parseInt(e.target.value, 10)
-                    if (!isNaN(v)) setEditedMinutes(Math.max(0, Math.min(59, v)))
+                    if (!isNaN(v))
+                      setEditedMinutes(Math.max(0, Math.min(59, v)))
                   }}
                   onBlur={saveDuration}
                   className="w-8 bg-transparent text-2xl font-bold text-white text-right focus:outline-none focus:bg-zinc-700/50 rounded px-0.5 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -527,6 +606,13 @@ function WorkoutSummaryPage() {
             </div>
           </div>
         </div>
+
+        {/* XP Breakdown */}
+        {xpBreakdown.length > 0 && (
+          <div className="px-4 pb-4 animate-fade-in">
+            <XpBreakdownCard breakdown={xpBreakdown} totalXp={xpTotal} />
+          </div>
+        )}
 
         {/* Exercise Breakdown */}
         <div className="px-4 pb-4">
@@ -579,7 +665,7 @@ function WorkoutSummaryPage() {
                       <button
                         key={set.id}
                         onClick={() => {
-                          const matchingSet = session!.workoutSets.find(
+                          const matchingSet = session.workoutSets.find(
                             (s) => s.id === set.id,
                           )
                           if (matchingSet) setEditingSet(matchingSet)

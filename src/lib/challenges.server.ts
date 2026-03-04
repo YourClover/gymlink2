@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db'
+import { awardXp } from './xp.server'
+import { XP_VALUES } from './xp-constants'
 import type { ChallengeStatus, ChallengeType } from '@prisma/client'
 
 const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
@@ -397,6 +399,15 @@ export const updateChallengeProgress = createServerFn({ method: 'POST' })
               metadata: { challengeName: challenge.name },
             },
           })
+
+          // Award XP for challenge completion
+          await awardXp(
+            tx,
+            data.userId,
+            XP_VALUES.CHALLENGE_COMPLETE,
+            'CHALLENGE_COMPLETE',
+            challenge.id,
+          )
         }
       })
     }

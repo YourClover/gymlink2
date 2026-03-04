@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import { checkAchievements } from './achievements.server'
 import { updateChallengeProgress } from './challenges.server'
+import { awardXp, calculateWorkoutXp } from './xp.server'
+import { XP_VALUES } from './xp-constants'
 import { BODYWEIGHT_BASE_SCORE, isDominatedByExistingPR } from './pr-utils'
 import type { PrismaClient, RecordType, WeightUnit } from '@prisma/client'
 
@@ -376,7 +378,31 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
       data: { userId: data.userId, triggerType: 'workout_complete' },
     })
 
-    return { session, newAchievements: achievementResult.newlyEarned }
+    // Calculate and award XP for the workout
+    let xpBreakdown: Array<{ source: string; amount: number }> = []
+    let leveledUp = false
+    let newLevel = 0
+    let newLevelName = ''
+    try {
+      const xpResult = await prisma.$transaction(async (tx) => {
+        return calculateWorkoutXp(tx, data.userId, data.sessionId)
+      })
+      xpBreakdown = xpResult.breakdown
+      leveledUp = xpResult.leveledUp
+      newLevel = xpResult.newLevel
+      newLevelName = xpResult.newLevelName
+    } catch (error) {
+      console.error('Failed to calculate XP:', error)
+    }
+
+    return {
+      session,
+      newAchievements: achievementResult.newlyEarned,
+      xpBreakdown,
+      leveledUp,
+      newLevel,
+      newLevelName,
+    }
   })
 
 // Discard/cancel an active workout
@@ -622,6 +648,15 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
               timeSeconds: time > 0 ? time : undefined,
             }
 
+            // Award XP for the PR
+            await awardXp(
+              tx,
+              userId,
+              XP_VALUES.PR_ACHIEVED,
+              'PR_ACHIEVED',
+              newPR.id,
+            )
+
             if (!dominated) {
               // Create activity feed item for PR achieved
               await tx.activityFeedItem.create({
@@ -682,6 +717,8 @@ export const updateWorkoutSet = createServerFn({ method: 'POST' })
       throw new Error('Set not found')
     }
 
+    // Note: XP previously awarded for PRs tied to this set is intentionally NOT
+    // reversed when values change. Reversing XP adds complexity and feels punitive.
     const workoutSet = await prisma.$transaction(async (tx) => {
       const updated = await tx.workoutSet.update({
         where: { id },
@@ -716,6 +753,8 @@ export const deleteWorkoutSet = createServerFn({ method: 'POST' })
       throw new Error('Set not found')
     }
 
+    // Note: XP previously awarded for PRs tied to this set is intentionally NOT
+    // reversed on deletion. Reversing XP adds complexity and feels punitive.
     await prisma.$transaction(async (tx) => {
       // Collect PR IDs linked to this set before deleting
       const linkedPRs = await tx.personalRecord.findMany({
@@ -777,11 +816,7 @@ export const getWorkoutSession = createServerFn({ method: 'GET' })
 // Update a workout session (e.g. duration for completed sessions)
 export const updateWorkoutSession = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      sessionId: string
-      userId: string
-      durationSeconds?: number
-    }) => {
+    (data: { sessionId: string; userId: string; durationSeconds?: number }) => {
       if (data.durationSeconds !== undefined && data.durationSeconds < 0) {
         throw new Error('durationSeconds must be non-negative')
       }
