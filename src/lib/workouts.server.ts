@@ -385,38 +385,12 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
     let newLevelName = ''
     try {
       const xpResult = await prisma.$transaction(async (tx) => {
-        const breakdown = await calculateWorkoutXp(
-          tx,
-          data.userId,
-          data.sessionId,
-        )
-        const user = await tx.user.findUnique({
-          where: { id: data.userId },
-          select: { totalXp: true, level: true },
-        })
-        return {
-          breakdown,
-          totalXp: user?.totalXp ?? 0,
-          level: user?.level ?? 1,
-        }
+        return calculateWorkoutXp(tx, data.userId, data.sessionId)
       })
       xpBreakdown = xpResult.breakdown
-      const { getLevelForXp } = await import('./xp-constants')
-      const levelInfo = getLevelForXp(xpResult.totalXp)
-      newLevel = levelInfo.level
-      newLevelName = levelInfo.name
-      // Check if we leveled up by comparing with the level before XP was awarded
-      // The level in the DB is already updated by awardXp, so check if any level-up events were created
-      leveledUp =
-        xpResult.breakdown.length > 0 && xpResult.level > 1
-          ? (await prisma.activityFeedItem.count({
-              where: {
-                userId: data.userId,
-                activityType: 'LEVEL_UP',
-                createdAt: { gte: session.completedAt! },
-              },
-            })) > 0
-          : false
+      leveledUp = xpResult.leveledUp
+      newLevel = xpResult.newLevel
+      newLevelName = xpResult.newLevelName
     } catch (error) {
       console.error('Failed to calculate XP:', error)
     }
@@ -743,6 +717,8 @@ export const updateWorkoutSet = createServerFn({ method: 'POST' })
       throw new Error('Set not found')
     }
 
+    // Note: XP previously awarded for PRs tied to this set is intentionally NOT
+    // reversed when values change. Reversing XP adds complexity and feels punitive.
     const workoutSet = await prisma.$transaction(async (tx) => {
       const updated = await tx.workoutSet.update({
         where: { id },
@@ -777,6 +753,8 @@ export const deleteWorkoutSet = createServerFn({ method: 'POST' })
       throw new Error('Set not found')
     }
 
+    // Note: XP previously awarded for PRs tied to this set is intentionally NOT
+    // reversed on deletion. Reversing XP adds complexity and feels punitive.
     await prisma.$transaction(async (tx) => {
       // Collect PR IDs linked to this set before deleting
       const linkedPRs = await tx.personalRecord.findMany({

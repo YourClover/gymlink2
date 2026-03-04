@@ -80,10 +80,19 @@ export function getXpProgress(totalXp: number): {
 }
 
 /** Get the color classes for a level tier */
-export function getLevelColor(level: number): string {
-  if (level <= 3) return 'text-zinc-400 bg-zinc-700/50'
-  if (level <= 5) return 'text-emerald-400 bg-emerald-500/20'
-  if (level <= 7) return 'text-blue-400 bg-blue-500/20'
-  if (level <= 9) return 'text-purple-400 bg-purple-500/20'
-  return 'text-amber-400 bg-amber-500/20'
+export function getLevelColor(level: number): { text: string; bg: string } {
+  if (level <= 3) return { text: 'text-zinc-400', bg: 'bg-zinc-700/50' }
+  if (level <= 5) return { text: 'text-emerald-400', bg: 'bg-emerald-500/20' }
+  if (level <= 7) return { text: 'text-blue-400', bg: 'bg-blue-500/20' }
+  if (level <= 9) return { text: 'text-purple-400', bg: 'bg-purple-500/20' }
+  return { text: 'text-amber-400', bg: 'bg-amber-500/20' }
+}
+
+/** Get the progress bar color for a level tier */
+export function getLevelBarColor(level: number): string {
+  if (level <= 3) return 'bg-zinc-400'
+  if (level <= 5) return 'bg-emerald-500'
+  if (level <= 7) return 'bg-blue-500'
+  if (level <= 9) return 'bg-purple-500'
+  return 'bg-amber-500'
 }

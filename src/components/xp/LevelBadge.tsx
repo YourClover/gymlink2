@@ -17,11 +17,11 @@ export default function LevelBadge({
   name,
   size = 'sm',
 }: LevelBadgeProps) {
-  const colorClass = getLevelColor(level)
+  const color = getLevelColor(level)
 
   return (
     <span
-      className={`inline-flex items-center font-medium rounded-full ${colorClass} ${sizeClasses[size]}`}
+      className={`inline-flex items-center font-medium rounded-full ${color.text} ${color.bg} ${sizeClasses[size]}`}
     >
       <span className="font-bold">{level}</span>
       <span>{name}</span>

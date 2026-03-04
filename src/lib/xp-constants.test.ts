@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { getLevelForXp, getXpProgress } from './xp-constants'
+import {
+  getLevelBarColor,
+  getLevelColor,
+  getLevelForXp,
+  getXpProgress,
+} from './xp-constants'
 
 describe('getLevelForXp', () => {
   it('returns Newcomer for 0 XP', () => {
@@ -115,5 +120,91 @@ describe('getXpProgress', () => {
     // At max level, should be exactly 100
     const progress = getXpProgress(999_999)
     expect(progress.percent).toBe(100)
+  })
+})
+
+describe('getLevelColor', () => {
+  it('returns { text, bg } object shape', () => {
+    const result = getLevelColor(1)
+    expect(result).toHaveProperty('text')
+    expect(result).toHaveProperty('bg')
+    expect(typeof result.text).toBe('string')
+    expect(typeof result.bg).toBe('string')
+  })
+
+  it('returns zinc for levels 1-3', () => {
+    for (const level of [1, 2, 3]) {
+      const result = getLevelColor(level)
+      expect(result.text).toBe('text-zinc-400')
+      expect(result.bg).toBe('bg-zinc-700/50')
+    }
+  })
+
+  it('returns emerald for levels 4-5', () => {
+    for (const level of [4, 5]) {
+      const result = getLevelColor(level)
+      expect(result.text).toBe('text-emerald-400')
+      expect(result.bg).toBe('bg-emerald-500/20')
+    }
+  })
+
+  it('returns blue for levels 6-7', () => {
+    for (const level of [6, 7]) {
+      const result = getLevelColor(level)
+      expect(result.text).toBe('text-blue-400')
+      expect(result.bg).toBe('bg-blue-500/20')
+    }
+  })
+
+  it('returns purple for levels 8-9', () => {
+    for (const level of [8, 9]) {
+      const result = getLevelColor(level)
+      expect(result.text).toBe('text-purple-400')
+      expect(result.bg).toBe('bg-purple-500/20')
+    }
+  })
+
+  it('returns amber for levels 10+', () => {
+    for (const level of [10, 11, 12]) {
+      const result = getLevelColor(level)
+      expect(result.text).toBe('text-amber-400')
+      expect(result.bg).toBe('bg-amber-500/20')
+    }
+  })
+})
+
+describe('getLevelBarColor', () => {
+  it('returns a string', () => {
+    expect(typeof getLevelBarColor(1)).toBe('string')
+  })
+
+  it('returns bg-zinc-400 for levels 1-3', () => {
+    for (const level of [1, 2, 3]) {
+      expect(getLevelBarColor(level)).toBe('bg-zinc-400')
+    }
+  })
+
+  it('returns bg-emerald-500 for levels 4-5', () => {
+    for (const level of [4, 5]) {
+      expect(getLevelBarColor(level)).toBe('bg-emerald-500')
+    }
+  })
+
+  it('returns bg-blue-500 for levels 6-7', () => {
+    for (const level of [6, 7]) {
+      expect(getLevelBarColor(level)).toBe('bg-blue-500')
+    }
+  })
+
+  it('returns bg-purple-500 for levels 8-9', () => {
+    for (const level of [8, 9]) {
+      expect(getLevelBarColor(level)).toBe('bg-purple-500')
+    }
+  })
+
+  it('returns bg-amber-500 for levels 10+', () => {
+    for (const level of [10, 11, 12]) {
+      expect(getLevelBarColor(level)).toBe('bg-amber-500')
+    }
   })
 })

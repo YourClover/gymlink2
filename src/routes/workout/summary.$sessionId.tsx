@@ -11,7 +11,12 @@ import {
   Trophy,
   Weight,
 } from 'lucide-react'
-import type { AchievementRarity, Exercise, WorkoutSet, XpSource  } from '@prisma/client'
+import type {
+  AchievementRarity,
+  Exercise,
+  WorkoutSet,
+  XpSource,
+} from '@prisma/client'
 import AppLayout from '@/components/AppLayout'
 import EmptyState from '@/components/ui/EmptyState'
 import { Skeleton, SkeletonStatsCard } from '@/components/ui/Skeleton'

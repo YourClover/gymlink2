@@ -78,17 +78,15 @@ export async function calculateWorkoutXp(
   tx: PrismaTransactionClient,
   userId: string,
   sessionId: string,
-) {
+): Promise<{
+  breakdown: Array<{ source: XpSource; amount: number }>
+  leveledUp: boolean
+  newLevel: number
+  newLevelName: string
+}> {
   const breakdown: Array<{ source: XpSource; amount: number }> = []
 
   // 1. Base: WORKOUT_COMPLETE
-  await awardXp(
-    tx,
-    userId,
-    XP_VALUES.WORKOUT_COMPLETE,
-    'WORKOUT_COMPLETE',
-    sessionId,
-  )
   breakdown.push({
     source: 'WORKOUT_COMPLETE',
     amount: XP_VALUES.WORKOUT_COMPLETE,
@@ -103,17 +101,19 @@ export async function calculateWorkoutXp(
   // 2. Sets: count non-warmup sets
   const workingSets = sets.filter((s) => !s.isWarmup)
   if (workingSets.length > 0) {
-    const setXp = workingSets.length * XP_VALUES.SET_LOGGED
-    await awardXp(tx, userId, setXp, 'SET_LOGGED', sessionId)
-    breakdown.push({ source: 'SET_LOGGED', amount: setXp })
+    breakdown.push({
+      source: 'SET_LOGGED',
+      amount: workingSets.length * XP_VALUES.SET_LOGGED,
+    })
   }
 
   // 3. RPE: count sets with RPE value
   const rpeSets = sets.filter((s) => s.rpe != null)
   if (rpeSets.length > 0) {
-    const rpeXp = rpeSets.length * XP_VALUES.RPE_LOGGED
-    await awardXp(tx, userId, rpeXp, 'RPE_LOGGED', sessionId)
-    breakdown.push({ source: 'RPE_LOGGED', amount: rpeXp })
+    breakdown.push({
+      source: 'RPE_LOGGED',
+      amount: rpeSets.length * XP_VALUES.RPE_LOGGED,
+    })
   }
 
   // 4. First workout of the week
@@ -127,13 +127,6 @@ export async function calculateWorkoutXp(
     },
   })
   if (otherSessionsThisWeek === 0) {
-    await awardXp(
-      tx,
-      userId,
-      XP_VALUES.FIRST_WORKOUT_OF_WEEK,
-      'FIRST_WORKOUT_OF_WEEK',
-      sessionId,
-    )
     breakdown.push({
       source: 'FIRST_WORKOUT_OF_WEEK',
       amount: XP_VALUES.FIRST_WORKOUT_OF_WEEK,
@@ -142,6 +135,7 @@ export async function calculateWorkoutXp(
 
   // 5. New exercises: check if any exercises in this session are new for the user
   const exerciseIdsInSession = [...new Set(sets.map((s) => s.exercise.id))]
+  const newExerciseIds: Array<string> = []
   for (const exerciseId of exerciseIdsInSession) {
     const previousSets = await tx.workoutSet.count({
       where: {
@@ -154,13 +148,7 @@ export async function calculateWorkoutXp(
       },
     })
     if (previousSets === 0) {
-      await awardXp(
-        tx,
-        userId,
-        XP_VALUES.NEW_EXERCISE,
-        'NEW_EXERCISE',
-        exerciseId,
-      )
+      newExerciseIds.push(exerciseId)
       breakdown.push({ source: 'NEW_EXERCISE', amount: XP_VALUES.NEW_EXERCISE })
     }
   }
@@ -199,12 +187,87 @@ export async function calculateWorkoutXp(
   }
 
   if (streakWeeks >= 2) {
-    const streakXp = streakWeeks * XP_VALUES.STREAK_BONUS
-    await awardXp(tx, userId, streakXp, 'STREAK_BONUS', sessionId)
-    breakdown.push({ source: 'STREAK_BONUS', amount: streakXp })
+    breakdown.push({
+      source: 'STREAK_BONUS',
+      amount: streakWeeks * XP_VALUES.STREAK_BONUS,
+    })
   }
 
-  return breakdown
+  // Batch award: single user read, single createMany, single user update, one level check
+  const totalXpAwarded = breakdown.reduce((sum, b) => sum + b.amount, 0)
+  if (totalXpAwarded === 0) {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { totalXp: true, level: true },
+    })
+    const levelInfo = getLevelForXp(user?.totalXp ?? 0)
+    return {
+      breakdown,
+      leveledUp: false,
+      newLevel: levelInfo.level,
+      newLevelName: levelInfo.name,
+    }
+  }
+
+  // Get level before awarding XP
+  const userBefore = await tx.user.findUnique({
+    where: { id: userId },
+    select: { level: true },
+  })
+  const previousLevel = userBefore?.level ?? 1
+
+  // Batch create all XP events
+  await tx.xpEvent.createMany({
+    data: breakdown.map((b) => ({
+      userId,
+      amount: b.amount,
+      source: b.source,
+      sourceId:
+        b.source === 'NEW_EXERCISE'
+          ? newExerciseIds[
+              breakdown.filter((x) => x.source === 'NEW_EXERCISE').indexOf(b)
+            ]
+          : sessionId,
+      metadata: {},
+    })),
+  })
+
+  // Single user update with total XP increment
+  const updatedUser = await tx.user.update({
+    where: { id: userId },
+    data: { totalXp: { increment: totalXpAwarded } },
+    select: { totalXp: true },
+  })
+
+  // Single level check
+  const newLevelInfo = getLevelForXp(updatedUser.totalXp)
+  const leveledUp = newLevelInfo.level > previousLevel
+
+  if (leveledUp) {
+    await tx.user.update({
+      where: { id: userId },
+      data: { level: newLevelInfo.level },
+    })
+
+    await tx.activityFeedItem.create({
+      data: {
+        userId,
+        activityType: 'LEVEL_UP',
+        metadata: {
+          level: newLevelInfo.level,
+          levelName: newLevelInfo.name,
+          previousLevel,
+        },
+      },
+    })
+  }
+
+  return {
+    breakdown,
+    leveledUp,
+    newLevel: newLevelInfo.level,
+    newLevelName: newLevelInfo.name,
+  }
 }
 
 // ============================================

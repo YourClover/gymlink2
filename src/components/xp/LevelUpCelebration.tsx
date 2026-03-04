@@ -14,7 +14,7 @@ export default function LevelUpCelebration({
   levelName,
   onDismiss,
 }: LevelUpCelebrationProps) {
-  const colorClass = getLevelColor(level)
+  const color = getLevelColor(level)
 
   // Auto-dismiss after 4 seconds
   useEffect(() => {
@@ -36,13 +36,13 @@ export default function LevelUpCelebration({
       {/* Card */}
       <div className="relative z-10 mx-4 p-6 rounded-2xl bg-zinc-800 border border-zinc-700 text-center max-w-sm w-full animate-fade-in">
         <div
-          className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${colorClass}`}
+          className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${color.text} ${color.bg}`}
         >
           <Star className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-white mb-1">Level Up!</h2>
         <p className="text-zinc-400 mb-3">You reached</p>
-        <div className={`text-3xl font-bold mb-1 ${colorClass.split(' ')[0]}`}>
+        <div className={`text-3xl font-bold mb-1 ${color.text}`}>
           Level {level}
         </div>
         <div className="text-lg text-zinc-300 font-medium">{levelName}</div>

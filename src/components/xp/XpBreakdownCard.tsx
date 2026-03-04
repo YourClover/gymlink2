@@ -71,7 +71,10 @@ export default function XpBreakdownCard({
             icon: <Zap className="w-4 h-4" />,
           }
           return (
-            <div key={index} className="flex items-center justify-between">
+            <div
+              key={`${item.source}-${index}`}
+              className="flex items-center justify-between"
+            >
               <div className="flex items-center gap-2 text-zinc-300">
                 <span className="text-zinc-500">{config.icon}</span>
                 <span className="text-sm">{config.label}</span>

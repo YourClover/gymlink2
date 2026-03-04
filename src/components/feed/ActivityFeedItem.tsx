@@ -229,7 +229,7 @@ function ActivityFeedItemComponent({ activity, style }: ActivityFeedItemProps) {
               <p className="text-white">
                 Reached{' '}
                 <span className="font-medium">
-                  Level {metadata.level}: {metadata.levelName}
+                  Level {metadata.level ?? '?'}: {metadata.levelName ?? '?'}
                 </span>
               </p>
             </div>

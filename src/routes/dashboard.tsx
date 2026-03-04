@@ -3,7 +3,7 @@ import {
   useLocation,
   useNavigate,
 } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Calendar,
   ChevronRight,
@@ -78,6 +78,7 @@ function DashboardPage() {
     levelName: string
     weeklyXp: number
   } | null>(null)
+  const backfillAttempted = useRef(false)
 
   // Fetch all dashboard data
   useEffect(() => {
@@ -113,7 +114,12 @@ function DashboardPage() {
           })
 
           // Trigger backfill for existing users with workouts but no XP
-          if (xpResult.totalXp === 0 && recentResult.workouts.length > 0) {
+          if (
+            !backfillAttempted.current &&
+            xpResult.totalXp === 0 &&
+            recentResult.workouts.length > 0
+          ) {
+            backfillAttempted.current = true
             backfillUserXp({ data: { userId: user.id } })
               .then((result) => {
                 if (result.backfilled) {

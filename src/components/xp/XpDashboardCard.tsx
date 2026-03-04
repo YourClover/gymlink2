@@ -1,5 +1,9 @@
 import { Sparkles } from 'lucide-react'
-import { getLevelColor, getXpProgress } from '@/lib/xp-constants'
+import {
+  getLevelBarColor,
+  getLevelColor,
+  getXpProgress,
+} from '@/lib/xp-constants'
 
 interface XpDashboardCardProps {
   totalXp: number
@@ -15,8 +19,8 @@ export default function XpDashboardCard({
   weeklyXp,
 }: XpDashboardCardProps) {
   const progress = getXpProgress(totalXp)
-  const colorClass = getLevelColor(level)
-  const barColor = getBarColor(level)
+  const color = getLevelColor(level)
+  const barColor = getLevelBarColor(level)
 
   return (
     <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
@@ -25,9 +29,7 @@ export default function XpDashboardCard({
         <span className="text-sm">Level</span>
       </div>
       <div className="flex items-baseline gap-2 mb-2">
-        <span className={`text-2xl font-bold ${colorClass.split(' ')[0]}`}>
-          {level}
-        </span>
+        <span className={`text-2xl font-bold ${color.text}`}>{level}</span>
         <span className="text-sm text-zinc-400">{levelName}</span>
       </div>
       {/* Mini progress bar */}
@@ -42,12 +44,4 @@ export default function XpDashboardCard({
       </div>
     </div>
   )
-}
-
-function getBarColor(level: number): string {
-  if (level <= 3) return 'bg-zinc-400'
-  if (level <= 5) return 'bg-emerald-500'
-  if (level <= 7) return 'bg-blue-500'
-  if (level <= 9) return 'bg-purple-500'
-  return 'bg-amber-500'
 }
