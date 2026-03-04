@@ -17,6 +17,7 @@ import type { AchievementRarity, MuscleGroup, RecordType } from '@prisma/client'
 import type { TimeRange } from '@/components/progression/TimeRangeSelector'
 import type { VolumeDataPoint } from '@/components/stats/VolumeChart'
 import type { Granularity } from '@/lib/date-utils'
+import type { MuscleGroupData } from '@/components/stats/muscle-chart-utils'
 import { useAuth } from '@/context/AuthContext'
 import AppLayout from '@/components/AppLayout'
 import TimeRangeSelector, {
@@ -65,12 +66,6 @@ type PreviousStats = {
   totalTimeSeconds: number
   totalVolume: number
   totalPRs: number
-}
-
-type MuscleGroupData = {
-  muscle: string
-  count: number
-  percentage: number
 }
 
 type DurationData = {

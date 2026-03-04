@@ -8,62 +8,16 @@ import {
   Sector,
   Tooltip,
 } from 'recharts'
+import {
+  MuscleChartTooltip,
+  formatMuscleName,
+  muscleColors,
+} from './muscle-chart-utils'
+import type { MuscleGroupData } from './muscle-chart-utils'
 import { useChartDimensions } from '@/hooks/useChartDimensions'
-
-type MuscleGroupData = {
-  muscle: string
-  count: number
-  percentage: number
-}
 
 type Props = {
   data: Array<MuscleGroupData>
-}
-
-const muscleColors: Record<string, string> = {
-  CHEST: '#f87171', // red-400
-  BACK: '#60a5fa', // blue-400
-  LEGS: '#4ade80', // green-400
-  SHOULDERS: '#fb923c', // orange-400
-  ARMS: '#c084fc', // purple-400
-  CORE: '#facc15', // yellow-400
-  CARDIO: '#f472b6', // pink-400
-  FULL_BODY: '#22d3ee', // cyan-400
-}
-
-function formatMuscleName(muscle: string): string {
-  return muscle.toLowerCase().replaceAll('_', ' ')
-}
-
-type TooltipPayloadEntry = {
-  name: string
-  value: number
-  payload: MuscleGroupData & { fill: string }
-}
-
-type CustomTooltipProps = {
-  active?: boolean
-  payload?: Array<TooltipPayloadEntry>
-}
-
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
-  if (!active || !payload || payload.length === 0) return null
-
-  const data = payload[0].payload
-
-  return (
-    <div
-      className="px-3 py-2 rounded-lg border shadow-lg"
-      style={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }}
-    >
-      <p className="text-sm font-medium text-white capitalize">
-        {formatMuscleName(data.muscle)}
-      </p>
-      <p className="text-xs text-zinc-400">
-        {data.count} sets ({data.percentage}%)
-      </p>
-    </div>
-  )
 }
 
 type LegendPayloadEntry = {
@@ -103,10 +57,19 @@ function CustomLegend({
   )
 }
 
-const RADIAN = Math.PI / 180
+interface ActiveShapeProps {
+  cx: number
+  cy: number
+  innerRadius: number
+  outerRadius: number
+  startAngle: number
+  endAngle: number
+  fill: string
+}
 
-function renderActiveShape(props: any) {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props
+function renderActiveShape(props: unknown) {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } =
+    props as ActiveShapeProps
 
   return (
     <g>
@@ -140,25 +103,12 @@ export default function MuscleDonutChart({ data }: Props) {
   const labelFontSize = compact ? 10 : 12
   const centerFontSize = compact ? 18 : 22
 
-  function renderLabel({
-    cx,
-    cy,
-    midAngle,
-    innerRadius,
-    outerRadius,
-    percentage,
-  }: {
-    cx: number
-    cy: number
-    midAngle: number
-    innerRadius: number
-    outerRadius: number
-    percentage: number
-  }) {
+  function renderLabel(props: any) {
+    const { cx, cy, midAngle, innerRadius, outerRadius, percentage } = props
     if (percentage < labelThreshold) return null
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-    const x = cx + radius * Math.cos(-midAngle * RADIAN)
-    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+    const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180))
+    const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180))
 
     return (
       <text
@@ -205,7 +155,7 @@ export default function MuscleDonutChart({ data }: Props) {
         {/* Center text showing total sets */}
         <text
           x="50%"
-          y="43%"
+          y="38%"
           textAnchor="middle"
           dominantBaseline="central"
           fill="white"
@@ -216,7 +166,7 @@ export default function MuscleDonutChart({ data }: Props) {
         </text>
         <text
           x="50%"
-          y="48%"
+          y="45%"
           textAnchor="middle"
           dominantBaseline="central"
           fill="#a1a1aa"
@@ -224,7 +174,7 @@ export default function MuscleDonutChart({ data }: Props) {
         >
           sets
         </text>
-        <Tooltip content={<CustomTooltip />} cursor={false} />
+        <Tooltip content={<MuscleChartTooltip />} cursor={false} />
         <Legend content={<CustomLegend data={data} />} />
       </PieChart>
     </ResponsiveContainer>

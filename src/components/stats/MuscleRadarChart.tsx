@@ -6,52 +6,12 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
+import { MuscleChartTooltip, formatMuscleName } from './muscle-chart-utils'
+import type { MuscleGroupData } from './muscle-chart-utils'
 import { useChartDimensions } from '@/hooks/useChartDimensions'
-
-type MuscleGroupData = {
-  muscle: string
-  count: number
-  percentage: number
-}
 
 type Props = {
   data: Array<MuscleGroupData>
-}
-
-function formatMuscleName(muscle: string): string {
-  return muscle
-    .toLowerCase()
-    .replaceAll('_', ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-type TooltipPayloadEntry = {
-  value: number
-  payload: { muscle: string; count: number; percentage: number }
-}
-
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean
-  payload?: Array<TooltipPayloadEntry>
-}) {
-  if (!active || !payload || payload.length === 0) return null
-  const d = payload[0].payload
-  return (
-    <div
-      className="px-3 py-2 rounded-lg border shadow-lg"
-      style={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }}
-    >
-      <p className="text-sm font-medium text-white">
-        {formatMuscleName(d.muscle)}
-      </p>
-      <p className="text-xs text-zinc-400">
-        {d.count} sets ({d.percentage}%)
-      </p>
-    </div>
-  )
 }
 
 export default function MuscleRadarChart({ data }: Props) {
@@ -83,12 +43,12 @@ export default function MuscleRadarChart({ data }: Props) {
         <PolarGrid stroke="#3f3f46" />
         <PolarAngleAxis
           dataKey="label"
-          tick={{ fill: '#a1a1aa', fontSize: compact ? 10 : 10 }}
+          tick={{ fill: '#a1a1aa', fontSize: 10 }}
           tickFormatter={(v: string) =>
             v.length > truncateLen ? v.slice(0, truncateLen) + '.' : v
           }
         />
-        <Tooltip content={<CustomTooltip />} cursor={false} />
+        <Tooltip content={<MuscleChartTooltip />} cursor={false} />
         <Radar
           dataKey="count"
           stroke="#3b82f6"

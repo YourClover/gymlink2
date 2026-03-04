@@ -1,14 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import { calculateStreak } from './date-utils.server'
-import {
-  
-  getDayStart,
-  getMonthStart,
-  getWeekStart
-} from './date-utils'
+import { getDayStart, getMonthStart, getWeekStart } from './date-utils'
 import { PR_PRIORITY } from './pr-utils'
-import type {Granularity} from './date-utils';
+import type { Granularity } from './date-utils'
 import type { RecordType } from '@prisma/client'
 
 // ============================================

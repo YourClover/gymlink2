@@ -103,7 +103,7 @@ export default function AchievementShowcase({
         <p className="text-xs font-medium text-zinc-400 mb-3">
           Recently Earned
         </p>
-        <div className="flex gap-4 overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex gap-4 overflow-x-auto hide-scrollbar -mx-1 px-1">
           {recentEarned.map((ua) => (
             <div
               key={ua.id}
