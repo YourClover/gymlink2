@@ -26,6 +26,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null
+  token: string | null
   isLoading: boolean
   isInitializing: boolean
   error: string | null
@@ -62,6 +63,7 @@ export function AuthProvider({
 }) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(initialUser)
+  const [token, setToken] = useState<string | null>(getStoredToken)
   const [isLoading, setIsLoading] = useState(false) // Only true during form submission
   const [isInitializing, setIsInitializing] = useState(!initialUser) // True during initial auth check
   const [error, setError] = useState<string | null>(null)
@@ -69,23 +71,27 @@ export function AuthProvider({
   const clearError = useCallback(() => setError(null), [])
 
   const refreshUser = useCallback(async () => {
-    const token = getStoredToken()
-    if (!token) {
+    const storedToken = getStoredToken()
+    if (!storedToken) {
       setUser(null)
+      setToken(null)
       setIsInitializing(false)
       return
     }
 
     try {
-      const result = await getCurrentUser({ data: { token } })
+      const result = await getCurrentUser({ data: { token: storedToken } })
       setUser(result.user as User | null)
       if (!result.user) {
         removeStoredToken()
+        setToken(null)
       } else if (result.token) {
         setStoredToken(result.token)
+        setToken(result.token)
       }
     } catch {
       setUser(null)
+      setToken(null)
       removeStoredToken()
     } finally {
       setIsInitializing(false)
@@ -106,6 +112,7 @@ export function AuthProvider({
       try {
         const result = await loginUser({ data: { email, password } })
         setStoredToken(result.token)
+        setToken(result.token)
         setUser(result.user as User)
         router.navigate({ to: '/dashboard' })
       } catch (err) {
@@ -125,6 +132,7 @@ export function AuthProvider({
       try {
         const result = await registerUser({ data: { email, password, name } })
         setStoredToken(result.token)
+        setToken(result.token)
         setUser(result.user as User)
         router.navigate({ to: '/dashboard' })
       } catch (err) {
@@ -142,6 +150,7 @@ export function AuthProvider({
     try {
       await logoutUser()
       removeStoredToken()
+      setToken(null)
       setUser(null)
       router.navigate({ to: '/' })
     } catch (err) {
@@ -155,6 +164,7 @@ export function AuthProvider({
     <AuthContext.Provider
       value={{
         user,
+        token,
         isLoading,
         isInitializing,
         error,

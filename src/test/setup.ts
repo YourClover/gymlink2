@@ -10,7 +10,7 @@ process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
 export const mockPrisma = mockDeep<PrismaClient>()
 
 // Mock the db module to return our mock
-vi.mock('@/lib/db', () => ({
+vi.mock('@/lib/db.server', () => ({
   prisma: mockPrisma,
   default: mockPrisma,
 }))
