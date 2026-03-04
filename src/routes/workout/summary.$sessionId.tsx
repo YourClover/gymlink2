@@ -181,8 +181,14 @@ function WorkoutSummaryPage() {
 
   // Edited duration in seconds
   const editedDurationSeconds =
-    (typeof editedHours === 'string' ? parseInt(editedHours) || 0 : editedHours) * 3600 +
-    (typeof editedMinutes === 'string' ? parseInt(editedMinutes) || 0 : editedMinutes) * 60
+    (typeof editedHours === 'string'
+      ? parseInt(editedHours) || 0
+      : editedHours) *
+      3600 +
+    (typeof editedMinutes === 'string'
+      ? parseInt(editedMinutes) || 0
+      : editedMinutes) *
+      60
 
   // Calculate stats
   const getStats = () => {
@@ -486,7 +492,8 @@ function WorkoutSummaryPage() {
                   onChange={(e) => {
                     if (e.target.value === '') return setEditedMinutes('')
                     const v = parseInt(e.target.value, 10)
-                    if (!isNaN(v)) setEditedMinutes(Math.max(0, Math.min(59, v)))
+                    if (!isNaN(v))
+                      setEditedMinutes(Math.max(0, Math.min(59, v)))
                   }}
                   onBlur={saveDuration}
                   className="w-8 bg-transparent text-2xl font-bold text-white text-right focus:outline-none focus:bg-zinc-700/50 rounded px-0.5 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -579,7 +586,7 @@ function WorkoutSummaryPage() {
                       <button
                         key={set.id}
                         onClick={() => {
-                          const matchingSet = session!.workoutSets.find(
+                          const matchingSet = session.workoutSets.find(
                             (s) => s.id === set.id,
                           )
                           if (matchingSet) setEditingSet(matchingSet)

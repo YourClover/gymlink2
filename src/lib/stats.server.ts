@@ -2,12 +2,13 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 import { calculateStreak } from './date-utils.server'
 import {
+  
   getDayStart,
   getMonthStart,
-  getWeekStart,
-  type Granularity,
+  getWeekStart
 } from './date-utils'
 import { PR_PRIORITY } from './pr-utils'
+import type {Granularity} from './date-utils';
 import type { RecordType } from '@prisma/client'
 
 // ============================================
@@ -136,11 +137,8 @@ function advancePeriod(date: Date, granularity: Granularity): Date {
 
 export const getVolumeHistory = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: {
-      userId: string
-      startDate?: string
-      granularity?: Granularity
-    }) => data,
+    (data: { userId: string; startDate?: string; granularity?: Granularity }) =>
+      data,
   )
   .handler(async ({ data }) => {
     const granularity = data.granularity ?? 'weekly'

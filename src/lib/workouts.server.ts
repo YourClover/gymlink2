@@ -777,11 +777,7 @@ export const getWorkoutSession = createServerFn({ method: 'GET' })
 // Update a workout session (e.g. duration for completed sessions)
 export const updateWorkoutSession = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      sessionId: string
-      userId: string
-      durationSeconds?: number
-    }) => {
+    (data: { sessionId: string; userId: string; durationSeconds?: number }) => {
       if (data.durationSeconds !== undefined && data.durationSeconds < 0) {
         throw new Error('durationSeconds must be non-negative')
       }

@@ -10,8 +10,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { useChartDimensions } from '@/hooks/useChartDimensions'
 import type { Granularity } from '@/lib/date-utils'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
 
 export type VolumeDataPoint = {
   periodStart: string
@@ -35,19 +35,28 @@ const chartColors = {
   tooltipBorder: '#3f3f46', // zinc-700
 }
 
-function formatXAxisLabel(periodStart: string, granularity: Granularity): string {
+function formatXAxisLabel(
+  periodStart: string,
+  granularity: Granularity,
+): string {
   const date = new Date(periodStart + 'T00:00:00')
   switch (granularity) {
     case 'daily':
       return date.toLocaleDateString('en-US', { weekday: 'short' })
     case 'weekly':
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      })
     case 'monthly':
       return date.toLocaleDateString('en-US', { month: 'short' })
   }
 }
 
-function formatTooltipLabel(periodStart: string, granularity: Granularity): string {
+function formatTooltipLabel(
+  periodStart: string,
+  granularity: Granularity,
+): string {
   const date = new Date(periodStart + 'T00:00:00')
   switch (granularity) {
     case 'daily':
@@ -59,7 +68,10 @@ function formatTooltipLabel(periodStart: string, granularity: Granularity): stri
     case 'weekly':
       return `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
     case 'monthly':
-      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      return date.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
   }
 }
 

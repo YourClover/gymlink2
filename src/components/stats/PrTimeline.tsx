@@ -1,6 +1,7 @@
 import { TrendingUp, Trophy } from 'lucide-react'
 import type { MuscleGroup, RecordType } from '@prisma/client'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
+import { formatTime, formatVolume } from '@/lib/formatting'
 
 type PrEntry = {
   id: string
@@ -38,12 +39,9 @@ function formatValue(value: number, recordType: RecordType): string {
     case 'MAX_REPS':
       return `${value} reps`
     case 'MAX_VOLUME':
-      return `${value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}kg`
-    case 'MAX_TIME': {
-      const mins = Math.floor(value / 60)
-      const secs = value % 60
-      return `${mins}:${secs.toString().padStart(2, '0')}`
-    }
+      return formatVolume(value)
+    case 'MAX_TIME':
+      return formatTime(value)
     default:
       return `${value}`
   }

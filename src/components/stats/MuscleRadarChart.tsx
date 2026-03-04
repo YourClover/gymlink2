@@ -21,7 +21,7 @@ type Props = {
 function formatMuscleName(muscle: string): string {
   return muscle
     .toLowerCase()
-    .replace('_', ' ')
+    .replaceAll('_', ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
@@ -59,7 +59,7 @@ export default function MuscleRadarChart({ data }: Props) {
 
   if (data.length < 3) {
     return (
-      <div className="h-[260px] flex items-center justify-center text-zinc-500 text-sm">
+      <div className="py-4 text-center text-zinc-500 text-sm">
         Need at least 3 muscle groups for radar chart
       </div>
     )

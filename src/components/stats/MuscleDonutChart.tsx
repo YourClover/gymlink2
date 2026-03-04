@@ -32,7 +32,7 @@ const muscleColors: Record<string, string> = {
 }
 
 function formatMuscleName(muscle: string): string {
-  return muscle.toLowerCase().replace('_', ' ')
+  return muscle.toLowerCase().replaceAll('_', ' ')
 }
 
 type TooltipPayloadEntry = {
