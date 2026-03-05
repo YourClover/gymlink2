@@ -113,11 +113,15 @@ function PRsPage() {
     return allPRs
   }, [allPRs, sortMode])
 
-  const sortedGroups = Object.entries(grouped).sort(([a], [b]) => {
-    const aIndex = muscleGroupOrder.indexOf(a as MuscleGroup)
-    const bIndex = muscleGroupOrder.indexOf(b as MuscleGroup)
-    return aIndex - bIndex
-  })
+  const sortedGroups = useMemo(
+    () =>
+      Object.entries(grouped).sort(([a], [b]) => {
+        const aIndex = muscleGroupOrder.indexOf(a as MuscleGroup)
+        const bIndex = muscleGroupOrder.indexOf(b as MuscleGroup)
+        return aIndex - bIndex
+      }),
+    [grouped],
+  )
 
   if (loading) {
     return (

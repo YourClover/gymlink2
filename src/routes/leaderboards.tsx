@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Crown, Dumbbell, Flame, Medal, Trophy, Zap } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -136,8 +136,8 @@ function LeaderboardsPage() {
     3: 'border-amber-600/30 bg-amber-600/5',
   }
 
-  const topEntries = leaderboard.filter((e) => e.rank <= 3)
-  const restEntries = leaderboard.filter((e) => e.rank > 3)
+  const topEntries = useMemo(() => leaderboard.filter((e) => e.rank <= 3), [leaderboard])
+  const restEntries = useMemo(() => leaderboard.filter((e) => e.rank > 3), [leaderboard])
 
   return (
     <AppLayout title="Leaderboards">

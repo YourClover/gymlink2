@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   ChevronDown,
@@ -133,7 +133,7 @@ export default function ExpandableWorkoutCard({ workout, userId }: Props) {
     setExpanded(!expanded)
   }
 
-  const muscles = getUniqueMuscles(workout.workoutSets)
+  const muscles = useMemo(() => getUniqueMuscles(workout.workoutSets), [workout.workoutSets])
 
   return (
     <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 overflow-hidden">

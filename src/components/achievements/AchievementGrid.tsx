@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import AchievementCard from './AchievementCard'
 import type { AchievementCategory, AchievementRarity } from '@prisma/client'
 
@@ -57,42 +57,49 @@ export default function AchievementGrid({
   >('ALL')
 
   // Create a map for quick lookup of earned dates
-  const earnedDates = new Map<string, Date>()
-  for (const ua of earnedAchievements) {
-    earnedDates.set(ua.achievementId, ua.earnedAt)
-  }
+  const earnedDates = useMemo(() => {
+    const map = new Map<string, Date>()
+    for (const ua of earnedAchievements) {
+      map.set(ua.achievementId, ua.earnedAt)
+    }
+    return map
+  }, [earnedAchievements])
 
   // Group achievements by category
-  const grouped = new Map<AchievementCategory, Array<Achievement>>()
-  for (const category of categoryOrder) {
-    grouped.set(category, [])
-  }
-  for (const achievement of allAchievements) {
-    const arr = grouped.get(achievement.category)
-    if (arr) arr.push(achievement)
-  }
+  const { grouped, earnedCountByCategory } = useMemo(() => {
+    const g = new Map<AchievementCategory, Array<Achievement>>()
+    for (const category of categoryOrder) {
+      g.set(category, [])
+    }
+    for (const achievement of allAchievements) {
+      const arr = g.get(achievement.category)
+      if (arr) arr.push(achievement)
+    }
 
-  // Count earned per category
-  const earnedCountByCategory = new Map<AchievementCategory, number>()
-  for (const category of categoryOrder) {
-    const achievements = grouped.get(category) || []
-    const count = achievements.filter((a) => earnedSet.has(a.id)).length
-    earnedCountByCategory.set(category, count)
-  }
+    const counts = new Map<AchievementCategory, number>()
+    for (const category of categoryOrder) {
+      const achievements = g.get(category) || []
+      const count = achievements.filter((a) => earnedSet.has(a.id)).length
+      counts.set(category, count)
+    }
 
-  // Filter based on selected category
-  const displayAchievements =
-    selectedCategory === 'ALL'
-      ? allAchievements
-      : allAchievements.filter((a) => a.category === selectedCategory)
+    return { grouped: g, earnedCountByCategory: counts }
+  }, [allAchievements, earnedSet])
 
-  // Sort: earned first, then by sortOrder
-  const sortedAchievements = [...displayAchievements].sort((a, b) => {
-    const aEarned = earnedSet.has(a.id) ? 0 : 1
-    const bEarned = earnedSet.has(b.id) ? 0 : 1
-    if (aEarned !== bEarned) return aEarned - bEarned
-    return a.sortOrder - b.sortOrder
-  })
+  // Filter and sort based on selected category
+  const sortedAchievements = useMemo(() => {
+    const displayAchievements =
+      selectedCategory === 'ALL'
+        ? allAchievements
+        : allAchievements.filter((a) => a.category === selectedCategory)
+
+    return [...displayAchievements].sort((a, b) => {
+      const aEarned = earnedSet.has(a.id) ? 0 : 1
+      const bEarned = earnedSet.has(b.id) ? 0 : 1
+      if (aEarned !== bEarned) return aEarned - bEarned
+      return a.sortOrder - b.sortOrder
+    })
+  }, [allAchievements, earnedSet, selectedCategory])
 
   return (
     <div className="space-y-4">
