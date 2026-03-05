@@ -2,7 +2,6 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db.server'
 import { requireAdmin, requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
-import { getWeekStart } from './date-utils'
 import type {
   AchievementCategory,
   AchievementRarity,
@@ -300,100 +299,50 @@ async function getTotalVolume(userId: string): Promise<number> {
 async function getMuscleGroupSetCounts(
   userId: string,
 ): Promise<Record<MuscleGroup, number>> {
-  const setCounts = await prisma.workoutSet.groupBy({
-    by: ['exerciseId'],
-    where: {
-      workoutSession: {
-        userId,
-        completedAt: { not: null },
-      },
-      isWarmup: false,
-    },
-    _count: { id: true },
-  })
-
-  const exerciseIds = setCounts.map((s) => s.exerciseId)
-  const exercises = await prisma.exercise.findMany({
-    where: { id: { in: exerciseIds } },
-    select: { id: true, muscleGroup: true },
-  })
-  const exerciseMap = new Map(exercises.map((e) => [e.id, e.muscleGroup]))
+  const rows = await prisma.$queryRaw<
+    Array<{ muscle_group: string; set_count: bigint }>
+  >`
+    SELECT e.muscle_group, COUNT(ws.id) AS set_count
+    FROM workout_sets ws
+    JOIN exercises e ON e.id = ws.exercise_id
+    JOIN workout_sessions s ON s.id = ws.workout_session_id
+    WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+      AND ws.is_warmup = false
+    GROUP BY e.muscle_group
+  `
 
   const counts: Record<string, number> = {}
-  for (const sc of setCounts) {
-    const mg = exerciseMap.get(sc.exerciseId) ?? 'FULL_BODY'
-    counts[mg] = (counts[mg] || 0) + sc._count.id
+  for (const row of rows) {
+    counts[row.muscle_group] = Number(row.set_count)
   }
 
   return counts as Record<MuscleGroup, number>
 }
 
 async function getConsistencyStreak(userId: string): Promise<number> {
-  // Calculate consecutive weeks with 3+ workouts
-  const twoYearsAgo = new Date()
-  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
-  const workouts = await prisma.workoutSession.findMany({
-    where: {
-      userId,
-      completedAt: { not: null, gte: twoYearsAgo },
-    },
-    select: { completedAt: true },
-    orderBy: { completedAt: 'desc' },
-  })
-
-  // Group by week and count
-  const weekCounts: Record<string, number> = {}
-  for (const workout of workouts) {
-    if (workout.completedAt) {
-      const weekStart = getWeekStart(workout.completedAt)
-      const weekKey = weekStart.toISOString().split('T')[0]
-      weekCounts[weekKey] = (weekCounts[weekKey] || 0) + 1
-    }
-  }
-
-  // Get weeks with 3+ workouts, sorted descending
-  const qualifyingWeeks = Object.entries(weekCounts)
-    .filter(([, count]) => count >= 3)
-    .map(([week]) => week)
-    .sort()
-    .reverse()
-
-  if (qualifyingWeeks.length === 0) return 0
-
-  const today = new Date()
-  const currentWeekStart = getWeekStart(today)
-
-  // Check if most recent qualifying week is current or last week
-  const currentWeekStr = currentWeekStart.toISOString().split('T')[0]
-  const lastWeekStart = new Date(currentWeekStart)
-  lastWeekStart.setDate(lastWeekStart.getDate() - 7)
-  const lastWeekStr = lastWeekStart.toISOString().split('T')[0]
-
-  if (
-    qualifyingWeeks[0] !== currentWeekStr &&
-    qualifyingWeeks[0] !== lastWeekStr
-  ) {
-    return 0
-  }
-
-  // Count consecutive weeks with 3+ workouts
-  let streak = 0
-  const expectedWeek = new Date(
-    qualifyingWeeks[0] === currentWeekStr ? currentWeekStart : lastWeekStart,
-  )
-
-  for (const weekStr of qualifyingWeeks) {
-    const expectedStr = expectedWeek.toISOString().split('T')[0]
-
-    if (weekStr === expectedStr) {
-      streak++
-      expectedWeek.setDate(expectedWeek.getDate() - 7)
-    } else if (weekStr < expectedStr) {
-      break
-    }
-  }
-
-  return streak
+  const result = await prisma.$queryRaw<[{ streak: number }]>`
+    WITH week_counts AS (
+      SELECT date_trunc('week', completed_at)::date AS week_start, COUNT(*) AS cnt
+      FROM workout_sessions
+      WHERE user_id = ${userId} AND completed_at IS NOT NULL
+        AND completed_at >= NOW() - interval '2 years'
+      GROUP BY week_start
+      HAVING COUNT(*) >= 3
+    ),
+    numbered AS (
+      SELECT week_start,
+        week_start - (ROW_NUMBER() OVER (ORDER BY week_start))::int * 7 AS grp
+      FROM week_counts
+    ),
+    streaks AS (
+      SELECT COUNT(*) AS streak_len, MAX(week_start) AS last_week
+      FROM numbered GROUP BY grp
+    )
+    SELECT COALESCE(MAX(streak_len), 0)::int AS streak
+    FROM streaks
+    WHERE last_week >= date_trunc('week', NOW())::date - 7
+  `
+  return Number(result[0].streak)
 }
 
 // Achievement check functions
