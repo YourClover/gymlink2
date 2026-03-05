@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import {
   Area,
   AreaChart,
@@ -107,15 +108,19 @@ function TrendTooltip({
   )
 }
 
-export default function RpeChart({ data }: Props) {
+export default memo(function RpeChart({ data }: Props) {
   const { compact } = useChartDimensions()
 
   // Build distribution bars (1-10)
-  const distData = Array.from({ length: 10 }, (_, i) => ({
-    rpe: i + 1,
-    count: data.distribution[i + 1] ?? 0,
-    fill: rpeColors[i + 1],
-  })).filter((d) => d.count > 0)
+  const distData = useMemo(
+    () =>
+      Array.from({ length: 10 }, (_, i) => ({
+        rpe: i + 1,
+        count: data.distribution[i + 1] ?? 0,
+        fill: rpeColors[i + 1],
+      })).filter((d) => d.count > 0),
+    [data.distribution],
+  )
 
   return (
     <div className="space-y-6">
@@ -262,4 +267,4 @@ export default function RpeChart({ data }: Props) {
       )}
     </div>
   )
-}
+})

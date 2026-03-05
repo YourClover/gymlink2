@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -14,7 +15,7 @@ type Props = {
   data: Array<MuscleGroupData>
 }
 
-export default function MuscleRadarChart({ data }: Props) {
+export default memo(function MuscleRadarChart({ data }: Props) {
   const { compact } = useChartDimensions()
 
   if (data.length < 3) {
@@ -58,4 +59,4 @@ export default function MuscleRadarChart({ data }: Props) {
       </RadarChart>
     </ResponsiveContainer>
   )
-}
+})

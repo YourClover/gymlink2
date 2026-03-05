@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import {
   Cell,
   Legend,
@@ -86,7 +86,7 @@ function renderActiveShape(props: unknown) {
   )
 }
 
-export default function MuscleDonutChart({ data }: Props) {
+export default memo(function MuscleDonutChart({ data }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
   const { compact } = useChartDimensions()
 
@@ -98,7 +98,7 @@ export default function MuscleDonutChart({ data }: Props) {
     )
   }
 
-  const totalSets = data.reduce((sum, d) => sum + d.count, 0)
+  const totalSets = useMemo(() => data.reduce((sum, d) => sum + d.count, 0), [data])
   const labelThreshold = compact ? 8 : 5
   const labelFontSize = compact ? 10 : 12
   const centerFontSize = compact ? 18 : 22
@@ -179,4 +179,4 @@ export default function MuscleDonutChart({ data }: Props) {
       </PieChart>
     </ResponsiveContainer>
   )
-}
+})

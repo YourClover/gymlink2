@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import type { MuscleGroup } from '@prisma/client'
 
@@ -50,7 +51,7 @@ function getFirstDayOfWeek(year: number, month: number): number {
   return day === 0 ? 6 : day - 1
 }
 
-export default function MonthlyCalendar({
+export default memo(function MonthlyCalendar({
   year,
   month,
   dayMap,
@@ -88,15 +89,18 @@ export default function MonthlyCalendar({
     return date > today
   }
 
-  const cells: Array<{ day: number | null }> = []
-  // Empty cells before first day
-  for (let i = 0; i < firstDay; i++) {
-    cells.push({ day: null })
-  }
-  // Day cells
-  for (let d = 1; d <= daysInMonth; d++) {
-    cells.push({ day: d })
-  }
+  const cells = useMemo(() => {
+    const result: Array<{ day: number | null }> = []
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) {
+      result.push({ day: null })
+    }
+    // Day cells
+    for (let d = 1; d <= daysInMonth; d++) {
+      result.push({ day: d })
+    }
+    return result
+  }, [firstDay, daysInMonth])
 
   return (
     <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-4">
@@ -200,4 +204,4 @@ export default function MonthlyCalendar({
       </div>
     </div>
   )
-}
+})

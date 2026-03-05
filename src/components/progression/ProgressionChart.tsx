@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -70,7 +71,7 @@ function CustomTooltip({ active, payload, metric }: CustomTooltipProps) {
   )
 }
 
-export default function ProgressionChart({ data, metric }: Props) {
+export default memo(function ProgressionChart({ data, metric }: Props) {
   const { compact } = useChartDimensions()
 
   if (data.length === 0) {
@@ -148,4 +149,4 @@ export default function ProgressionChart({ data, metric }: Props) {
       </LineChart>
     </ResponsiveContainer>
   )
-}
+})

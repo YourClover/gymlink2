@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import {
   Area,
   Bar,
@@ -115,7 +116,7 @@ function CustomTooltip({ active, payload, granularity }: CustomTooltipProps) {
   )
 }
 
-export default function VolumeChart({ data, granularity }: Props) {
+export default memo(function VolumeChart({ data, granularity }: Props) {
   const { compact } = useChartDimensions()
   const hasVolume = data?.some((w) => w.volume > 0) ?? false
 
@@ -240,4 +241,4 @@ export default function VolumeChart({ data, granularity }: Props) {
       </ComposedChart>
     </ResponsiveContainer>
   )
-}
+})

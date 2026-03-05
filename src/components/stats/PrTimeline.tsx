@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { TrendingUp, Trophy } from 'lucide-react'
 import type { MuscleGroup, RecordType } from '@prisma/client'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
@@ -47,7 +48,7 @@ function formatValue(value: number, recordType: RecordType): string {
   }
 }
 
-export default function PrTimeline({ timeline }: Props) {
+export default memo(function PrTimeline({ timeline }: Props) {
   if (timeline.length === 0) {
     return (
       <div className="py-6 text-center text-zinc-500 text-sm">
@@ -113,4 +114,4 @@ export default function PrTimeline({ timeline }: Props) {
       </div>
     </div>
   )
-}
+})
