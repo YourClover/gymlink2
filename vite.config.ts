@@ -85,6 +85,11 @@ const config = defineConfig({
               'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
             },
           },
+          '/_build/**': {
+            headers: {
+              'Cache-Control': 'public, max-age=31536000, immutable',
+            },
+          },
         },
       },
     }),
@@ -96,6 +101,20 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          recharts: ['recharts'],
+          router: [
+            '@tanstack/react-router',
+            '@tanstack/react-start',
+          ],
+        },
+      },
+    },
+  },
   optimizeDeps: {
     exclude: SERVER_ONLY_PACKAGES,
   },
