@@ -56,6 +56,29 @@ export const getUserAchievements = createServerFn({ method: 'GET' })
     const auth = await requireAuth(data.token)
     const userId = data.targetUserId ?? auth.userId
 
+    // Access control: verify the requester can view this user's achievements
+    if (data.targetUserId && data.targetUserId !== auth.userId) {
+      const targetProfile = await prisma.userProfile.findUnique({
+        where: { userId: data.targetUserId },
+      })
+      if (!targetProfile || !targetProfile.showAchievements) {
+        throw new Error('Cannot view this content')
+      }
+      if (targetProfile.isPrivate) {
+        const follow = await prisma.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: auth.userId,
+              followingId: data.targetUserId,
+            },
+          },
+        })
+        if (follow?.status !== 'ACCEPTED') {
+          throw new Error('Cannot view this content')
+        }
+      }
+    }
+
     const userAchievements = await prisma.userAchievement.findMany({
       where: { userId },
       include: {

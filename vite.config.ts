@@ -69,7 +69,25 @@ const config = defineConfig({
   plugins: [
     serverOnlyPackages(),
     devtools(),
-    nitro(),
+    nitro({
+      config: {
+        routeRules: {
+          '/**': {
+            headers: {
+              'X-Content-Type-Options': 'nosniff',
+              'X-Frame-Options': 'DENY',
+              'Referrer-Policy': 'strict-origin-when-cross-origin',
+              'X-XSS-Protection': '0',
+              'Content-Security-Policy':
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'",
+              'Strict-Transport-Security':
+                'max-age=31536000; includeSubDomains',
+              'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+            },
+          },
+        },
+      },
+    }),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],

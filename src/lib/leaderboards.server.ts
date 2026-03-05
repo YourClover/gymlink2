@@ -17,7 +17,7 @@ export const getGlobalLeaderboard = createServerFn({ method: 'GET' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const limit = data.limit ?? 50
+    const limit = Math.min(data.limit ?? 50, 100)
     const dateFilter = getDateFilter(data.timeRange)
 
     switch (data.metric) {
@@ -52,7 +52,7 @@ export const getFriendsLeaderboard = createServerFn({ method: 'GET' })
     })
 
     const userIds = [userId, ...following.map((f) => f.followingId)]
-    const limit = data.limit ?? 50
+    const limit = Math.min(data.limit ?? 50, 100)
     const dateFilter = getDateFilter(data.timeRange)
 
     switch (data.metric) {

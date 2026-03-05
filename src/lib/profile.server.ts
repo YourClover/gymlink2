@@ -1,7 +1,9 @@
+import { randomInt } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { requireAuth } from './auth-guard.server'
 import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db.server'
+import { rateLimit } from './rate-limit.server'
 
 // Character set for profile codes (excludes confusing chars: 0/O, 1/I/L)
 const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
@@ -9,7 +11,7 @@ const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
 function generateProfileCode(): string {
   let code = ''
   for (let i = 0; i < 8; i++) {
-    code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]
+    code += CODE_CHARS[randomInt(CODE_CHARS.length)]
   }
   return code
 }
@@ -69,15 +71,42 @@ export const updateUserProfile = createServerFn({ method: 'POST' })
       isPrivate?: boolean
       showAchievements?: boolean
       showStats?: boolean
-    }) => data,
+    }) => {
+      if (data.bio !== undefined && data.bio.length > 500) {
+        throw new Error('Bio must be 500 characters or fewer')
+      }
+      if (data.avatarUrl !== undefined && data.avatarUrl !== '') {
+        if (data.avatarUrl.length > 2048) {
+          throw new Error('Avatar URL is too long')
+        }
+        try {
+          const url = new URL(data.avatarUrl)
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Avatar URL must use HTTP or HTTPS')
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message.includes('Avatar URL'))
+            throw e
+          throw new Error('Avatar URL must be a valid URL')
+        }
+      }
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const { userId } = await requireAuth(data.token)
-    const { token: _, ...updateData } = data
 
     const profile = await prisma.userProfile.update({
       where: { userId },
-      data: updateData,
+      data: {
+        ...(data.bio !== undefined && { bio: data.bio }),
+        ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
+        ...(data.isPrivate !== undefined && { isPrivate: data.isPrivate }),
+        ...(data.showAchievements !== undefined && {
+          showAchievements: data.showAchievements,
+        }),
+        ...(data.showStats !== undefined && { showStats: data.showStats }),
+      },
     })
 
     return { profile }
@@ -263,6 +292,8 @@ export const deleteUserAccount = createServerFn({ method: 'POST' })
       data,
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'account-delete', limit: 3, windowMs: 3600_000 })
+
     const { userId } = await requireAuth(data.token)
 
     // Verify user exists and is not already deleted
@@ -363,6 +394,29 @@ export const getProfileStats = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const auth = await requireAuth(data.token)
     const userId = data.targetUserId ?? auth.userId
+
+    // Access control: verify the requester can view this user's stats
+    if (data.targetUserId && data.targetUserId !== auth.userId) {
+      const targetProfile = await prisma.userProfile.findUnique({
+        where: { userId: data.targetUserId },
+      })
+      if (!targetProfile || !targetProfile.showStats) {
+        throw new Error('Cannot view this content')
+      }
+      if (targetProfile.isPrivate) {
+        const follow = await prisma.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: auth.userId,
+              followingId: data.targetUserId,
+            },
+          },
+        })
+        if (follow?.status !== 'ACCEPTED') {
+          throw new Error('Cannot view this content')
+        }
+      }
+    }
 
     const [
       totalWorkouts,

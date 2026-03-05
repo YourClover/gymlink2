@@ -30,11 +30,10 @@ export const getHealthStatus = createServerFn({ method: 'GET' }).handler(
         status: 'up',
         latencyMs: Date.now() - dbStart,
       }
-    } catch (error) {
+    } catch {
       dbStatus = {
         status: 'down',
-        error:
-          error instanceof Error ? error.message : 'Unknown database error',
+        error: 'Database connection failed',
       }
     }
 

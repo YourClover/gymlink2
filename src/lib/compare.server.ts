@@ -154,7 +154,7 @@ export const getComparisonData = createServerFn({ method: 'GET' })
     })
 
     if (!targetProfile) {
-      throw new Error('User not found')
+      throw new Error('Cannot view this content')
     }
 
     // Verify follow status is ACCEPTED
@@ -168,12 +168,12 @@ export const getComparisonData = createServerFn({ method: 'GET' })
     })
 
     if (follow?.status !== 'ACCEPTED') {
-      throw new Error('You must be following this user to compare stats')
+      throw new Error('Cannot view this content')
     }
 
     // Verify target has showStats enabled
     if (!targetProfile.showStats) {
-      throw new Error('This user has their stats hidden')
+      throw new Error('Cannot view this content')
     }
 
     // Get own profile

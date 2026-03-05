@@ -334,6 +334,8 @@ export const reorderPlanDays = createServerFn({ method: 'POST' })
 
     await requirePlanEditAccess(data.workoutPlanId, userId)
 
+    if (data.dayIds.length > 100) throw new Error('Too many items to reorder')
+
     // Update each day's order
     await Promise.all(
       data.dayIds.map((dayId, index) =>
@@ -492,6 +494,9 @@ export const reorderPlanExercises = createServerFn({ method: 'POST' })
     }
 
     await requirePlanEditAccess(planDay.workoutPlanId, userId)
+
+    if (data.exerciseIds.length > 100)
+      throw new Error('Too many items to reorder')
 
     // Update each exercise's order
     await Promise.all(

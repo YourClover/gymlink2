@@ -7,7 +7,12 @@ import {
   verifyToken,
 } from './auth'
 import { EMAIL_REGEX, PASSWORD_MIN_LENGTH } from './constants'
+import { rateLimit } from './rate-limit.server'
 import type { JWTPayload } from './auth'
+
+// Pre-computed dummy hash for constant-time login rejection
+const DUMMY_HASH =
+  '$2b$12$k6U09nPx.hg5Pt3Q/vm4W.bvP7tn5Tk60gCOPK9MekrEWUOG7CzlO'
 
 // Development-only logging helper
 const isDev = process.env.NODE_ENV !== 'production'
@@ -62,6 +67,7 @@ export const registerUser = createServerFn({ method: 'POST' })
     return data
   })
   .handler(async ({ data }) => {
+    rateLimit({ key: 'register', limit: 3, windowMs: 3600_000 })
     const { email, password, name } = data
     log('Register attempt:', { email, name })
 
@@ -110,6 +116,7 @@ export const loginUser = createServerFn({ method: 'POST' })
     return data
   })
   .handler(async ({ data }) => {
+    rateLimit({ key: 'login', limit: 5, windowMs: 60_000 })
     const { email, password } = data
     log('Login attempt:', { email })
 
@@ -119,6 +126,8 @@ export const loginUser = createServerFn({ method: 'POST' })
     })
 
     if (!user) {
+      // Hash against dummy value to prevent timing-based user enumeration
+      await verifyPassword(password, DUMMY_HASH)
       log('Login failed: User not found:', { email })
       throw new Error('Invalid email or password')
     }
@@ -163,6 +172,7 @@ export const checkEmailAvailable = createServerFn({ method: 'POST' })
     return data
   })
   .handler(async ({ data }) => {
+    rateLimit({ key: 'email-check', limit: 10, windowMs: 60_000 })
     log('Email availability check:', { email: data.email })
     try {
       const existingUser = await prisma.user.findUnique({

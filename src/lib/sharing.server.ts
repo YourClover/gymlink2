@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db.server'
@@ -13,8 +14,7 @@ const DEFAULT_EXPIRY_DAYS = 7
 function generateCode(): string {
   let code = ''
   for (let i = 0; i < SHARE_CODE_LENGTH; i++) {
-    code +=
-      SHARE_CODE_CHARSET[Math.floor(Math.random() * SHARE_CODE_CHARSET.length)]
+    code += SHARE_CODE_CHARSET[randomInt(SHARE_CODE_CHARSET.length)]
   }
   return code
 }
@@ -272,12 +272,9 @@ export const revokeShareCode = createServerFn({ method: 'POST' })
 // Clean up expired share codes
 // This should be called periodically (e.g., via cron job or scheduled task)
 export const cleanupExpiredShareCodes = createServerFn({ method: 'POST' })
-  .inputValidator((data: { token?: string | null }) => data)
+  .inputValidator((data: { token: string | null }) => data)
   .handler(async ({ data }) => {
-    // Optional: verify admin access for manual cleanup
-    if (data.token) {
-      await requireAdmin(data.token)
-    }
+    await requireAdmin(data.token)
 
     const now = new Date()
 

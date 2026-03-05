@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db.server'
@@ -9,7 +10,7 @@ const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
 function generateInviteCode(): string {
   let code = ''
   for (let i = 0; i < 8; i++) {
-    code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]
+    code += CODE_CHARS[randomInt(CODE_CHARS.length)]
   }
   return code
 }
@@ -145,6 +146,13 @@ export const joinChallenge = createServerFn({ method: 'POST' })
   .inputValidator((data: { challengeId: string; token: string | null }) => data)
   .handler(async ({ data }) => {
     const { userId } = await requireAuth(data.token)
+
+    const challenge = await prisma.challenge.findUnique({
+      where: { id: data.challengeId },
+      select: { isPublic: true },
+    })
+    if (!challenge) throw new Error('Challenge not found')
+    if (!challenge.isPublic) throw new Error('Challenge not found')
 
     return joinChallengeInternal(data.challengeId, userId)
   })
