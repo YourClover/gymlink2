@@ -30,6 +30,17 @@ type ExercisePR = {
 
 type GroupedPRs = Record<string, Array<ExercisePR>>
 
+const muscleGroupOrder: Array<MuscleGroup> = [
+  'CHEST',
+  'BACK',
+  'LEGS',
+  'SHOULDERS',
+  'ARMS',
+  'CORE',
+  'CARDIO',
+  'FULL_BODY',
+]
+
 function PRsPage() {
   const { user, token } = useAuth()
   const navigate = useNavigate()
@@ -80,17 +91,6 @@ function PRsPage() {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     return new Date(pr.achievedAt) > sevenDaysAgo
   }
-
-  const muscleGroupOrder: Array<MuscleGroup> = [
-    'CHEST',
-    'BACK',
-    'LEGS',
-    'SHOULDERS',
-    'ARMS',
-    'CORE',
-    'CARDIO',
-    'FULL_BODY',
-  ]
 
   // Get all PRs as a flat list
   const allPRs = useMemo(() => Object.values(grouped).flat(), [grouped])

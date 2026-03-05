@@ -208,10 +208,10 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
           },
         })
 
-        // Copy all exercises (custom exercises are now globally available)
-        for (const sourcePlanExercise of sourceDay.planExercises) {
-          await tx.planExercise.create({
-            data: {
+        // Batch-create all exercises for this day
+        if (sourceDay.planExercises.length > 0) {
+          await tx.planExercise.createMany({
+            data: sourceDay.planExercises.map((sourcePlanExercise) => ({
               planDayId: newDay.id,
               exerciseId: sourcePlanExercise.exercise.id,
               exerciseOrder: sourcePlanExercise.exerciseOrder,
@@ -221,7 +221,7 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
               targetWeight: sourcePlanExercise.targetWeight,
               restSeconds: sourcePlanExercise.restSeconds,
               notes: sourcePlanExercise.notes,
-            },
+            })),
           })
         }
       }

@@ -449,6 +449,7 @@ model ActivityFeedItem {
 
   @@index([userId, createdAt])
   @@index([referenceId])
+  @@index([activityType, referenceId])
   @@map("activity_feed_items")
 }
 

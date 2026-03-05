@@ -236,19 +236,20 @@ async function enrichLeaderboard(
 
   const userIds = entries.map((e) => e.userId)
 
-  const [users, profiles] = await Promise.all([
-    prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, name: true },
-    }),
-    prisma.userProfile.findMany({
-      where: { userId: { in: userIds } },
-      select: { userId: true, username: true, avatarUrl: true },
-    }),
-  ])
+  const profiles = await prisma.userProfile.findMany({
+    where: { userId: { in: userIds } },
+    select: {
+      userId: true,
+      username: true,
+      avatarUrl: true,
+      user: { select: { id: true, name: true } },
+    },
+  })
 
-  const userMap = new Map(users.map((u) => [u.id, u]))
   const profileMap = new Map(profiles.map((p) => [p.userId, p]))
+  const userMap = new Map(
+    profiles.map((p) => [p.userId, p.user]),
+  )
 
   return {
     leaderboard: entries.map((entry, index) => ({

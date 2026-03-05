@@ -405,7 +405,15 @@ export const addPlanExercise = createServerFn({ method: 'POST' })
         notes: exerciseData.notes,
       },
       include: {
-        exercise: true,
+        exercise: {
+          select: {
+            id: true,
+            name: true,
+            muscleGroup: true,
+            isTimed: true,
+            equipment: true,
+          },
+        },
       },
     })
 
@@ -447,7 +455,15 @@ export const updatePlanExercise = createServerFn({ method: 'POST' })
       where: { id },
       data: updateData,
       include: {
-        exercise: true,
+        exercise: {
+          select: {
+            id: true,
+            name: true,
+            muscleGroup: true,
+            isTimed: true,
+            equipment: true,
+          },
+        },
       },
     })
 
@@ -534,7 +550,15 @@ export const getPlanDay = createServerFn({ method: 'GET' })
         planExercises: {
           orderBy: { exerciseOrder: 'asc' },
           include: {
-            exercise: true,
+            exercise: {
+              select: {
+                id: true,
+                name: true,
+                muscleGroup: true,
+                isTimed: true,
+                equipment: true,
+              },
+            },
           },
         },
       },

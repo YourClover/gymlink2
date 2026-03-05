@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import AchievementBadge from './AchievementBadge'
 import type { AchievementCategory, AchievementRarity } from '@prisma/client'
 
@@ -44,7 +45,7 @@ function formatDate(date: Date): string {
   }).format(new Date(date))
 }
 
-export default function AchievementCard({
+export default memo(function AchievementCard({
   name,
   description,
   icon,
@@ -93,4 +94,4 @@ export default function AchievementCard({
       </div>
     </button>
   )
-}
+})

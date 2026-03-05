@@ -163,31 +163,18 @@ export const getProfileByUsername = createServerFn({ method: 'GET' })
         followStatus: null,
       }
 
-    // Check if viewer can see this profile
-    let canView = !profile.isPrivate
-    let followStatus: string | null = null
-
-    if (viewerId) {
-      if (viewerId === profile.userId) {
-        canView = true // Own profile
-      } else {
-        const follow = await prisma.follow.findUnique({
-          where: {
-            followerId_followingId: {
-              followerId: viewerId,
-              followingId: profile.userId,
+    // Run follow check and counts in parallel
+    const [follow, followersCount, followingCount] = await Promise.all([
+      viewerId && viewerId !== profile.userId
+        ? prisma.follow.findUnique({
+            where: {
+              followerId_followingId: {
+                followerId: viewerId,
+                followingId: profile.userId,
+              },
             },
-          },
-        })
-        followStatus = follow?.status ?? null
-        if (follow?.status === 'ACCEPTED') {
-          canView = true
-        }
-      }
-    }
-
-    // Get follower/following counts
-    const [followersCount, followingCount] = await Promise.all([
+          })
+        : Promise.resolve(null),
       prisma.follow.count({
         where: { followingId: profile.userId, status: 'ACCEPTED' },
       }),
@@ -195,6 +182,17 @@ export const getProfileByUsername = createServerFn({ method: 'GET' })
         where: { followerId: profile.userId, status: 'ACCEPTED' },
       }),
     ])
+
+    let canView = !profile.isPrivate
+    const followStatus = follow?.status ?? null
+
+    if (viewerId) {
+      if (viewerId === profile.userId) {
+        canView = true
+      } else if (follow?.status === 'ACCEPTED') {
+        canView = true
+      }
+    }
 
     return {
       profile: {
@@ -271,6 +269,7 @@ export const searchUsers = createServerFn({ method: 'GET' })
         followerId: userId,
         followingId: { in: profiles.map((p) => p.userId) },
       },
+      select: { followingId: true, status: true },
     })
 
     const statusMap = new Map(

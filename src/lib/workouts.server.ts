@@ -89,6 +89,13 @@ async function recalculatePR(
       isDropset: false,
       workoutSession: { userId },
     },
+    select: {
+      id: true,
+      weight: true,
+      reps: true,
+      timeSeconds: true,
+      weightUnit: true,
+    },
   })
 
   // Find best score per recordType
@@ -205,7 +212,15 @@ export const getActiveSession = createServerFn({ method: 'GET' })
             planExercises: {
               orderBy: { exerciseOrder: 'asc' },
               include: {
-                exercise: true,
+                exercise: {
+                  select: {
+                    id: true,
+                    name: true,
+                    muscleGroup: true,
+                    isTimed: true,
+                    equipment: true,
+                  },
+                },
               },
             },
           },
@@ -213,7 +228,15 @@ export const getActiveSession = createServerFn({ method: 'GET' })
         workoutSets: {
           orderBy: { completedAt: 'asc' },
           include: {
-            exercise: true,
+            exercise: {
+              select: {
+                id: true,
+                name: true,
+                muscleGroup: true,
+                isTimed: true,
+                equipment: true,
+              },
+            },
           },
         },
       },
@@ -286,7 +309,15 @@ export const startWorkoutSession = createServerFn({ method: 'POST' })
             planExercises: {
               orderBy: { exerciseOrder: 'asc' },
               include: {
-                exercise: true,
+                exercise: {
+                  select: {
+                    id: true,
+                    name: true,
+                    muscleGroup: true,
+                    isTimed: true,
+                    equipment: true,
+                  },
+                },
               },
             },
           },
@@ -509,7 +540,14 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
           completedAt: new Date(),
         },
         include: {
-          exercise: true,
+          exercise: {
+            select: {
+              id: true,
+              name: true,
+              isTimed: true,
+              equipment: true,
+            },
+          },
         },
       })
 
@@ -696,7 +734,13 @@ export const updateWorkoutSet = createServerFn({ method: 'POST' })
         where: { id },
         data: updateData,
         include: {
-          exercise: true,
+          exercise: {
+            select: {
+              id: true,
+              isTimed: true,
+              equipment: true,
+            },
+          },
         },
       })
 
@@ -776,7 +820,15 @@ export const getWorkoutSession = createServerFn({ method: 'GET' })
         workoutSets: {
           orderBy: { completedAt: 'asc' },
           include: {
-            exercise: true,
+            exercise: {
+              select: {
+                id: true,
+                name: true,
+                muscleGroup: true,
+                isTimed: true,
+                equipment: true,
+              },
+            },
           },
         },
       },

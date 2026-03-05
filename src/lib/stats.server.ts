@@ -2,7 +2,6 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db.server'
 import { requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
-import { getDayStart, getMonthStart, getWeekStart } from './date-utils'
 import { PR_PRIORITY } from './pr-utils'
 import type { Granularity } from './date-utils'
 import type { RecordType } from '@prisma/client'
@@ -136,13 +135,20 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
 // ============================================
 
 function getPeriodStart(date: Date, granularity: Granularity): Date {
+  const d = new Date(date)
+  d.setUTCHours(0, 0, 0, 0)
   switch (granularity) {
     case 'daily':
-      return getDayStart(date)
-    case 'weekly':
-      return getWeekStart(date)
+      return d
+    case 'weekly': {
+      const day = d.getUTCDay()
+      const diff = day === 0 ? 6 : day - 1
+      d.setUTCDate(d.getUTCDate() - diff)
+      return d
+    }
     case 'monthly':
-      return getMonthStart(date)
+      d.setUTCDate(1)
+      return d
   }
 }
 
@@ -150,13 +156,13 @@ function advancePeriod(date: Date, granularity: Granularity): Date {
   const d = new Date(date)
   switch (granularity) {
     case 'daily':
-      d.setDate(d.getDate() + 1)
+      d.setUTCDate(d.getUTCDate() + 1)
       return d
     case 'weekly':
-      d.setDate(d.getDate() + 7)
+      d.setUTCDate(d.getUTCDate() + 7)
       return d
     case 'monthly':
-      d.setMonth(d.getMonth() + 1)
+      d.setUTCMonth(d.getUTCMonth() + 1)
       return d
   }
 }
