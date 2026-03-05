@@ -93,52 +93,54 @@ export const createChallenge = createServerFn({ method: 'POST' })
 
 // Internal helper for joining a challenge (used by joinChallenge and joinChallengeByCode)
 async function joinChallengeInternal(challengeId: string, userId: string) {
-  const challenge = await prisma.challenge.findUnique({
-    where: { id: challengeId },
-    include: { _count: { select: { participants: true } } },
-  })
+  return prisma.$transaction(async (tx) => {
+    const challenge = await tx.challenge.findUnique({
+      where: { id: challengeId },
+      include: { _count: { select: { participants: true } } },
+    })
 
-  if (!challenge) throw new Error('Challenge not found')
-  if (challenge.status === 'COMPLETED' || challenge.status === 'CANCELLED') {
-    throw new Error('Challenge is no longer active')
-  }
-  if (
-    challenge.maxParticipants &&
-    challenge._count.participants >= challenge.maxParticipants
-  ) {
-    throw new Error('Challenge is full')
-  }
+    if (!challenge) throw new Error('Challenge not found')
+    if (challenge.status === 'COMPLETED' || challenge.status === 'CANCELLED') {
+      throw new Error('Challenge is no longer active')
+    }
+    if (
+      challenge.maxParticipants &&
+      challenge._count.participants >= challenge.maxParticipants
+    ) {
+      throw new Error('Challenge is full')
+    }
 
-  // Check if already participating
-  const existing = await prisma.challengeParticipant.findUnique({
-    where: {
-      challengeId_userId: {
+    // Check if already participating
+    const existing = await tx.challengeParticipant.findUnique({
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId,
+        },
+      },
+    })
+    if (existing) throw new Error('Already participating in this challenge')
+
+    const participant = await tx.challengeParticipant.create({
+      data: {
         challengeId,
         userId,
+        progress: 0,
       },
-    },
-  })
-  if (existing) throw new Error('Already participating in this challenge')
+    })
 
-  const participant = await prisma.challengeParticipant.create({
-    data: {
-      challengeId,
-      userId,
-      progress: 0,
-    },
-  })
+    // Create activity item
+    await tx.activityFeedItem.create({
+      data: {
+        userId,
+        activityType: 'CHALLENGE_JOINED',
+        referenceId: challengeId,
+        metadata: { challengeName: challenge.name },
+      },
+    })
 
-  // Create activity item
-  await prisma.activityFeedItem.create({
-    data: {
-      userId,
-      activityType: 'CHALLENGE_JOINED',
-      referenceId: challengeId,
-      metadata: { challengeName: challenge.name },
-    },
+    return { participant }
   })
-
-  return { participant }
 }
 
 // Join a challenge

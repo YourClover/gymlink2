@@ -42,7 +42,17 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
       completedAtFilter: typeof dateFilter,
       prFilter?: { gte: Date; lt?: Date },
     ) {
-      const [workouts, times, sets, prs] = await Promise.all([
+      // Build date bounds for raw SQL volume query
+      const dateGte =
+        completedAtFilter && typeof completedAtFilter === 'object' && 'gte' in completedAtFilter
+          ? (completedAtFilter.gte as Date)
+          : null
+      const dateLt =
+        completedAtFilter && typeof completedAtFilter === 'object' && 'lt' in completedAtFilter
+          ? (completedAtFilter.lt as Date)
+          : null
+
+      const [workouts, times, volumeResult, prs] = await Promise.all([
         prisma.workoutSession.count({
           where: { userId, completedAt: completedAtFilter },
         }),
@@ -50,16 +60,41 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
           where: { userId, completedAt: completedAtFilter },
           _sum: { durationSeconds: true },
         }),
-        prisma.workoutSet.findMany({
-          where: {
-            workoutSession: {
-              userId,
-              completedAt: completedAtFilter,
-            },
-            isWarmup: false,
-          },
-          select: { weight: true, reps: true },
-        }),
+        dateGte && dateLt
+          ? prisma.$queryRaw<[{ total: number | null }]>`
+              SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
+              FROM workout_sets ws
+              JOIN workout_sessions s ON s.id = ws.workout_session_id
+              WHERE s.user_id = ${userId}
+                AND s.completed_at IS NOT NULL
+                AND s.completed_at >= ${dateGte}
+                AND s.completed_at < ${dateLt}
+                AND ws.is_warmup = false
+                AND ws.weight IS NOT NULL
+                AND ws.reps IS NOT NULL
+            `
+          : dateGte
+            ? prisma.$queryRaw<[{ total: number | null }]>`
+                SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
+                FROM workout_sets ws
+                JOIN workout_sessions s ON s.id = ws.workout_session_id
+                WHERE s.user_id = ${userId}
+                  AND s.completed_at IS NOT NULL
+                  AND s.completed_at >= ${dateGte}
+                  AND ws.is_warmup = false
+                  AND ws.weight IS NOT NULL
+                  AND ws.reps IS NOT NULL
+              `
+            : prisma.$queryRaw<[{ total: number | null }]>`
+                SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
+                FROM workout_sets ws
+                JOIN workout_sessions s ON s.id = ws.workout_session_id
+                WHERE s.user_id = ${userId}
+                  AND s.completed_at IS NOT NULL
+                  AND ws.is_warmup = false
+                  AND ws.weight IS NOT NULL
+                  AND ws.reps IS NOT NULL
+              `,
         prisma.personalRecord.count({
           where: {
             userId,
@@ -68,17 +103,10 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
         }),
       ])
 
-      let volume = 0
-      for (const set of sets) {
-        if (set.weight && set.reps) {
-          volume += set.weight * set.reps
-        }
-      }
-
       return {
         totalWorkouts: workouts,
         totalTimeSeconds: times._sum.durationSeconds ?? 0,
-        totalVolume: volume,
+        totalVolume: Number(volumeResult[0].total),
         totalPRs: prs,
       }
     }
@@ -271,12 +299,12 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
       select: { id: true, muscleGroup: true },
     })
 
+    const exerciseMap = new Map(allExercises.map((e) => [e.id, e.muscleGroup]))
     const muscleDistribution: Record<string, number> = {}
     let totalSets = 0
 
     for (const ec of muscleGroupCounts) {
-      const exercise = allExercises.find((e) => e.id === ec.exerciseId)
-      const group = exercise?.muscleGroup ?? 'OTHER'
+      const group = exerciseMap.get(ec.exerciseId) ?? 'OTHER'
       muscleDistribution[group] =
         (muscleDistribution[group] ?? 0) + ec._count.id
       totalSets += ec._count.id
@@ -637,6 +665,7 @@ export const getRpeStats = createServerFn({ method: 'GET' })
       orderBy: {
         workoutSession: { completedAt: 'asc' },
       },
+      take: 5000,
     })
 
     if (setsWithRpe.length === 0)
