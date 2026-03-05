@@ -180,6 +180,7 @@ model WorkoutPlan {
   collaborators   PlanCollaborator[]
 
   @@index([userId])
+  @@index([userId, isActive])
   @@map("workout_plans")
 }
 
@@ -310,6 +311,7 @@ model PersonalRecord {
   @@unique([userId, exerciseId, recordType]) // Prevent duplicate PRs for same exercise/type
   @@index([userId])
   @@index([exerciseId])
+  @@index([userId, achievedAt])
   @@map("personal_records")
 }
 
@@ -429,9 +431,8 @@ model Follow {
   following User @relation("FollowingRelation", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
-  @@index([followerId])
-  @@index([followingId])
-  @@index([status])
+  @@index([followerId, status])
+  @@index([followingId, status])
   @@map("follows")
 }
 
@@ -445,8 +446,7 @@ model ActivityFeedItem {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([createdAt])
+  @@index([userId, createdAt])
   @@index([referenceId])
   @@map("activity_feed_items")
 }
@@ -475,6 +475,7 @@ model Challenge {
   @@index([creatorId])
   @@index([status])
   @@index([inviteCode])
+  @@index([status, startDate, endDate])
   @@map("challenges")
 }
 
@@ -507,8 +508,6 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
+  @@index([userId, isRead, createdAt])
   @@map("notifications")
 }
