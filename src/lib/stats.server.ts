@@ -197,48 +197,30 @@ export const getVolumeHistory = createServerFn({ method: 'GET' })
       startDate = getPeriodStart(earliest.completedAt, granularity)
     }
 
-    // Get all completed workout sets in this period
-    const workouts = await prisma.workoutSession.findMany({
-      where: {
-        userId,
-        AND: [
-          { completedAt: { not: null } },
-          { completedAt: { gte: startDate } },
-        ],
-      },
-      include: {
-        workoutSets: {
-          where: { isWarmup: false },
-          select: {
-            weight: true,
-            reps: true,
-          },
-        },
-      },
-    })
+    // Aggregate volume and workout counts per period in SQL
+    const intervalMap = { daily: 'day', weekly: 'week', monthly: 'month' } as const
+    const truncInterval = intervalMap[granularity]
 
-    // Group by period
+    const rows = await prisma.$queryRaw<
+      Array<{ period_start: Date; volume: number; workouts: bigint }>
+    >`
+      SELECT date_trunc(${truncInterval}, s.completed_at)::date AS period_start,
+             COALESCE(SUM(ws.weight * ws.reps), 0) AS volume,
+             COUNT(DISTINCT s.id) AS workouts
+      FROM workout_sessions s
+      LEFT JOIN workout_sets ws ON ws.workout_session_id = s.id
+        AND ws.is_warmup = false AND ws.weight IS NOT NULL AND ws.reps IS NOT NULL
+      WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+        AND s.completed_at >= ${startDate}
+      GROUP BY period_start ORDER BY period_start
+    `
+
     const periodVolume: Record<string, number> = {}
     const periodWorkouts: Record<string, number> = {}
-
-    for (const workout of workouts) {
-      if (!workout.completedAt) continue
-
-      const periodStart = getPeriodStart(workout.completedAt, granularity)
-      const periodKey = periodStart.toISOString().split('T')[0]
-
-      if (!periodVolume[periodKey]) {
-        periodVolume[periodKey] = 0
-        periodWorkouts[periodKey] = 0
-      }
-
-      periodWorkouts[periodKey]++
-
-      for (const set of workout.workoutSets) {
-        if (set.weight && set.reps) {
-          periodVolume[periodKey] += set.weight * set.reps
-        }
-      }
+    for (const row of rows) {
+      const key = row.period_start.toISOString().split('T')[0]
+      periodVolume[key] = Number(row.volume)
+      periodWorkouts[key] = Number(row.workouts)
     }
 
     // Build array of periods
@@ -277,47 +259,38 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
       ? { not: null, gte: new Date(data.startDate) }
       : { not: null }
 
-    // Muscle group distribution
-    const muscleGroupCounts = await prisma.workoutSet.groupBy({
-      by: ['exerciseId'],
-      where: {
-        workoutSession: {
-          userId,
-          completedAt: dateFilter,
-        },
-        isWarmup: false,
-      },
-      _count: {
-        id: true,
-      },
-    })
+    // Muscle group distribution via single JOIN query
+    const startDateParam = data.startDate ? new Date(data.startDate) : null
+    const muscleRows = startDateParam
+      ? await prisma.$queryRaw<Array<{ muscle_group: string; set_count: bigint }>>`
+          SELECT e.muscle_group, COUNT(ws.id) AS set_count
+          FROM workout_sets ws
+          JOIN exercises e ON e.id = ws.exercise_id
+          JOIN workout_sessions s ON s.id = ws.workout_session_id
+          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+            AND s.completed_at >= ${startDateParam}
+            AND ws.is_warmup = false
+          GROUP BY e.muscle_group ORDER BY set_count DESC
+        `
+      : await prisma.$queryRaw<Array<{ muscle_group: string; set_count: bigint }>>`
+          SELECT e.muscle_group, COUNT(ws.id) AS set_count
+          FROM workout_sets ws
+          JOIN exercises e ON e.id = ws.exercise_id
+          JOIN workout_sessions s ON s.id = ws.workout_session_id
+          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+            AND ws.is_warmup = false
+          GROUP BY e.muscle_group ORDER BY set_count DESC
+        `
 
-    // Get all exercises to map to muscle groups
-    const allExerciseIds = muscleGroupCounts.map((e) => e.exerciseId)
-    const allExercises = await prisma.exercise.findMany({
-      where: { id: { in: allExerciseIds } },
-      select: { id: true, muscleGroup: true },
-    })
-
-    const exerciseMap = new Map(allExercises.map((e) => [e.id, e.muscleGroup]))
-    const muscleDistribution: Record<string, number> = {}
     let totalSets = 0
-
-    for (const ec of muscleGroupCounts) {
-      const group = exerciseMap.get(ec.exerciseId) ?? 'OTHER'
-      muscleDistribution[group] =
-        (muscleDistribution[group] ?? 0) + ec._count.id
-      totalSets += ec._count.id
+    const muscleGroups = muscleRows.map((row) => {
+      const count = Number(row.set_count)
+      totalSets += count
+      return { muscle: row.muscle_group, count, percentage: 0 }
+    })
+    for (const mg of muscleGroups) {
+      mg.percentage = totalSets > 0 ? Math.round((mg.count / totalSets) * 100) : 0
     }
-
-    // Convert to percentages and sort
-    const muscleGroups = Object.entries(muscleDistribution)
-      .map(([muscle, count]) => ({
-        muscle,
-        count,
-        percentage: totalSets > 0 ? Math.round((count / totalSets) * 100) : 0,
-      }))
-      .sort((a, b) => b.count - a.count)
 
     return {
       muscleGroups,
@@ -647,69 +620,72 @@ export const getRpeStats = createServerFn({ method: 'GET' })
       ? { not: null, gte: new Date(data.startDate) }
       : { not: null }
 
-    const setsWithRpe = await prisma.workoutSet.findMany({
-      where: {
-        workoutSession: {
-          userId,
-          completedAt: dateFilter,
-        },
-        isWarmup: false,
-        rpe: { not: null },
-      },
-      select: {
-        rpe: true,
-        workoutSession: {
-          select: { id: true, completedAt: true },
-        },
-      },
-      orderBy: {
-        workoutSession: { completedAt: 'asc' },
-      },
-      take: 5000,
-    })
+    // Distribution + totals via SQL
+    const rpeStartDate = data.startDate ? new Date(data.startDate) : null
+    const distRows = rpeStartDate
+      ? await prisma.$queryRaw<Array<{ rpe: number; cnt: bigint }>>`
+          SELECT ws.rpe, COUNT(*) AS cnt
+          FROM workout_sets ws
+          JOIN workout_sessions s ON s.id = ws.workout_session_id
+          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+            AND s.completed_at >= ${rpeStartDate}
+            AND ws.is_warmup = false AND ws.rpe IS NOT NULL
+          GROUP BY ws.rpe ORDER BY ws.rpe
+        `
+      : await prisma.$queryRaw<Array<{ rpe: number; cnt: bigint }>>`
+          SELECT ws.rpe, COUNT(*) AS cnt
+          FROM workout_sets ws
+          JOIN workout_sessions s ON s.id = ws.workout_session_id
+          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+            AND ws.is_warmup = false AND ws.rpe IS NOT NULL
+          GROUP BY ws.rpe ORDER BY ws.rpe
+        `
 
-    if (setsWithRpe.length === 0)
+    if (distRows.length === 0)
       return { avgRpe: 0, totalRatedSets: 0, distribution: {}, trend: [] }
 
-    // Distribution (count per RPE 1-10)
     const distribution: Record<number, number> = {}
     let totalRpe = 0
-    for (const set of setsWithRpe) {
-      const rpe = set.rpe!
-      distribution[rpe] = (distribution[rpe] ?? 0) + 1
-      totalRpe += rpe
+    let totalRatedSets = 0
+    for (const row of distRows) {
+      const count = Number(row.cnt)
+      distribution[row.rpe] = count
+      totalRpe += row.rpe * count
+      totalRatedSets += count
     }
 
-    // Average RPE per session (last 20 sessions)
-    const sessionRpes = new Map<
-      string,
-      { total: number; count: number; date: string }
-    >()
-    for (const set of setsWithRpe) {
-      const sessionId = set.workoutSession.id
-      const existing = sessionRpes.get(sessionId)
-      if (existing) {
-        existing.total += set.rpe!
-        existing.count++
-      } else {
-        sessionRpes.set(sessionId, {
-          total: set.rpe!,
-          count: 1,
-          date: set.workoutSession.completedAt!.toISOString().split('T')[0],
-        })
-      }
-    }
+    // Trend: avg RPE per session (last 20 sessions)
+    const trendRows = rpeStartDate
+      ? await prisma.$queryRaw<Array<{ completed_date: Date; avg_rpe: number }>>`
+          SELECT s.completed_at::date AS completed_date, AVG(ws.rpe) AS avg_rpe
+          FROM workout_sets ws
+          JOIN workout_sessions s ON s.id = ws.workout_session_id
+          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+            AND s.completed_at >= ${rpeStartDate}
+            AND ws.is_warmup = false AND ws.rpe IS NOT NULL
+          GROUP BY s.id, s.completed_at
+          ORDER BY s.completed_at DESC LIMIT 20
+        `
+      : await prisma.$queryRaw<Array<{ completed_date: Date; avg_rpe: number }>>`
+          SELECT s.completed_at::date AS completed_date, AVG(ws.rpe) AS avg_rpe
+          FROM workout_sets ws
+          JOIN workout_sessions s ON s.id = ws.workout_session_id
+          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+            AND ws.is_warmup = false AND ws.rpe IS NOT NULL
+          GROUP BY s.id, s.completed_at
+          ORDER BY s.completed_at DESC LIMIT 20
+        `
 
-    const trend = Array.from(sessionRpes.values())
-      .map((s) => ({
-        avgRpe: Math.round((s.total / s.count) * 10) / 10,
-        date: s.date,
+    const trend = trendRows
+      .reverse()
+      .map((row) => ({
+        avgRpe: Math.round(Number(row.avg_rpe) * 10) / 10,
+        date: row.completed_date.toISOString().split('T')[0],
       }))
-      .slice(-20)
 
     return {
-      avgRpe: Math.round((totalRpe / setsWithRpe.length) * 10) / 10,
-      totalRatedSets: setsWithRpe.length,
+      avgRpe: Math.round((totalRpe / totalRatedSets) * 10) / 10,
+      totalRatedSets,
       distribution,
       trend,
     }
