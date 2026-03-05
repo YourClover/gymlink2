@@ -228,7 +228,7 @@ export const getChallengeDetails = createServerFn({ method: 'GET' })
               select: {
                 id: true,
                 name: true,
-                profile: true,
+                profile: { select: { username: true, avatarUrl: true } },
               },
             },
           },
@@ -283,6 +283,7 @@ export const getPublicChallenges = createServerFn({ method: 'GET' })
         _count: { select: { participants: true } },
       },
       orderBy: { createdAt: 'desc' },
+      take: 30,
     })
 
     return {
@@ -313,6 +314,7 @@ export const getUserChallenges = createServerFn({ method: 'GET' })
         },
       },
       orderBy: { joinedAt: 'desc' },
+      take: 50,
     })
 
     const challenges = participations

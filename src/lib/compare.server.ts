@@ -51,19 +51,19 @@ async function getUserStats(userId: string): Promise<CompareUserStats> {
       prisma.personalRecord.count({ where: { userId } }),
       prisma.userAchievement.count({ where: { userId } }),
       calculateStreak(userId),
-      prisma.workoutSet.aggregate({
-        where: {
-          workoutSession: { userId, completedAt: { not: null } },
-          isWarmup: false,
-        },
-        _sum: { weight: true },
-      }),
+      prisma.$queryRaw<[{ total: number | null }]>`
+        SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
+        FROM workout_sets ws
+        JOIN workout_sessions s ON s.id = ws.workout_session_id
+        WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+          AND ws.is_warmup = false AND ws.weight IS NOT NULL AND ws.reps IS NOT NULL
+      `,
     ])
 
   return {
     totalWorkouts,
     totalPRs,
-    totalVolume: volumeResult._sum.weight ?? 0,
+    totalVolume: Number(volumeResult[0].total ?? 0),
     totalAchievements,
     currentStreak: streak,
   }
