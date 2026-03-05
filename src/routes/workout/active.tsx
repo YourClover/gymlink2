@@ -193,25 +193,28 @@ function ActiveWorkoutPage() {
   }, [exercises])
 
   // Handle opening the set logger modal (fetch previous workout data)
-  const handleOpenSetLogger = async (ex: WorkoutExercise) => {
-    setLoggingExercise(ex)
-    setPreviousWorkout(null) // Reset while loading
+  const handleOpenSetLogger = useCallback(
+    async (ex: WorkoutExercise) => {
+      setLoggingExercise(ex)
+      setPreviousWorkout(null) // Reset while loading
 
-    if (!user || !session) return
+      if (!user || !session) return
 
-    try {
-      const result = await getLastExerciseSets({
-        data: {
-          token,
-          exerciseId: ex.exercise.id,
-          excludeSessionId: session.id,
-        },
-      })
-      setPreviousWorkout(result.lastSession)
-    } catch (error) {
-      console.error('Failed to fetch previous workout:', error)
-    }
-  }
+      try {
+        const result = await getLastExerciseSets({
+          data: {
+            token,
+            exerciseId: ex.exercise.id,
+            excludeSessionId: session.id,
+          },
+        })
+        setPreviousWorkout(result.lastSession)
+      } catch (error) {
+        console.error('Failed to fetch previous workout:', error)
+      }
+    },
+    [user, session, token],
+  )
 
   // Handle set logging
   const handleLogSet = async (setData: {
@@ -277,16 +280,34 @@ function ActiveWorkoutPage() {
   }
 
   // Handle set deletion
-  const handleDeleteSet = async (setId: string) => {
-    if (!user) return
+  const handleDeleteSet = useCallback(
+    async (setId: string) => {
+      if (!user) return
 
-    try {
-      await deleteWorkoutSet({ data: { id: setId, token } })
-      await fetchSession()
-    } catch (error) {
-      console.error('Failed to delete set:', error)
-    }
-  }
+      try {
+        await deleteWorkoutSet({ data: { id: setId, token } })
+        await fetchSession()
+      } catch (error) {
+        console.error('Failed to delete set:', error)
+      }
+    },
+    [user, token, fetchSession],
+  )
+
+  // Stable callbacks for ExerciseWorkoutCard memo
+  const handleToggleExpand = useCallback(
+    (id: string) =>
+      setExpandedExerciseId((cur) => (cur === id ? null : id)),
+    [],
+  )
+
+  const handleLogSetById = useCallback(
+    (id: string) => {
+      const ex = exercises.find((e) => e.exercise.id === id)
+      if (ex) handleOpenSetLogger(ex)
+    },
+    [exercises, handleOpenSetLogger],
+  )
 
   // Handle adding extra exercise
   const handleAddExercise = (exercise: Exercise) => {
@@ -443,12 +464,8 @@ function ActiveWorkoutPage() {
                   sets={ex.sets}
                   planExercise={ex.planExercise}
                   isExpanded={expandedExerciseId === ex.exercise.id}
-                  onToggleExpand={() =>
-                    setExpandedExerciseId((current) =>
-                      current === ex.exercise.id ? null : ex.exercise.id,
-                    )
-                  }
-                  onLogSet={() => handleOpenSetLogger(ex)}
+                  onToggleExpand={handleToggleExpand}
+                  onLogSet={handleLogSetById}
                   onDeleteSet={handleDeleteSet}
                 />
               </div>

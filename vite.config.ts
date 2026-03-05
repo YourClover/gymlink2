@@ -119,7 +119,7 @@ const config = defineConfig({
     exclude: SERVER_ONLY_PACKAGES,
   },
   ssr: {
-    external: ['@prisma/client', '@prisma/adapter-pg'],
+    external: ['@prisma/client', '@prisma/adapter-pg', 'pg'],
   },
 })
 

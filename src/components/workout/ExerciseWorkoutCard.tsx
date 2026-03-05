@@ -8,10 +8,10 @@ interface ExerciseWorkoutCardProps {
   exercise: Exercise
   sets: Array<WorkoutSet>
   planExercise?: PlanExercise | null
-  onLogSet: () => void
+  onLogSet: (exerciseId: string) => void
   onDeleteSet: (setId: string) => void
   isExpanded?: boolean
-  onToggleExpand?: () => void
+  onToggleExpand?: (exerciseId: string) => void
 }
 
 export default memo(function ExerciseWorkoutCard({
@@ -27,7 +27,7 @@ export default memo(function ExerciseWorkoutCard({
 
   const handleToggle = () => {
     if (onToggleExpand) {
-      onToggleExpand()
+      onToggleExpand(exercise.id)
     } else {
       setExpanded(!expanded)
     }
@@ -141,7 +141,7 @@ export default memo(function ExerciseWorkoutCard({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              onLogSet()
+              onLogSet(exercise.id)
             }}
             className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600/20 text-blue-400 font-medium rounded-xl hover:bg-blue-600/30 transition-colors"
           >
