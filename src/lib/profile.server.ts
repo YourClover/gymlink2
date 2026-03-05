@@ -424,6 +424,7 @@ export const getProfileStats = createServerFn({ method: 'GET' })
       totalPRs,
       totalAchievements,
       recentWorkout,
+      volumeResult,
     ] = await Promise.all([
       prisma.workoutSession.count({
         where: { userId, completedAt: { not: null } },
@@ -445,23 +446,19 @@ export const getProfileStats = createServerFn({ method: 'GET' })
         orderBy: { completedAt: 'desc' },
         select: { completedAt: true },
       }),
+      prisma.$queryRaw<[{ total: number | null }]>`
+        SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
+        FROM workout_sets ws
+        JOIN workout_sessions s ON s.id = ws.workout_session_id
+        WHERE s.user_id = ${userId}
+          AND s.completed_at IS NOT NULL
+          AND ws.is_warmup = false
+          AND ws.weight IS NOT NULL
+          AND ws.reps IS NOT NULL
+      `,
     ])
 
-    // Calculate total volume (weight × reps)
-    const volumeSets = await prisma.workoutSet.findMany({
-      where: {
-        workoutSession: { userId, completedAt: { not: null } },
-        isWarmup: false,
-      },
-      select: { weight: true, reps: true },
-    })
-
-    let totalVolume = 0
-    for (const set of volumeSets) {
-      if (set.weight != null && set.reps != null) {
-        totalVolume += set.weight * set.reps
-      }
-    }
+    const totalVolume = Number(volumeResult[0].total)
 
     return {
       stats: {

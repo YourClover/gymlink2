@@ -184,12 +184,12 @@ export async function checkAchievementsInternal(
   })
   const earnedSet = new Set(earnedAchievementIds.map((e) => e.achievementId))
 
-  const allAchievements = await prisma.achievement.findMany()
+  const allAchievements = await prisma.achievement.findMany({
+    where: { id: { notIn: Array.from(earnedSet) } },
+  })
 
-  // Check each achievement
+  // Check each unearned achievement
   for (const achievement of allAchievements) {
-    if (earnedSet.has(achievement.id)) continue
-
     let earned = false
 
     switch (achievement.category) {
@@ -284,29 +284,24 @@ async function getTotalPRs(userId: string): Promise<number> {
 }
 
 async function getTotalVolume(userId: string): Promise<number> {
-  const sets = await prisma.workoutSet.findMany({
-    where: {
-      workoutSession: {
-        userId,
-        completedAt: { not: null },
-      },
-      isWarmup: false,
-    },
-    select: { weight: true, reps: true },
-  })
-
-  return sets.reduce((sum, set) => {
-    if (set.weight && set.reps) {
-      return sum + set.weight * set.reps
-    }
-    return sum
-  }, 0)
+  const result = await prisma.$queryRaw<[{ total: number | null }]>`
+    SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
+    FROM workout_sets ws
+    JOIN workout_sessions s ON s.id = ws.workout_session_id
+    WHERE s.user_id = ${userId}
+      AND s.completed_at IS NOT NULL
+      AND ws.is_warmup = false
+      AND ws.weight IS NOT NULL
+      AND ws.reps IS NOT NULL
+  `
+  return Number(result[0].total)
 }
 
 async function getMuscleGroupSetCounts(
   userId: string,
 ): Promise<Record<MuscleGroup, number>> {
-  const sets = await prisma.workoutSet.findMany({
+  const setCounts = await prisma.workoutSet.groupBy({
+    by: ['exerciseId'],
     where: {
       workoutSession: {
         userId,
@@ -314,15 +309,20 @@ async function getMuscleGroupSetCounts(
       },
       isWarmup: false,
     },
-    include: {
-      exercise: { select: { muscleGroup: true } },
-    },
+    _count: { id: true },
   })
 
+  const exerciseIds = setCounts.map((s) => s.exerciseId)
+  const exercises = await prisma.exercise.findMany({
+    where: { id: { in: exerciseIds } },
+    select: { id: true, muscleGroup: true },
+  })
+  const exerciseMap = new Map(exercises.map((e) => [e.id, e.muscleGroup]))
+
   const counts: Record<string, number> = {}
-  for (const set of sets) {
-    const mg = set.exercise.muscleGroup
-    counts[mg] = (counts[mg] || 0) + 1
+  for (const sc of setCounts) {
+    const mg = exerciseMap.get(sc.exerciseId) ?? 'FULL_BODY'
+    counts[mg] = (counts[mg] || 0) + sc._count.id
   }
 
   return counts as Record<MuscleGroup, number>
@@ -330,10 +330,12 @@ async function getMuscleGroupSetCounts(
 
 async function getConsistencyStreak(userId: string): Promise<number> {
   // Calculate consecutive weeks with 3+ workouts
+  const twoYearsAgo = new Date()
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
   const workouts = await prisma.workoutSession.findMany({
     where: {
       userId,
-      completedAt: { not: null },
+      completedAt: { not: null, gte: twoYearsAgo },
     },
     select: { completedAt: true },
     orderBy: { completedAt: 'desc' },
