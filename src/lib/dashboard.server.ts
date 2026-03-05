@@ -20,35 +20,28 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
     weekStart.setDate(now.getDate() + mondayOffset)
     weekStart.setHours(0, 0, 0, 0)
 
-    // Get workouts completed this week
-    const workoutsThisWeek = await prisma.workoutSession.findMany({
-      where: {
-        userId,
-        completedAt: {
-          gte: weekStart,
+    // Get workout count and volume this week in parallel
+    const [workoutsThisWeekCount, volumeResult] = await Promise.all([
+      prisma.workoutSession.count({
+        where: {
+          userId,
+          completedAt: { gte: weekStart },
         },
-      },
-      include: {
-        workoutSets: {
-          select: {
-            weight: true,
-            reps: true,
-            isWarmup: true,
-            isDropset: true,
-          },
-        },
-      },
-    })
+      }),
+      prisma.$queryRaw<Array<{ volume: bigint | null }>>`
+        SELECT SUM(wset.weight * wset.reps) as volume
+        FROM "workout_sets" wset
+        JOIN "workout_sessions" ws ON wset."workout_session_id" = ws.id
+        WHERE ws."user_id" = ${userId}
+          AND ws."completed_at" >= ${weekStart}
+          AND wset."is_warmup" = false
+          AND wset."is_dropset" = false
+          AND wset.weight IS NOT NULL
+          AND wset.reps IS NOT NULL
+      `,
+    ])
 
-    // Calculate total volume (weight × reps for working sets)
-    let totalVolumeThisWeek = 0
-    for (const workout of workoutsThisWeek) {
-      for (const set of workout.workoutSets) {
-        if (!set.isWarmup && !set.isDropset && set.weight && set.reps) {
-          totalVolumeThisWeek += set.weight * set.reps
-        }
-      }
-    }
+    const totalVolumeThisWeek = Number(volumeResult[0]?.volume ?? 0)
 
     // Calculate streak
     const currentStreak = await calculateStreak(userId)
@@ -65,7 +58,7 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
 
     return {
       stats: {
-        workoutsThisWeek: workoutsThisWeek.length,
+        workoutsThisWeek: workoutsThisWeekCount,
         totalVolumeThisWeek,
         currentStreak,
         prsThisWeek,

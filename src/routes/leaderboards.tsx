@@ -36,28 +36,34 @@ function LeaderboardsPage() {
   const [leaderboard, setLeaderboard] = useState<Array<LeaderboardEntry>>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const loadLeaderboard = async () => {
+  useEffect(() => {
     if (!user) return
+
+    let aborted = false
     setIsLoading(true)
 
-    try {
-      const result =
-        scope === 'friends'
-          ? await getFriendsLeaderboard({
-              data: { token, metric, timeRange },
-            })
-          : await getGlobalLeaderboard({ data: { metric, timeRange } })
+    const load = async () => {
+      try {
+        const result =
+          scope === 'friends'
+            ? await getFriendsLeaderboard({
+                data: { token, metric, timeRange },
+              })
+            : await getGlobalLeaderboard({ data: { metric, timeRange } })
 
-      setLeaderboard(result.leaderboard as Array<LeaderboardEntry>)
-    } catch (error) {
-      console.error('Failed to load leaderboard:', error)
-    } finally {
-      setIsLoading(false)
+        if (!aborted) setLeaderboard(result.leaderboard as Array<LeaderboardEntry>)
+      } catch (error) {
+        if (!aborted) console.error('Failed to load leaderboard:', error)
+      } finally {
+        if (!aborted) setIsLoading(false)
+      }
     }
-  }
 
-  useEffect(() => {
-    loadLeaderboard()
+    load()
+
+    return () => {
+      aborted = true
+    }
   }, [user, metric, timeRange, scope])
 
   const getMetricLabel = (m: LeaderboardMetric) => {

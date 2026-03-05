@@ -180,7 +180,7 @@ async function getFollowersInternal(
         select: {
           id: true,
           name: true,
-          profile: true,
+          profile: { select: { username: true, avatarUrl: true } },
         },
       },
     },
@@ -259,7 +259,7 @@ export const getFollowing = createServerFn({ method: 'GET' })
           select: {
             id: true,
             name: true,
-            profile: true,
+            profile: { select: { username: true, avatarUrl: true } },
           },
         },
       },
@@ -364,7 +364,7 @@ export const getMutualFollowers = createServerFn({ method: 'GET' })
           select: {
             id: true,
             name: true,
-            profile: true,
+            profile: { select: { username: true, avatarUrl: true } },
           },
         },
       },

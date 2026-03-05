@@ -312,6 +312,7 @@ model PersonalRecord {
   @@index([userId])
   @@index([exerciseId])
   @@index([userId, achievedAt])
+  @@index([exerciseId, achievedAt])
   @@map("personal_records")
 }
 

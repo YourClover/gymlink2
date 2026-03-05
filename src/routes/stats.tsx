@@ -150,6 +150,8 @@ function StatsPage() {
   const achievementCacheRef = useRef<typeof achievementData>(null)
 
   useEffect(() => {
+    let aborted = false
+
     const fetchStats = async () => {
       if (!user) return
 
@@ -180,6 +182,8 @@ function StatsPage() {
           getPrTimeline({ data: { token, limit: 5, startDate } }),
         ])
 
+        if (aborted) return
+
         setOverview(overviewRes.stats)
         setPreviousStats(overviewRes.previousStats)
         setVolumeHistory(volumeRes.periods)
@@ -202,6 +206,9 @@ function StatsPage() {
           const achRes = await getUserAchievements({
             data: { token },
           })
+
+          if (aborted) return
+
           const recentEarned = achRes.earned.slice(0, 5)
           const earnedSet = new Set(achRes.earnedSet)
           const rarityBreakdown: Partial<
@@ -230,13 +237,17 @@ function StatsPage() {
           setAchievementData(achievementCacheRef.current)
         }
       } catch (error) {
-        console.error('Failed to fetch stats:', error)
+        if (!aborted) console.error('Failed to fetch stats:', error)
       } finally {
-        setLoading(false)
+        if (!aborted) setLoading(false)
       }
     }
 
     fetchStats()
+
+    return () => {
+      aborted = true
+    }
   }, [user, timeRange])
 
   const hasPreviousStats = previousStats !== undefined && timeRange !== 'all'

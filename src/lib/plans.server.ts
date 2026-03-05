@@ -125,7 +125,15 @@ export const getPlan = createServerFn({ method: 'GET' })
             planExercises: {
               orderBy: { exerciseOrder: 'asc' },
               include: {
-                exercise: true,
+                exercise: {
+                  select: {
+                    id: true,
+                    name: true,
+                    muscleGroup: true,
+                    equipment: true,
+                    isTimed: true,
+                  },
+                },
               },
             },
             _count: {

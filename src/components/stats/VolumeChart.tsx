@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import {
   Area,
   Bar,
@@ -128,11 +128,17 @@ export default memo(function VolumeChart({ data, granularity }: Props) {
     )
   }
 
-  const avgVolume =
-    data.reduce((sum, w) => sum + w.volume, 0) /
-    (data.filter((w) => w.volume > 0).length || 1)
+  const avgVolume = useMemo(
+    () =>
+      data.reduce((sum, w) => sum + w.volume, 0) /
+      (data.filter((w) => w.volume > 0).length || 1),
+    [data],
+  )
 
-  const hasWorkoutVariance = new Set(data.map((w) => w.workouts)).size > 1
+  const hasWorkoutVariance = useMemo(
+    () => new Set(data.map((w) => w.workouts)).size > 1,
+    [data],
+  )
 
   return (
     <ResponsiveContainer width="100%" height={compact ? 200 : 240}>

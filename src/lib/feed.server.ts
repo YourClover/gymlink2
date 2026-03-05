@@ -52,7 +52,7 @@ export const getActivityFeed = createServerFn({ method: 'GET' })
           select: {
             id: true,
             name: true,
-            profile: true,
+            profile: { select: { username: true, avatarUrl: true } },
           },
         },
       },

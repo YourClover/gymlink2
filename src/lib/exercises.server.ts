@@ -43,6 +43,7 @@ export const getExercises = createServerFn({ method: 'GET' })
     const exercises = await prisma.exercise.findMany({
       where,
       orderBy: [{ muscleGroup: 'asc' }, { name: 'asc' }],
+      take: 200,
     })
 
     return { exercises }

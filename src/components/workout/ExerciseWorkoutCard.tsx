@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { ChevronDown, ChevronUp, Plus, Repeat, Timer } from 'lucide-react'
 import WorkoutSetRow from './WorkoutSetRow'
 import type { Exercise, PlanExercise, WorkoutSet } from '@prisma/client'
@@ -14,7 +14,7 @@ interface ExerciseWorkoutCardProps {
   onToggleExpand?: () => void
 }
 
-export default function ExerciseWorkoutCard({
+export default memo(function ExerciseWorkoutCard({
   exercise,
   sets,
   planExercise,
@@ -152,4 +152,4 @@ export default function ExerciseWorkoutCard({
       )}
     </div>
   )
-}
+})

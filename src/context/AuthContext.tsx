@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react'
 import { useRouter } from '@tanstack/react-router'
@@ -160,21 +161,24 @@ export function AuthProvider({
     }
   }, [router])
 
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isLoading,
+      isInitializing,
+      error,
+      login,
+      register,
+      logout,
+      refreshUser,
+      clearError,
+    }),
+    [user, token, isLoading, isInitializing, error, login, register, logout, refreshUser, clearError],
+  )
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isLoading,
-        isInitializing,
-        error,
-        login,
-        register,
-        logout,
-        refreshUser,
-        clearError,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

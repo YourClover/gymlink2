@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { Prisma } from '@prisma/client'
 import { prisma } from './db.server'
-import { calculateStreak } from './date-utils.server'
 import { requireAuth } from './auth-guard.server'
 
 type LeaderboardMetric = 'volume' | 'workouts' | 'streak' | 'prs'
@@ -150,37 +149,60 @@ async function getWorkoutsLeaderboard(
   return enrichLeaderboard(sorted)
 }
 
-// Streak leaderboard (current streak)
+// Streak leaderboard (current streak) — single SQL query
 async function getStreakLeaderboard(limit: number, userIds?: Array<string>) {
-  // Get all users to calculate streaks for
-  const users = await prisma.user.findMany({
-    where: userIds ? { id: { in: userIds } } : undefined,
-    select: { id: true },
-    take: 500, // Limit for performance
-  })
+  const userCondition =
+    userIds && userIds.length > 0
+      ? Prisma.sql`AND ws."user_id" = ANY(${userIds})`
+      : Prisma.empty
 
-  // Calculate streak for each user (batched for performance)
-  const streaks: Array<{ userId: string; value: number }> = []
-  const chunkSize = 50
-
-  for (let i = 0; i < users.length; i += chunkSize) {
-    const chunk = users.slice(i, i + chunkSize)
-    const results = await Promise.all(
-      chunk.map(async (user) => ({
-        userId: user.id,
-        value: await calculateStreak(user.id),
-      })),
+  // Single CTE-based query that computes streaks at the database level:
+  // 1. Group completed workouts by (user_id, week_start) for last 52 weeks
+  // 2. Use LAG window function to detect consecutive week gaps
+  // 3. Count consecutive weeks from the most recent qualifying week backward
+  // 4. Filter to only users whose streak includes current or last week
+  const results = await prisma.$queryRaw<
+    Array<{ user_id: string; streak: number }>
+  >`
+    WITH week_activity AS (
+      SELECT DISTINCT
+        ws."user_id",
+        date_trunc('week', ws."completed_at")::date AS week_start
+      FROM "workout_sessions" ws
+      WHERE ws."completed_at" IS NOT NULL
+        AND ws."completed_at" >= (date_trunc('week', NOW()) - interval '52 weeks')::timestamp
+        ${userCondition}
+    ),
+    ranked_weeks AS (
+      SELECT
+        "user_id",
+        week_start,
+        ROW_NUMBER() OVER (PARTITION BY "user_id" ORDER BY week_start DESC) AS rn,
+        (date_trunc('week', NOW())::date - week_start) / 7 AS weeks_ago
+      FROM week_activity
+    ),
+    streaks AS (
+      SELECT
+        "user_id",
+        COUNT(*) AS streak
+      FROM ranked_weeks
+      WHERE weeks_ago = rn - 1  -- consecutive from current/last week
+        AND weeks_ago <= 52
+      GROUP BY "user_id"
+      HAVING MIN(weeks_ago) <= 1  -- must include current or last week
     )
-    for (const result of results) {
-      if (result.value > 0) {
-        streaks.push(result)
-      }
-    }
-  }
+    SELECT "user_id", streak::int
+    FROM streaks
+    ORDER BY streak DESC
+    LIMIT ${limit}
+  `
 
-  return enrichLeaderboard(
-    streaks.sort((a, b) => b.value - a.value).slice(0, limit),
-  )
+  const entries = results.map((r) => ({
+    userId: r.user_id,
+    value: r.streak,
+  }))
+
+  return enrichLeaderboard(entries)
 }
 
 // PRs count leaderboard
@@ -221,6 +243,7 @@ async function enrichLeaderboard(
     }),
     prisma.userProfile.findMany({
       where: { userId: { in: userIds } },
+      select: { userId: true, username: true, avatarUrl: true },
     }),
   ])
 
@@ -237,5 +260,3 @@ async function enrichLeaderboard(
     })),
   }
 }
-
-// calculateStreak is imported from date-utils.ts (shared utility)

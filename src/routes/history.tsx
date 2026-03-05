@@ -164,7 +164,7 @@ function HistoryPage() {
 
   // Fetch calendar data
   const fetchCalendarMonth = useCallback(
-    async (year: number, month: number) => {
+    async (year: number, month: number, signal?: { aborted: boolean }) => {
       if (!user) return
       const cacheKey = `${year}-${month}`
       const cached = monthCache.get(cacheKey)
@@ -178,21 +178,25 @@ function HistoryPage() {
         const result = await getMonthlyWorkoutDays({
           data: { token, year, month },
         })
+        if (signal?.aborted) return
         const dayMap = result.dayMap as Record<number, Array<WorkoutDaySummary>>
         setCalendarData(dayMap)
         setMonthCache((prev) => new Map(prev).set(cacheKey, dayMap))
       } catch (err) {
-        console.error('Failed to fetch calendar data:', err)
+        if (!signal?.aborted) console.error('Failed to fetch calendar data:', err)
       } finally {
-        setCalendarLoading(false)
+        if (!signal?.aborted) setCalendarLoading(false)
       }
     },
     [user, monthCache],
   )
 
   useEffect(() => {
-    if (view === 'calendar') {
-      fetchCalendarMonth(calendarYear, calendarMonth)
+    if (view !== 'calendar') return
+    const signal = { aborted: false }
+    fetchCalendarMonth(calendarYear, calendarMonth, signal)
+    return () => {
+      signal.aborted = true
     }
   }, [view, calendarYear, calendarMonth, fetchCalendarMonth])
 
