@@ -85,12 +85,13 @@ function ProfilePage() {
 
       setLoading(true)
       try {
-        // Load achievements, profile, and stats in parallel
-        const [achievementResult, profileResult, statsResult] =
+        // Load achievements, profile, stats, and follow counts in parallel
+        const [achievementResult, profileResult, statsResult, followResult] =
           await Promise.all([
             getUserAchievements({ data: { token } }),
             getUserProfile({ data: { token } }),
             getProfileStats({ data: { token } }),
+            getFollowCounts({ data: { token } }),
           ])
 
         setAchievementStats({
@@ -124,10 +125,6 @@ function ProfilePage() {
             user: { createdAt: profileResult.profile.user.createdAt },
           })
 
-          // Load follow counts once we know profile exists
-          const followResult = await getFollowCounts({
-            data: { token },
-          })
           setFollowCounts(followResult)
         }
       } catch (error) {

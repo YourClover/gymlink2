@@ -290,6 +290,7 @@ model WorkoutSet {
 
   @@index([workoutSessionId])
   @@index([exerciseId])
+  @@index([workoutSessionId, isWarmup, isDropset])
   @@map("workout_sets")
 }
 
@@ -478,6 +479,7 @@ model Challenge {
   @@index([status])
   @@index([inviteCode])
   @@index([status, startDate, endDate])
+  @@index([isPublic, status])
   @@map("challenges")
 }
 
@@ -495,6 +497,7 @@ model ChallengeParticipant {
   @@unique([challengeId, userId])
   @@index([challengeId])
   @@index([userId])
+  @@index([userId, completedAt])
   @@map("challenge_participants")
 }
 

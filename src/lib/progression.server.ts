@@ -60,10 +60,14 @@ export const getExerciseProgression = createServerFn({ method: 'GET' })
       },
       orderBy: {
         workoutSession: {
-          completedAt: 'asc',
+          completedAt: 'desc',
         },
       },
+      take: 500,
     })
+
+    // Reverse so data points are chronological (we fetched desc to keep newest)
+    sets.reverse()
 
     // Group by session and find best set for each
     const sessionData = new Map<

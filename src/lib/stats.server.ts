@@ -4,7 +4,7 @@ import { requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
 import { PR_PRIORITY } from './pr-utils'
 import type { Granularity } from './date-utils'
-import type { RecordType } from '@prisma/client'
+import { Prisma, type RecordType } from '@prisma/client'
 
 // ============================================
 // OVERVIEW STATS
@@ -59,41 +59,22 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
           where: { userId, completedAt: completedAtFilter },
           _sum: { durationSeconds: true },
         }),
-        dateGte && dateLt
-          ? prisma.$queryRaw<[{ total: number | null }]>`
-              SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
-              FROM workout_sets ws
-              JOIN workout_sessions s ON s.id = ws.workout_session_id
-              WHERE s.user_id = ${userId}
-                AND s.completed_at IS NOT NULL
-                AND s.completed_at >= ${dateGte}
-                AND s.completed_at < ${dateLt}
-                AND ws.is_warmup = false
-                AND ws.weight IS NOT NULL
-                AND ws.reps IS NOT NULL
-            `
-          : dateGte
-            ? prisma.$queryRaw<[{ total: number | null }]>`
-                SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
-                FROM workout_sets ws
-                JOIN workout_sessions s ON s.id = ws.workout_session_id
-                WHERE s.user_id = ${userId}
-                  AND s.completed_at IS NOT NULL
-                  AND s.completed_at >= ${dateGte}
-                  AND ws.is_warmup = false
-                  AND ws.weight IS NOT NULL
-                  AND ws.reps IS NOT NULL
-              `
-            : prisma.$queryRaw<[{ total: number | null }]>`
-                SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
-                FROM workout_sets ws
-                JOIN workout_sessions s ON s.id = ws.workout_session_id
-                WHERE s.user_id = ${userId}
-                  AND s.completed_at IS NOT NULL
-                  AND ws.is_warmup = false
-                  AND ws.weight IS NOT NULL
-                  AND ws.reps IS NOT NULL
-              `,
+        (() => {
+          const gteFilter = dateGte ? Prisma.sql`AND s.completed_at >= ${dateGte}` : Prisma.empty
+          const ltFilter = dateLt ? Prisma.sql`AND s.completed_at < ${dateLt}` : Prisma.empty
+          return prisma.$queryRaw<[{ total: number | null }]>`
+            SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
+            FROM workout_sets ws
+            JOIN workout_sessions s ON s.id = ws.workout_session_id
+            WHERE s.user_id = ${userId}
+              AND s.completed_at IS NOT NULL
+              ${gteFilter}
+              ${ltFilter}
+              AND ws.is_warmup = false
+              AND ws.weight IS NOT NULL
+              AND ws.reps IS NOT NULL
+          `
+        })(),
         prisma.personalRecord.count({
           where: {
             userId,
@@ -267,26 +248,19 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
 
     // Muscle group distribution via single JOIN query
     const startDateParam = data.startDate ? new Date(data.startDate) : null
-    const muscleRows = startDateParam
-      ? await prisma.$queryRaw<Array<{ muscle_group: string; set_count: bigint }>>`
-          SELECT e.muscle_group, COUNT(ws.id) AS set_count
-          FROM workout_sets ws
-          JOIN exercises e ON e.id = ws.exercise_id
-          JOIN workout_sessions s ON s.id = ws.workout_session_id
-          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
-            AND s.completed_at >= ${startDateParam}
-            AND ws.is_warmup = false
-          GROUP BY e.muscle_group ORDER BY set_count DESC
-        `
-      : await prisma.$queryRaw<Array<{ muscle_group: string; set_count: bigint }>>`
-          SELECT e.muscle_group, COUNT(ws.id) AS set_count
-          FROM workout_sets ws
-          JOIN exercises e ON e.id = ws.exercise_id
-          JOIN workout_sessions s ON s.id = ws.workout_session_id
-          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
-            AND ws.is_warmup = false
-          GROUP BY e.muscle_group ORDER BY set_count DESC
-        `
+    const startDateFilter = startDateParam
+      ? Prisma.sql`AND s.completed_at >= ${startDateParam}`
+      : Prisma.empty
+    const muscleRows = await prisma.$queryRaw<Array<{ muscle_group: string; set_count: bigint }>>`
+      SELECT e.muscle_group, COUNT(ws.id) AS set_count
+      FROM workout_sets ws
+      JOIN exercises e ON e.id = ws.exercise_id
+      JOIN workout_sessions s ON s.id = ws.workout_session_id
+      WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+        ${startDateFilter}
+        AND ws.is_warmup = false
+      GROUP BY e.muscle_group ORDER BY set_count DESC
+    `
 
     let totalSets = 0
     const muscleGroups = muscleRows.map((row) => {
@@ -628,24 +602,18 @@ export const getRpeStats = createServerFn({ method: 'GET' })
 
     // Distribution + totals via SQL
     const rpeStartDate = data.startDate ? new Date(data.startDate) : null
-    const distRows = rpeStartDate
-      ? await prisma.$queryRaw<Array<{ rpe: number; cnt: bigint }>>`
-          SELECT ws.rpe, COUNT(*) AS cnt
-          FROM workout_sets ws
-          JOIN workout_sessions s ON s.id = ws.workout_session_id
-          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
-            AND s.completed_at >= ${rpeStartDate}
-            AND ws.is_warmup = false AND ws.rpe IS NOT NULL
-          GROUP BY ws.rpe ORDER BY ws.rpe
-        `
-      : await prisma.$queryRaw<Array<{ rpe: number; cnt: bigint }>>`
-          SELECT ws.rpe, COUNT(*) AS cnt
-          FROM workout_sets ws
-          JOIN workout_sessions s ON s.id = ws.workout_session_id
-          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
-            AND ws.is_warmup = false AND ws.rpe IS NOT NULL
-          GROUP BY ws.rpe ORDER BY ws.rpe
-        `
+    const rpeStartFilter = rpeStartDate
+      ? Prisma.sql`AND s.completed_at >= ${rpeStartDate}`
+      : Prisma.empty
+    const distRows = await prisma.$queryRaw<Array<{ rpe: number; cnt: bigint }>>`
+      SELECT ws.rpe, COUNT(*) AS cnt
+      FROM workout_sets ws
+      JOIN workout_sessions s ON s.id = ws.workout_session_id
+      WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+        ${rpeStartFilter}
+        AND ws.is_warmup = false AND ws.rpe IS NOT NULL
+      GROUP BY ws.rpe ORDER BY ws.rpe
+    `
 
     if (distRows.length === 0)
       return { avgRpe: 0, totalRatedSets: 0, distribution: {}, trend: [] }
@@ -661,26 +629,16 @@ export const getRpeStats = createServerFn({ method: 'GET' })
     }
 
     // Trend: avg RPE per session (last 20 sessions)
-    const trendRows = rpeStartDate
-      ? await prisma.$queryRaw<Array<{ completed_date: Date; avg_rpe: number }>>`
-          SELECT s.completed_at::date AS completed_date, AVG(ws.rpe) AS avg_rpe
-          FROM workout_sets ws
-          JOIN workout_sessions s ON s.id = ws.workout_session_id
-          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
-            AND s.completed_at >= ${rpeStartDate}
-            AND ws.is_warmup = false AND ws.rpe IS NOT NULL
-          GROUP BY s.id, s.completed_at
-          ORDER BY s.completed_at DESC LIMIT 20
-        `
-      : await prisma.$queryRaw<Array<{ completed_date: Date; avg_rpe: number }>>`
-          SELECT s.completed_at::date AS completed_date, AVG(ws.rpe) AS avg_rpe
-          FROM workout_sets ws
-          JOIN workout_sessions s ON s.id = ws.workout_session_id
-          WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
-            AND ws.is_warmup = false AND ws.rpe IS NOT NULL
-          GROUP BY s.id, s.completed_at
-          ORDER BY s.completed_at DESC LIMIT 20
-        `
+    const trendRows = await prisma.$queryRaw<Array<{ completed_date: Date; avg_rpe: number }>>`
+      SELECT s.completed_at::date AS completed_date, AVG(ws.rpe) AS avg_rpe
+      FROM workout_sets ws
+      JOIN workout_sessions s ON s.id = ws.workout_session_id
+      WHERE s.user_id = ${userId} AND s.completed_at IS NOT NULL
+        ${rpeStartFilter}
+        AND ws.is_warmup = false AND ws.rpe IS NOT NULL
+      GROUP BY s.id, s.completed_at
+      ORDER BY s.completed_at DESC LIMIT 20
+    `
 
     const trend = trendRows
       .reverse()

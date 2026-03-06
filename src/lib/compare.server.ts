@@ -81,6 +81,7 @@ async function getUserPRMap(userId: string) {
       },
     },
     orderBy: [{ exerciseId: 'asc' }, { value: 'desc' }],
+    take: 1000,
   })
 
   // Group by exercise, pick best PR type per exercise (same logic as getUserExercisePRs)

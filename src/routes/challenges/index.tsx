@@ -99,8 +99,7 @@ function ChallengesPage() {
     setJoiningId(challengeId)
     try {
       await joinChallenge({ data: { challengeId, token } })
-      await loadPublicChallenges()
-      await loadChallenges()
+      await Promise.all([loadPublicChallenges(), loadChallenges()])
     } catch (error) {
       console.error('Failed to join challenge:', error)
     } finally {

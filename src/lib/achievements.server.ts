@@ -188,6 +188,7 @@ export async function checkAchievementsInternal(
   })
 
   // Check each unearned achievement
+  const toEarn: typeof allAchievements = []
   for (const achievement of allAchievements) {
     let earned = false
 
@@ -212,39 +213,45 @@ export async function checkAchievementsInternal(
         break
     }
 
-    if (earned) {
-      const userAchievement = await prisma.userAchievement.create({
-        data: {
-          userId,
-          achievementId: achievement.id,
-          notified: false,
-        },
-      })
+    if (earned) toEarn.push(achievement)
+  }
 
-      // Create activity feed item for achievement earned
-      await prisma.activityFeedItem.create({
-        data: {
-          userId,
-          activityType: 'ACHIEVEMENT_EARNED',
-          referenceId: userAchievement.id,
-          metadata: {
-            achievementName: achievement.name,
-            achievementIcon: achievement.icon,
-            achievementRarity: achievement.rarity,
+  // Batch all achievement creation into a single transaction
+  if (toEarn.length > 0) {
+    await prisma.$transaction(async (tx) => {
+      for (const achievement of toEarn) {
+        const userAchievement = await tx.userAchievement.create({
+          data: {
+            userId,
+            achievementId: achievement.id,
+            notified: false,
           },
-        },
-      })
+        })
 
-      newlyEarned.push({
-        id: achievement.id,
-        userAchievementId: userAchievement.id,
-        code: achievement.code,
-        name: achievement.name,
-        description: achievement.description,
-        rarity: achievement.rarity,
-        icon: achievement.icon,
-      })
-    }
+        await tx.activityFeedItem.create({
+          data: {
+            userId,
+            activityType: 'ACHIEVEMENT_EARNED',
+            referenceId: userAchievement.id,
+            metadata: {
+              achievementName: achievement.name,
+              achievementIcon: achievement.icon,
+              achievementRarity: achievement.rarity,
+            },
+          },
+        })
+
+        newlyEarned.push({
+          id: achievement.id,
+          userAchievementId: userAchievement.id,
+          code: achievement.code,
+          name: achievement.name,
+          description: achievement.description,
+          rarity: achievement.rarity,
+          icon: achievement.icon,
+        })
+      }
+    })
   }
 
   return { newlyEarned }

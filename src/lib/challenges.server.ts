@@ -334,95 +334,88 @@ export async function updateChallengeProgressInternal(
   userId: string,
   sessionId: string,
 ) {
-  // Get user's active challenges
-  const participations = await prisma.challengeParticipant.findMany({
-    where: {
-      userId,
-      completedAt: null,
-      challenge: { status: 'ACTIVE' },
-    },
-    include: { challenge: true },
-  })
+  // Get user's active challenges and session data in parallel
+  const [participations, session] = await Promise.all([
+    prisma.challengeParticipant.findMany({
+      where: {
+        userId,
+        completedAt: null,
+        challenge: { status: 'ACTIVE' },
+      },
+      include: { challenge: true },
+    }),
+    prisma.workoutSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        workoutSets: {
+          where: { isWarmup: false, isDropset: false },
+          select: { weight: true, reps: true, exerciseId: true },
+        },
+      },
+    }),
+  ])
 
-  for (const participation of participations) {
+  if (!session) return { success: true }
+
+  // Pre-compute session-level aggregates
+  const sessionVolume = session.workoutSets.reduce(
+    (sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0),
+    0,
+  )
+  const sessionSetCount = session.workoutSets.length
+
+  // Compute progress deltas in-memory first
+  const deltas = participations.map((participation) => {
     const challenge = participation.challenge
     let progressDelta = 0
 
-    // Calculate progress delta based on challenge type
     switch (challenge.challengeType) {
       case 'TOTAL_WORKOUTS':
         progressDelta = 1
         break
 
-      case 'TOTAL_VOLUME': {
-        const session = await prisma.workoutSession.findUnique({
-          where: { id: sessionId },
-          include: {
-            workoutSets: {
-              where: { isWarmup: false, isDropset: false },
-              select: { weight: true, reps: true },
-            },
-          },
-        })
-        progressDelta =
-          session?.workoutSets.reduce(
-            (sum, set) => sum + (set.weight ?? 0) * (set.reps ?? 0),
-            0,
-          ) ?? 0
+      case 'TOTAL_VOLUME':
+        progressDelta = sessionVolume
         break
-      }
 
-      case 'TOTAL_SETS': {
-        progressDelta = await prisma.workoutSet.count({
-          where: {
-            workoutSessionId: sessionId,
-            isWarmup: false,
-            isDropset: false,
-          },
-        })
+      case 'TOTAL_SETS':
+        progressDelta = sessionSetCount
         break
-      }
 
       case 'SPECIFIC_EXERCISE': {
         if (!challenge.exerciseId) break
-        const exerciseSets = await prisma.workoutSet.findMany({
-          where: {
-            workoutSessionId: sessionId,
-            exerciseId: challenge.exerciseId,
-            isWarmup: false,
-            isDropset: false,
-          },
-          select: { weight: true, reps: true },
-        })
-        progressDelta = exerciseSets.reduce(
-          (sum, set) => sum + (set.weight ?? 0) * (set.reps ?? 0),
-          0,
-        )
+        progressDelta = session.workoutSets
+          .filter((s) => s.exerciseId === challenge.exerciseId)
+          .reduce(
+            (sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0),
+            0,
+          )
         break
       }
     }
 
-    if (progressDelta === 0) continue
+    return { participation, challenge, progressDelta }
+  })
 
-    // Use transaction with atomic update to prevent race conditions
-    await prisma.$transaction(async (tx) => {
-      // Re-fetch to get latest progress (prevents race condition)
+  // Single transaction for all participation updates
+  await prisma.$transaction(async (tx) => {
+    for (const { participation, challenge, progressDelta } of deltas) {
+      if (progressDelta === 0) continue
+
       const current = await tx.challengeParticipant.findUnique({
         where: { id: participation.id },
         select: { progress: true, completedAt: true },
       })
 
-      // Skip if already completed (another request beat us)
-      if (current?.completedAt) return
+      if (current?.completedAt) continue
 
       const newProgress = (current?.progress ?? 0) + progressDelta
       const completed = newProgress >= challenge.targetValue
 
-      // Update progress atomically
       await tx.challengeParticipant.update({
         where: {
           id: participation.id,
-          completedAt: null, // Only update if still not completed
+          completedAt: null,
         },
         data: {
           progress: newProgress,
@@ -430,7 +423,6 @@ export async function updateChallengeProgressInternal(
         },
       })
 
-      // Only create activity if we just completed (not if already completed)
       if (completed) {
         await tx.activityFeedItem.create({
           data: {
@@ -441,8 +433,8 @@ export async function updateChallengeProgressInternal(
           },
         })
       }
-    })
-  }
+    }
+  })
 
   return { success: true }
 }

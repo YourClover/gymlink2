@@ -160,6 +160,8 @@ function StatsPage() {
       const gran = getGranularityForRange(timeRange)
 
       try {
+        const shouldFetchAchievements = !achievementCacheRef.current
+
         const [
           overviewRes,
           volumeRes,
@@ -182,6 +184,10 @@ function StatsPage() {
           getPrTimeline({ data: { token, limit: 5, startDate } }),
         ])
 
+        const achRes = shouldFetchAchievements
+          ? await getUserAchievements({ data: { token } })
+          : null
+
         if (aborted) return
 
         setOverview(overviewRes.stats)
@@ -201,14 +207,7 @@ function StatsPage() {
         setRpeData(rpeRes)
         setPrTimeline(prTimelineRes.timeline)
 
-        // Fetch achievements only once (not affected by time range)
-        if (!achievementCacheRef.current) {
-          const achRes = await getUserAchievements({
-            data: { token },
-          })
-
-          if (aborted) return
-
+        if (achRes) {
           const recentEarned = achRes.earned.slice(0, 5)
           const earnedSet = new Set(achRes.earnedSet)
           const rarityBreakdown: Partial<

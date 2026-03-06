@@ -27,6 +27,12 @@ interface LeaderboardEntry {
   profile?: { username: string; avatarUrl: string | null }
 }
 
+const podiumStyles: Record<number, string> = {
+  1: 'border-yellow-500/30 bg-yellow-500/5',
+  2: 'border-zinc-400/30 bg-zinc-400/5',
+  3: 'border-amber-600/30 bg-amber-600/5',
+}
+
 function LeaderboardsPage() {
   const { user, token } = useAuth()
   const navigate = useNavigate()
@@ -136,14 +142,14 @@ function LeaderboardsPage() {
     }
   }
 
-  const podiumStyles: Record<number, string> = {
-    1: 'border-yellow-500/30 bg-yellow-500/5',
-    2: 'border-zinc-400/30 bg-zinc-400/5',
-    3: 'border-amber-600/30 bg-amber-600/5',
-  }
-
-  const topEntries = useMemo(() => leaderboard.filter((e) => e.rank <= 3), [leaderboard])
-  const restEntries = useMemo(() => leaderboard.filter((e) => e.rank > 3), [leaderboard])
+  const [topEntries, restEntries] = useMemo(() => {
+    const top: LeaderboardEntry[] = []
+    const rest: LeaderboardEntry[] = []
+    for (const e of leaderboard) {
+      ;(e.rank <= 3 ? top : rest).push(e)
+    }
+    return [top, rest] as const
+  }, [leaderboard])
 
   return (
     <AppLayout title="Leaderboards">
