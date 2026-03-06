@@ -1,5 +1,13 @@
 import { Star } from 'lucide-react'
-import { Line, LineChart, ResponsiveContainer, Tooltip } from 'recharts'
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 function MoodTooltip({
   active,
@@ -80,8 +88,38 @@ export default function MoodStats({ data }: Props) {
       {data.trend.length >= 3 && (
         <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
           <p className="text-xs text-zinc-400 mb-2">Mood Trend</p>
-          <ResponsiveContainer width="100%" height={60}>
-            <LineChart data={data.trend}>
+          <ResponsiveContainer width="100%" height={140}>
+            <LineChart
+              data={data.trend}
+              margin={{ top: 5, right: 5, bottom: 0, left: -10 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#3f3f46"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                fontSize={11}
+                stroke="#a1a1aa"
+                interval="preserveStartEnd"
+                tickFormatter={(v: string) => {
+                  const d = new Date(v)
+                  return d.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                fontSize={11}
+                stroke="#a1a1aa"
+                domain={[1, 5]}
+              />
               <Tooltip content={<MoodTooltip />} cursor={false} />
               <Line
                 type="monotone"
