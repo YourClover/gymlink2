@@ -22,7 +22,6 @@ function serverOnlyPackages(): Plugin {
   return {
     name: 'server-only-packages',
     enforce: 'pre',
-    apply: 'serve',
     resolveId(source, _importer, options) {
       if (!options?.ssr && pkgs.has(source)) {
         return { id: '\0server-only-stub', moduleSideEffects: false }
