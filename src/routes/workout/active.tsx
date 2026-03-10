@@ -449,7 +449,7 @@ function ActiveWorkoutPage() {
             />
           </div>
         ) : (
-          <div className="p-4 space-y-3">
+          <div className="p-4 pb-24 space-y-3">
             {exercises.map((ex, index) => (
               <div
                 key={ex.exercise.id}

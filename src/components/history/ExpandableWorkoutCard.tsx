@@ -7,6 +7,7 @@ import {
   Dumbbell,
   ExternalLink,
   Loader2,
+  Pencil,
 } from 'lucide-react'
 import type { MuscleGroup } from '@prisma/client'
 import MuscleGroupBadge from '@/components/exercises/MuscleGroupBadge'
@@ -164,6 +165,29 @@ export default function ExpandableWorkoutCard({ workout, userId }: Props) {
                   ? formatDuration(workout.durationSeconds)
                   : '--'}
               </div>
+            </div>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate({
+                  to: '/workout/summary/$sessionId',
+                  params: { sessionId: workout.id },
+                })
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation()
+                  navigate({
+                    to: '/workout/summary/$sessionId',
+                    params: { sessionId: workout.id },
+                  })
+                }
+              }}
+              className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 transition-colors"
+            >
+              <Pencil className="w-4 h-4" />
             </div>
             {loading ? (
               <Loader2 className="w-4 h-4 text-zinc-500 animate-spin" />
