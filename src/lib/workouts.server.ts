@@ -657,19 +657,19 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
               otherPRs.map((p) => p.recordType),
             )
 
-            // Always celebrate locally (toast/confetti)
-            prResult = {
-              isNewPR: true,
-              newRecord: prScore,
-              previousRecord: previousRecord ?? undefined,
-              recordType,
-              weight: rawWeight > 0 ? rawWeight : undefined,
-              weightUnit: setData.weightUnit ?? ('KG' as WeightUnit),
-              reps: reps > 0 ? reps : undefined,
-              timeSeconds: time > 0 ? time : undefined,
-            }
-
             if (!dominated) {
+              // Celebrate locally (toast/confetti) only for non-dominated PRs
+              prResult = {
+                isNewPR: true,
+                newRecord: prScore,
+                previousRecord: previousRecord ?? undefined,
+                recordType,
+                weight: rawWeight > 0 ? rawWeight : undefined,
+                weightUnit: setData.weightUnit ?? ('KG' as WeightUnit),
+                reps: reps > 0 ? reps : undefined,
+                timeSeconds: time > 0 ? time : undefined,
+              }
+
               // Create activity feed item for PR achieved
               await tx.activityFeedItem.create({
                 data: {
