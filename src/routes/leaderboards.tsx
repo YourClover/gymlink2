@@ -57,7 +57,8 @@ function LeaderboardsPage() {
               })
             : await getGlobalLeaderboard({ data: { metric, timeRange } })
 
-        if (!aborted) setLeaderboard(result.leaderboard as Array<LeaderboardEntry>)
+        if (!aborted)
+          setLeaderboard(result.leaderboard as Array<LeaderboardEntry>)
       } catch (error) {
         if (!aborted) console.error('Failed to load leaderboard:', error)
       } finally {
@@ -143,8 +144,8 @@ function LeaderboardsPage() {
   }
 
   const [topEntries, restEntries] = useMemo(() => {
-    const top: LeaderboardEntry[] = []
-    const rest: LeaderboardEntry[] = []
+    const top: Array<LeaderboardEntry> = []
+    const rest: Array<LeaderboardEntry> = []
     for (const e of leaderboard) {
       ;(e.rank <= 3 ? top : rest).push(e)
     }

@@ -3,6 +3,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db.server'
 import { requireAuth } from './auth-guard.server'
+import { rateLimit } from './rate-limit.server'
+import { validateDescription, validateNameLength } from './validation'
 import type { ChallengeStatus, ChallengeType } from '@prisma/client'
 
 const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
@@ -46,6 +48,9 @@ export const createChallenge = createServerFn({ method: 'POST' })
     },
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'create-challenge', limit: 5, windowMs: 60_000 })
+    validateNameLength(data.name)
+    validateDescription(data.description)
     const { userId } = await requireAuth(data.token)
 
     // Generate unique invite code
@@ -386,10 +391,7 @@ export async function updateChallengeProgressInternal(
         if (!challenge.exerciseId) break
         progressDelta = session.workoutSets
           .filter((s) => s.exerciseId === challenge.exerciseId)
-          .reduce(
-            (sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0),
-            0,
-          )
+          .reduce((sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0), 0)
         break
       }
     }

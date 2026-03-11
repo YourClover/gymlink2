@@ -183,7 +183,8 @@ function HistoryPage() {
         setCalendarData(dayMap)
         setMonthCache((prev) => new Map(prev).set(cacheKey, dayMap))
       } catch (err) {
-        if (!signal?.aborted) console.error('Failed to fetch calendar data:', err)
+        if (!signal?.aborted)
+          console.error('Failed to fetch calendar data:', err)
       } finally {
         if (!signal?.aborted) setCalendarLoading(false)
       }

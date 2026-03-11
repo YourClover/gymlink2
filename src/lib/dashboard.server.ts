@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db.server'
 import { requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
+import { getWeeklyVolume } from './volume.server'
 
 // ============================================
 // DASHBOARD STATS
@@ -21,27 +22,15 @@ export const getDashboardStats = createServerFn({ method: 'GET' })
     weekStart.setHours(0, 0, 0, 0)
 
     // Get workout count and volume this week in parallel
-    const [workoutsThisWeekCount, volumeResult] = await Promise.all([
+    const [workoutsThisWeekCount, totalVolumeThisWeek] = await Promise.all([
       prisma.workoutSession.count({
         where: {
           userId,
           completedAt: { gte: weekStart },
         },
       }),
-      prisma.$queryRaw<Array<{ volume: bigint | null }>>`
-        SELECT SUM(wset.weight * wset.reps) as volume
-        FROM "workout_sets" wset
-        JOIN "workout_sessions" ws ON wset."workout_session_id" = ws.id
-        WHERE ws."user_id" = ${userId}
-          AND ws."completed_at" >= ${weekStart}
-          AND wset."is_warmup" = false
-          AND wset."is_dropset" = false
-          AND wset.weight IS NOT NULL
-          AND wset.reps IS NOT NULL
-      `,
+      getWeeklyVolume(userId, weekStart),
     ])
-
-    const totalVolumeThisWeek = Number(volumeResult[0]?.volume ?? 0)
 
     // Calculate streak
     const currentStreak = await calculateStreak(userId)

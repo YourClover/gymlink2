@@ -134,7 +134,10 @@ export default function ExpandableWorkoutCard({ workout, userId }: Props) {
     setExpanded(!expanded)
   }
 
-  const muscles = useMemo(() => getUniqueMuscles(workout.workoutSets), [workout.workoutSets])
+  const muscles = useMemo(
+    () => getUniqueMuscles(workout.workoutSets),
+    [workout.workoutSets],
+  )
   const detailVolume = useMemo(
     () => (detail ? calculateVolume(detail.workoutSets) : 0),
     [detail],
@@ -250,9 +253,9 @@ export default function ExpandableWorkoutCard({ workout, userId }: Props) {
           ))}
 
           {detailVolume > 0 && (
-              <div className="pt-2 border-t border-zinc-700/30 text-xs text-zinc-500">
-                Total volume: {formatVolume(detailVolume)}
-              </div>
+            <div className="pt-2 border-t border-zinc-700/30 text-xs text-zinc-500">
+              Total volume: {formatVolume(detailVolume)}
+            </div>
           )}
 
           <button

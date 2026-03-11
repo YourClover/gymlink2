@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db.server'
 import { requireAdmin, requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
+import { getTotalVolume } from './volume.server'
 import type {
   AchievementCategory,
   AchievementRarity,
@@ -287,20 +288,6 @@ async function getTotalPRs(userId: string): Promise<number> {
   return prisma.personalRecord.count({
     where: { userId },
   })
-}
-
-async function getTotalVolume(userId: string): Promise<number> {
-  const result = await prisma.$queryRaw<[{ total: number | null }]>`
-    SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
-    FROM workout_sets ws
-    JOIN workout_sessions s ON s.id = ws.workout_session_id
-    WHERE s.user_id = ${userId}
-      AND s.completed_at IS NOT NULL
-      AND ws.is_warmup = false
-      AND ws.weight IS NOT NULL
-      AND ws.reps IS NOT NULL
-  `
-  return Number(result[0].total)
 }
 
 async function getMuscleGroupSetCounts(

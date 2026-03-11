@@ -1,10 +1,13 @@
 import { getRequestIP } from '@tanstack/react-start/server'
 
 interface RateLimitEntry {
-  timestamps: number[]
+  timestamps: Array<number>
 }
 
 const store = new Map<string, RateLimitEntry>()
+
+// Limit total entries to prevent unbounded memory growth
+const MAX_STORE_SIZE = 10_000
 
 // Clean up expired entries every 10 minutes
 const CLEANUP_INTERVAL = 10 * 60 * 1000
@@ -50,4 +53,13 @@ export function rateLimit(opts: {
 
   entry.timestamps.push(now)
   store.set(bucketKey, entry)
+
+  // Evict oldest entries if store grows too large
+  if (store.size > MAX_STORE_SIZE) {
+    const keysToDelete = Array.from(store.keys()).slice(
+      0,
+      store.size - MAX_STORE_SIZE,
+    )
+    for (const k of keysToDelete) store.delete(k)
+  }
 }

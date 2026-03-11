@@ -4,6 +4,8 @@ import { requireAuth } from './auth-guard.server'
 import { checkAchievementsInternal } from './achievements.server'
 import { updateChallengeProgressInternal } from './challenges.server'
 import { BODYWEIGHT_BASE_SCORE, isDominatedByExistingPR } from './pr-utils'
+import { validateNotes } from './validation'
+import { rateLimit } from './rate-limit.server'
 import type { PrismaClient, RecordType, WeightUnit } from '@prisma/client'
 
 type PrismaTransactionClient = Parameters<
@@ -255,6 +257,7 @@ export const startWorkoutSession = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'start-workout', limit: 10, windowMs: 60_000 })
     const { userId } = await requireAuth(data.token)
     // If plan/day provided, verify access (owner or accepted collaborator)
     if (data.planDayId) {
@@ -349,6 +352,7 @@ export const completeWorkoutSession = createServerFn({ method: 'POST' })
       if (data.durationSeconds !== undefined && data.durationSeconds < 0) {
         throw new Error('durationSeconds must be non-negative')
       }
+      validateNotes(data.notes)
       return data
     },
   )
@@ -506,6 +510,7 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
       if (!hasReps && !hasTime) {
         throw new Error('Set must have either reps or time recorded')
       }
+      validateNotes(data.notes)
       return data
     },
   )
@@ -596,7 +601,8 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
           })
 
           const PR_EPSILON = 0.01
-          const isNewPR = !existingPR || prScore >= existingPR.value + PR_EPSILON
+          const isNewPR =
+            !existingPR || prScore >= existingPR.value + PR_EPSILON
 
           if (isNewPR) {
             // Determine previousRecord: if the existing PR's set is from this

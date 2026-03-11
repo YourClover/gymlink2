@@ -242,6 +242,7 @@ model Exercise {
   achievements    Achievement[]
 
   @@index([userId])
+  @@index([userId, isCustom])
   @@map("exercises")
 }
 
@@ -265,6 +266,7 @@ model WorkoutSession {
   @@index([userId])
   @@index([workoutPlanId])
   @@index([userId, completedAt]) // Composite index for efficient workout history queries
+  @@index([userId, completedAt, workoutPlanId]) // For filtered workout queries by plan
   @@map("workout_sessions")
 }
 

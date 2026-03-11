@@ -1,9 +1,15 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db.server'
 import { requireAdmin, requireAuth } from './auth-guard.server'
+import {
+  validateDescription,
+  validateInstructions,
+  validateNameLength,
+} from './validation'
+import { rateLimit } from './rate-limit.server'
 import type { Equipment, ExerciseType, MuscleGroup } from '@prisma/client'
 
-// Get exercises with optional filtering
+// Get exercises with optional filtering and cursor pagination
 export const getExercises = createServerFn({ method: 'GET' })
   .inputValidator(
     (data: {
@@ -13,7 +19,14 @@ export const getExercises = createServerFn({ method: 'GET' })
       search?: string
       userId?: string
       includeBuiltIn?: boolean
-    }) => data,
+      cursor?: string
+      limit?: number
+    }) => {
+      if (data.limit !== undefined && (data.limit < 1 || data.limit > 100)) {
+        throw new Error('limit must be between 1 and 100')
+      }
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const {
@@ -24,6 +37,8 @@ export const getExercises = createServerFn({ method: 'GET' })
       // userId and includeBuiltIn kept for API compatibility but not used
       // since all exercises are now globally available
     } = data
+
+    const limit = data.limit ?? 50
 
     const where: {
       muscleGroup?: MuscleGroup
@@ -43,10 +58,17 @@ export const getExercises = createServerFn({ method: 'GET' })
     const exercises = await prisma.exercise.findMany({
       where,
       orderBy: [{ muscleGroup: 'asc' }, { name: 'asc' }],
-      take: 200,
+      take: limit + 1,
+      ...(data.cursor && { cursor: { id: data.cursor }, skip: 1 }),
     })
 
-    return { exercises }
+    const hasMore = exercises.length > limit
+    if (hasMore) exercises.pop()
+
+    return {
+      exercises,
+      nextCursor: hasMore ? exercises[exercises.length - 1].id : null,
+    }
   })
 
 // Get a single exercise by ID
@@ -77,6 +99,10 @@ export const createExercise = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'create-exercise', limit: 20, windowMs: 60_000 })
+    validateNameLength(data.name)
+    validateDescription(data.description)
+    validateInstructions(data.instructions)
     const { userId } = await requireAdmin(data.token)
     const {
       token: _,
@@ -146,6 +172,10 @@ export const updateExercise = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'update-exercise', limit: 20, windowMs: 60_000 })
+    if (data.name) validateNameLength(data.name)
+    validateDescription(data.description)
+    validateInstructions(data.instructions)
     const { userId } = await requireAuth(data.token)
     const { id, token: _, ...updateData } = data
 

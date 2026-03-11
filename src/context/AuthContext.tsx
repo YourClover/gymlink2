@@ -174,14 +174,21 @@ export function AuthProvider({
       refreshUser,
       clearError,
     }),
-    [user, token, isLoading, isInitializing, error, login, register, logout, refreshUser, clearError],
+    [
+      user,
+      token,
+      isLoading,
+      isInitializing,
+      error,
+      login,
+      register,
+      logout,
+      refreshUser,
+      clearError,
+    ],
   )
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

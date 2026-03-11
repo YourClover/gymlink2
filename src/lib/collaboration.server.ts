@@ -1,8 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { Prisma } from '@prisma/client'
 import { prisma } from './db.server'
-import { requireAdmin, requireAuth } from './auth-guard.server'
+import { requireAuth } from './auth-guard.server'
 import { requirePlanAccess, requirePlanOwnership } from './plan-auth.server'
+import { rateLimit } from './rate-limit.server'
 import type { PlanCollaboratorRole } from '@prisma/client'
 
 // Get mutual followers who can be invited to a plan
@@ -63,6 +64,7 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'invite-collaborator', limit: 10, windowMs: 60_000 })
     const { userId } = await requireAuth(data.token)
 
     if (userId === data.inviteeId) {
@@ -71,43 +73,34 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
 
     await requirePlanOwnership(data.planId, userId)
 
-    // Verify mutual follow
-    const [theyFollowMe, iFollowThem] = await Promise.all([
-      prisma.follow.findFirst({
-        where: {
-          followerId: data.inviteeId,
-          followingId: userId,
-          status: 'ACCEPTED',
-        },
-      }),
-      prisma.follow.findFirst({
-        where: {
-          followerId: userId,
-          followingId: data.inviteeId,
-          status: 'ACCEPTED',
-        },
-      }),
-    ])
-
-    if (!theyFollowMe || !iFollowThem) {
-      throw new Error('Can only invite mutual followers')
-    }
-
-    const [plan, inviter] = await Promise.all([
-      prisma.workoutPlan.findUnique({
-        where: { id: data.planId },
-        select: { name: true },
-      }),
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { name: true },
-      }),
-    ])
-
-    // Use transaction to prevent duplicate invite race condition
+    // Use transaction to prevent race conditions (mutual follow + duplicate invite)
     let collaborator
+    let planName: string | undefined
+    let inviterName: string | undefined
     try {
       collaborator = await prisma.$transaction(async (tx) => {
+        // Verify mutual follow inside transaction to prevent TOCTOU race
+        const [theyFollowMe, iFollowThem] = await Promise.all([
+          tx.follow.findFirst({
+            where: {
+              followerId: data.inviteeId,
+              followingId: userId,
+              status: 'ACCEPTED',
+            },
+          }),
+          tx.follow.findFirst({
+            where: {
+              followerId: userId,
+              followingId: data.inviteeId,
+              status: 'ACCEPTED',
+            },
+          }),
+        ])
+
+        if (!theyFollowMe || !iFollowThem) {
+          throw new Error('Can only invite mutual followers')
+        }
+
         const existing = await tx.planCollaborator.findUnique({
           where: {
             workoutPlanId_userId: {
@@ -121,6 +114,20 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
           throw new Error('User has already been invited to this plan')
         }
 
+        const [plan, inviter] = await Promise.all([
+          tx.workoutPlan.findUnique({
+            where: { id: data.planId },
+            select: { name: true },
+          }),
+          tx.user.findUnique({
+            where: { id: userId },
+            select: { name: true },
+          }),
+        ])
+
+        planName = plan?.name
+        inviterName = inviter?.name
+
         return tx.planCollaborator.create({
           data: {
             workoutPlanId: data.planId,
@@ -131,12 +138,7 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
         })
       })
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message === 'User has already been invited to this plan'
-      ) {
-        throw error
-      }
+      if (error instanceof Error) throw error
       throw new Error('User has already been invited to this plan')
     }
 
@@ -146,7 +148,7 @@ export const inviteCollaborator = createServerFn({ method: 'POST' })
         userId: data.inviteeId,
         type: 'PLAN_INVITE',
         title: 'Plan Invitation',
-        message: `${inviter?.name} invited you to collaborate on "${plan?.name}"`,
+        message: `${inviterName} invited you to collaborate on "${planName}"`,
         referenceId: data.planId,
       },
     })

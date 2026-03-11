@@ -1,10 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
+import { Prisma  } from '@prisma/client'
 import { prisma } from './db.server'
 import { requireAuth } from './auth-guard.server'
 import { calculateStreak } from './date-utils.server'
 import { PR_PRIORITY } from './pr-utils'
+import type {RecordType} from '@prisma/client';
 import type { Granularity } from './date-utils'
-import { Prisma, type RecordType } from '@prisma/client'
 
 // ============================================
 // OVERVIEW STATS
@@ -43,11 +44,15 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
     ) {
       // Build date bounds for raw SQL volume query
       const dateGte =
-        completedAtFilter && typeof completedAtFilter === 'object' && 'gte' in completedAtFilter
+        completedAtFilter &&
+        typeof completedAtFilter === 'object' &&
+        'gte' in completedAtFilter
           ? (completedAtFilter.gte as Date)
           : null
       const dateLt =
-        completedAtFilter && typeof completedAtFilter === 'object' && 'lt' in completedAtFilter
+        completedAtFilter &&
+        typeof completedAtFilter === 'object' &&
+        'lt' in completedAtFilter
           ? (completedAtFilter.lt as Date)
           : null
 
@@ -60,8 +65,12 @@ export const getOverviewStats = createServerFn({ method: 'GET' })
           _sum: { durationSeconds: true },
         }),
         (() => {
-          const gteFilter = dateGte ? Prisma.sql`AND s.completed_at >= ${dateGte}` : Prisma.empty
-          const ltFilter = dateLt ? Prisma.sql`AND s.completed_at < ${dateLt}` : Prisma.empty
+          const gteFilter = dateGte
+            ? Prisma.sql`AND s.completed_at >= ${dateGte}`
+            : Prisma.empty
+          const ltFilter = dateLt
+            ? Prisma.sql`AND s.completed_at < ${dateLt}`
+            : Prisma.empty
           return prisma.$queryRaw<[{ total: number | null }]>`
             SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
             FROM workout_sets ws
@@ -185,7 +194,11 @@ export const getVolumeHistory = createServerFn({ method: 'GET' })
     }
 
     // Aggregate volume and workout counts per period in SQL
-    const intervalMap = { daily: 'day', weekly: 'week', monthly: 'month' } as const
+    const intervalMap = {
+      daily: 'day',
+      weekly: 'week',
+      monthly: 'month',
+    } as const
     const truncInterval = intervalMap[granularity]
 
     const rows = await prisma.$queryRaw<
@@ -251,7 +264,9 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
     const startDateFilter = startDateParam
       ? Prisma.sql`AND s.completed_at >= ${startDateParam}`
       : Prisma.empty
-    const muscleRows = await prisma.$queryRaw<Array<{ muscle_group: string; set_count: bigint }>>`
+    const muscleRows = await prisma.$queryRaw<
+      Array<{ muscle_group: string; set_count: bigint }>
+    >`
       SELECT e.muscle_group, COUNT(ws.id) AS set_count
       FROM workout_sets ws
       JOIN exercises e ON e.id = ws.exercise_id
@@ -269,7 +284,8 @@ export const getExerciseStats = createServerFn({ method: 'GET' })
       return { muscle: row.muscle_group, count, percentage: 0 }
     })
     for (const mg of muscleGroups) {
-      mg.percentage = totalSets > 0 ? Math.round((mg.count / totalSets) * 100) : 0
+      mg.percentage =
+        totalSets > 0 ? Math.round((mg.count / totalSets) * 100) : 0
     }
 
     return {
@@ -605,7 +621,9 @@ export const getRpeStats = createServerFn({ method: 'GET' })
     const rpeStartFilter = rpeStartDate
       ? Prisma.sql`AND s.completed_at >= ${rpeStartDate}`
       : Prisma.empty
-    const distRows = await prisma.$queryRaw<Array<{ rpe: number; cnt: bigint }>>`
+    const distRows = await prisma.$queryRaw<
+      Array<{ rpe: number; cnt: bigint }>
+    >`
       SELECT ws.rpe, COUNT(*) AS cnt
       FROM workout_sets ws
       JOIN workout_sessions s ON s.id = ws.workout_session_id
@@ -629,7 +647,9 @@ export const getRpeStats = createServerFn({ method: 'GET' })
     }
 
     // Trend: avg RPE per session (last 20 sessions)
-    const trendRows = await prisma.$queryRaw<Array<{ completed_date: Date; avg_rpe: number }>>`
+    const trendRows = await prisma.$queryRaw<
+      Array<{ completed_date: Date; avg_rpe: number }>
+    >`
       SELECT s.completed_at::date AS completed_date, AVG(ws.rpe) AS avg_rpe
       FROM workout_sets ws
       JOIN workout_sessions s ON s.id = ws.workout_session_id
@@ -640,12 +660,10 @@ export const getRpeStats = createServerFn({ method: 'GET' })
       ORDER BY s.completed_at DESC LIMIT 20
     `
 
-    const trend = trendRows
-      .reverse()
-      .map((row) => ({
-        avgRpe: Math.round(Number(row.avg_rpe) * 10) / 10,
-        date: row.completed_date.toISOString().split('T')[0],
-      }))
+    const trend = trendRows.reverse().map((row) => ({
+      avgRpe: Math.round(Number(row.avg_rpe) * 10) / 10,
+      date: row.completed_date.toISOString().split('T')[0],
+    }))
 
     return {
       avgRpe: Math.round((totalRpe / totalRatedSets) * 10) / 10,

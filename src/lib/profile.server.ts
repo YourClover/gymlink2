@@ -4,6 +4,7 @@ import { requireAuth } from './auth-guard.server'
 import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db.server'
 import { rateLimit } from './rate-limit.server'
+import { getTotalVolume } from './volume.server'
 
 // Character set for profile codes (excludes confusing chars: 0/O, 1/I/L)
 const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
@@ -84,8 +85,27 @@ export const updateUserProfile = createServerFn({ method: 'POST' })
           if (!['http:', 'https:'].includes(url.protocol)) {
             throw new Error('Avatar URL must use HTTP or HTTPS')
           }
+          // Block private/internal IP ranges to prevent SSRF
+          const hostname = url.hostname.toLowerCase()
+          const blockedPatterns = [
+            /^localhost$/,
+            /^127\./,
+            /^10\./,
+            /^172\.(1[6-9]|2\d|3[01])\./,
+            /^192\.168\./,
+            /^0\./,
+            /^169\.254\./, // link-local
+            /^\[::1\]$/, // IPv6 loopback
+            /^\[fc/, // IPv6 private
+            /^\[fd/, // IPv6 private
+            /^\[fe80/, // IPv6 link-local
+          ]
+          if (blockedPatterns.some((p) => p.test(hostname))) {
+            throw new Error('Avatar URL must point to a public address')
+          }
         } catch (e) {
-          if (e instanceof Error && e.message.includes('Avatar URL'))
+          if (e instanceof Error && e.message.includes('Avatar URL')) throw e
+          if (e instanceof Error && e.message.includes('public address'))
             throw e
           throw new Error('Avatar URL must be a valid URL')
         }
@@ -94,6 +114,7 @@ export const updateUserProfile = createServerFn({ method: 'POST' })
     },
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'profile-update', limit: 10, windowMs: 60_000 })
     const { userId } = await requireAuth(data.token)
 
     const profile = await prisma.userProfile.update({
@@ -209,8 +230,11 @@ export const getProfileByUsername = createServerFn({ method: 'GET' })
 export const getProfileByCode = createServerFn({ method: 'GET' })
   .inputValidator((data: { profileCode: string }) => data)
   .handler(async ({ data }) => {
-    const profile = await prisma.userProfile.findUnique({
-      where: { profileCode: data.profileCode.toUpperCase() },
+    const profile = await prisma.userProfile.findFirst({
+      where: {
+        profileCode: data.profileCode.toUpperCase(),
+        user: { deletedAt: null }, // Exclude soft-deleted users
+      },
       include: {
         user: { select: { id: true, name: true } },
       },
@@ -423,7 +447,7 @@ export const getProfileStats = createServerFn({ method: 'GET' })
       totalPRs,
       totalAchievements,
       recentWorkout,
-      volumeResult,
+      totalVolume,
     ] = await Promise.all([
       prisma.workoutSession.count({
         where: { userId, completedAt: { not: null } },
@@ -445,19 +469,8 @@ export const getProfileStats = createServerFn({ method: 'GET' })
         orderBy: { completedAt: 'desc' },
         select: { completedAt: true },
       }),
-      prisma.$queryRaw<[{ total: number | null }]>`
-        SELECT COALESCE(SUM(ws.weight * ws.reps), 0) AS total
-        FROM workout_sets ws
-        JOIN workout_sessions s ON s.id = ws.workout_session_id
-        WHERE s.user_id = ${userId}
-          AND s.completed_at IS NOT NULL
-          AND ws.is_warmup = false
-          AND ws.weight IS NOT NULL
-          AND ws.reps IS NOT NULL
-      `,
+      getTotalVolume(userId),
     ])
-
-    const totalVolume = Number(volumeResult[0].total)
 
     return {
       stats: {

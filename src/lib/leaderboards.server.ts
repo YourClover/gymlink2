@@ -237,7 +237,10 @@ async function enrichLeaderboard(
   const userIds = entries.map((e) => e.userId)
 
   const profiles = await prisma.userProfile.findMany({
-    where: { userId: { in: userIds } },
+    where: {
+      userId: { in: userIds },
+      user: { deletedAt: null }, // Exclude soft-deleted users
+    },
     select: {
       userId: true,
       username: true,
@@ -247,9 +250,7 @@ async function enrichLeaderboard(
   })
 
   const profileMap = new Map(profiles.map((p) => [p.userId, p]))
-  const userMap = new Map(
-    profiles.map((p) => [p.userId, p.user]),
-  )
+  const userMap = new Map(profiles.map((p) => [p.userId, p.user]))
 
   return {
     leaderboard: entries.map((entry, index) => ({

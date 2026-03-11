@@ -4,6 +4,7 @@ import { MAX_CODE_GENERATION_ATTEMPTS } from './constants'
 import { prisma } from './db.server'
 import { requireAdmin, requireAuth } from './auth-guard.server'
 import { requirePlanOwnership } from './plan-auth.server'
+import { rateLimit } from './rate-limit.server'
 
 // Safe charset for share codes (no 0/O, 1/I/L confusion)
 const SHARE_CODE_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
@@ -45,6 +46,7 @@ export const generateShareCode = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'share-code', limit: 10, windowMs: 60_000 })
     const { userId } = await requireAuth(data.token)
     await requirePlanOwnership(data.workoutPlanId, userId)
 
@@ -144,6 +146,7 @@ export const importPlanFromCode = createServerFn({ method: 'POST' })
       data,
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'import-plan', limit: 5, windowMs: 60_000 })
     const { userId } = await requireAuth(data.token)
     const code = data.code.toUpperCase().trim()
 

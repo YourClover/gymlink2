@@ -7,6 +7,12 @@ import {
   requirePlanEditAccess,
   requirePlanOwnership,
 } from './plan-auth.server'
+import {
+  validateDescription,
+  validateNameLength,
+  validateNotes,
+} from './validation'
+import { rateLimit } from './rate-limit.server'
 
 // ============================================
 // WORKOUT PLAN OPERATIONS
@@ -158,10 +164,14 @@ export const getPlan = createServerFn({ method: 'GET' })
 // Create a new plan
 export const createPlan = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { name: string; description?: string; token: string | null }) =>
-      data,
+    (data: { name: string; description?: string; token: string | null }) => {
+      validateNameLength(data.name)
+      validateDescription(data.description)
+      return data
+    },
   )
   .handler(async ({ data }) => {
+    rateLimit({ key: 'create-plan', limit: 10, windowMs: 60_000 })
     const { userId } = await requireAuth(data.token)
 
     const plan = await prisma.workoutPlan.create({
@@ -183,7 +193,11 @@ export const updatePlan = createServerFn({ method: 'POST' })
       name?: string
       description?: string
       token: string | null
-    }) => data,
+    }) => {
+      if (data.name) validateNameLength(data.name)
+      validateDescription(data.description)
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const { userId } = await requireAuth(data.token)
@@ -250,7 +264,10 @@ export const createPlanDay = createServerFn({ method: 'POST' })
       dayOrder: number
       restDay?: boolean
       token: string | null
-    }) => data,
+    }) => {
+      validateNameLength(data.name)
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const { userId } = await requireAuth(data.token)
@@ -375,7 +392,10 @@ export const addPlanExercise = createServerFn({ method: 'POST' })
       restSeconds?: number
       notes?: string
       token: string | null
-    }) => data,
+    }) => {
+      validateNotes(data.notes)
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const { userId } = await requireAuth(data.token)
@@ -432,7 +452,10 @@ export const updatePlanExercise = createServerFn({ method: 'POST' })
       restSeconds?: number
       notes?: string
       token: string | null
-    }) => data,
+    }) => {
+      validateNotes(data.notes)
+      return data
+    },
   )
   .handler(async ({ data }) => {
     const { userId } = await requireAuth(data.token)

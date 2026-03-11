@@ -98,7 +98,10 @@ export default memo(function MuscleDonutChart({ data }: Props) {
     )
   }
 
-  const totalSets = useMemo(() => data.reduce((sum, d) => sum + d.count, 0), [data])
+  const totalSets = useMemo(
+    () => data.reduce((sum, d) => sum + d.count, 0),
+    [data],
+  )
   const labelThreshold = compact ? 8 : 5
   const labelFontSize = compact ? 10 : 12
   const centerFontSize = compact ? 18 : 22

@@ -171,6 +171,7 @@ async function getFollowersInternal(
     where: {
       followingId: userId,
       ...(status && { status }),
+      follower: { deletedAt: null }, // Exclude soft-deleted users
     },
     take: limit ?? 50,
     skip: offset ?? 0,
@@ -250,6 +251,7 @@ export const getFollowing = createServerFn({ method: 'GET' })
       where: {
         followerId: userId,
         ...(data.status && { status: data.status }),
+        following: { deletedAt: null }, // Exclude soft-deleted users
       },
       take: data.limit ?? 50,
       skip: data.offset ?? 0,
@@ -358,6 +360,7 @@ export const getMutualFollowers = createServerFn({ method: 'GET' })
         followerId: userId,
         followingId: { in: followerIds },
         status: 'ACCEPTED',
+        following: { deletedAt: null }, // Exclude soft-deleted users
       },
       include: {
         following: {

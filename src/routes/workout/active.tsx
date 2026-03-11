@@ -296,8 +296,7 @@ function ActiveWorkoutPage() {
 
   // Stable callbacks for ExerciseWorkoutCard memo
   const handleToggleExpand = useCallback(
-    (id: string) =>
-      setExpandedExerciseId((cur) => (cur === id ? null : id)),
+    (id: string) => setExpandedExerciseId((cur) => (cur === id ? null : id)),
     [],
   )
 

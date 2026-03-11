@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite'
-import type { Plugin } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 import { nitro } from 'nitro/vite'
+import type { Plugin } from 'vite'
 
 const SERVER_ONLY_PACKAGES = ['@prisma/client', '@prisma/adapter-pg', 'pg']
 
@@ -48,12 +48,17 @@ function serverOnlyPackages(): Plugin {
         for (const m of code.matchAll(/export\s*\{([^}]+)\}/g)) {
           if (/export\s+type\s*\{/.test(m[0])) continue
           for (const n of m[1].split(',')) {
-            const name = n.trim().split(/\s+as\s+/).pop()?.trim()
+            const name = n
+              .trim()
+              .split(/\s+as\s+/)
+              .pop()
+              ?.trim()
             if (name) names.add(name)
           }
         }
         const hasDefault = /export\s+default\b/.test(code)
-        const stub = 'const s = new Proxy({}, { get: (_, p) => p === Symbol.toPrimitive ? () => "" : s });'
+        const stub =
+          'const s = new Proxy({}, { get: (_, p) => p === Symbol.toPrimitive ? () => "" : s });'
         const named = names.size
           ? `export { ${[...names].map((n) => `s as ${n}`).join(', ')} };`
           : ''
@@ -106,10 +111,7 @@ const config = defineConfig({
         manualChunks: {
           react: ['react', 'react-dom'],
           recharts: ['recharts'],
-          router: [
-            '@tanstack/react-router',
-            '@tanstack/react-start',
-          ],
+          router: ['@tanstack/react-router', '@tanstack/react-start'],
         },
       },
     },

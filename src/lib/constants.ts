@@ -73,6 +73,15 @@ export const TOAST_DURATION_MS = 5000
 export const ANIMATION_DURATION_MS = 300
 
 // ============================================
+// INPUT VALIDATION
+// ============================================
+export const MAX_NOTES_LENGTH = 2000
+export const MAX_INSTRUCTIONS_LENGTH = 5000
+export const MAX_DESCRIPTION_LENGTH = 2000
+export const MAX_NAME_LENGTH = 200
+export const MAX_BIO_LENGTH = 500
+
+// ============================================
 // FILE LIMITS
 // ============================================
 export const MAX_AVATAR_SIZE_MB = 5
