@@ -164,8 +164,8 @@ async function recalculatePR(
           workoutSetId: best.setId,
           // Handle previousRecord based on score change direction
           ...(existingPR && best.score < existingPR.value
-            ? // Regression: PR-holding set deleted, next-best is lower — clear stale previousRecord
-              { previousRecord: null }
+            ? // Regression: PR-holding set deleted, next-best is lower — preserve history
+              { previousRecord: existingPR.previousRecord }
             : existingPR && best.score > existingPR.value
               ? // Improvement via recalc: treat as new PR
                 { previousRecord: existingPR.value, achievedAt: new Date() }
@@ -595,7 +595,8 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
             },
           })
 
-          const isNewPR = !existingPR || prScore > existingPR.value
+          const PR_EPSILON = 0.01
+          const isNewPR = !existingPR || prScore >= existingPR.value + PR_EPSILON
 
           if (isNewPR) {
             // Determine previousRecord: if the existing PR's set is from this
@@ -609,7 +610,7 @@ export const logWorkoutSet = createServerFn({ method: 'POST' })
               })
               if (existingSet?.workoutSessionId === setData.workoutSessionId) {
                 // Same session — preserve the original beaten value
-                previousRecord = existingPR.previousRecord
+                previousRecord = existingPR.previousRecord ?? existingPR.value
               } else {
                 previousRecord = existingPR.value
               }

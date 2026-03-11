@@ -83,7 +83,10 @@ export default function PRToast({
     return () => clearTimeout(timer)
   }, [onClose, autoCloseMs])
 
-  const improvement = previousRecord ? newRecord - previousRecord : null
+  const improvement =
+    previousRecord && previousRecord !== newRecord
+      ? newRecord - previousRecord
+      : null
 
   return (
     <div className="fixed top-4 left-4 right-4 z-[90] animate-in slide-in-from-top-4 duration-300 safe-area-mt">
@@ -113,7 +116,7 @@ export default function PRToast({
                 reps,
                 timeSeconds,
               )}
-              {previousRecord && (
+              {previousRecord && previousRecord !== newRecord && (
                 <span className="text-zinc-500">
                   {' '}
                   (previous:{' '}
