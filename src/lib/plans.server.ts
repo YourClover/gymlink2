@@ -545,15 +545,28 @@ export const reorderPlanExercises = createServerFn({ method: 'POST' })
     if (data.exerciseIds.length > 100)
       throw new Error('Too many items to reorder')
 
-    // Update each exercise's order
-    await Promise.all(
-      data.exerciseIds.map((exerciseId, index) =>
-        prisma.planExercise.update({
-          where: { id: exerciseId },
-          data: { exerciseOrder: index + 1 },
-        }),
-      ),
-    )
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.planExercise.findMany({
+        where: { id: { in: data.exerciseIds }, planDayId: data.planDayId },
+        select: { id: true },
+      })
+      if (existing.length !== data.exerciseIds.length) {
+        throw new Error('Invalid exercise ids for this day')
+      }
+
+      for (let i = 0; i < data.exerciseIds.length; i++) {
+        await tx.planExercise.update({
+          where: { id: data.exerciseIds[i] },
+          data: { exerciseOrder: -(i + 1) },
+        })
+      }
+      for (let i = 0; i < data.exerciseIds.length; i++) {
+        await tx.planExercise.update({
+          where: { id: data.exerciseIds[i] },
+          data: { exerciseOrder: i + 1 },
+        })
+      }
+    })
 
     return { success: true }
   })
